@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import InventoryDashboard from "@/components/InventoryDashboard";
 import ProductForm from "@/components/ProductForm";
 import SalesTerminal from "@/components/SalesTerminal";
@@ -43,15 +44,31 @@ export default function Home() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#fcf8f1] font-['Segoe_UI_Variable_Text',_system-ui,_sans-serif]">
-      {/* Sidebar - Collapsible */}
-      <aside className={`bg-[#1a1f2b] text-white flex flex-col h-screen flex-shrink-0 transition-all duration-300 ease-in-out ${sidebarExpanded ? 'w-[280px] p-6' : 'w-[80px] p-2'}`}>
+      {/* Sidebar - Collapsible with Framer Motion for smoothness */}
+      <motion.aside 
+        initial={false}
+        animate={{ 
+          width: sidebarExpanded ? 280 : 80,
+          padding: sidebarExpanded ? '24px' : '12px'
+        }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className="bg-[#1a1f2b] text-white flex flex-col h-screen flex-shrink-0 overflow-hidden"
+      >
         <div className={`flex items-center justify-between px-2 ${sidebarExpanded ? 'mb-8' : 'mb-4'}`}>
-          {sidebarExpanded && (
-            <div className="animate-in fade-in slide-in-from-left-2">
-              <h2 className="text-xl font-bold tracking-tight">Awards Centre</h2>
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">Inventory Management</p>
-            </div>
-          )}
+          <AnimatePresence mode="wait">
+            {sidebarExpanded && (
+              <motion.div 
+                key="title"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="overflow-hidden whitespace-nowrap"
+              >
+                <h2 className="text-xl font-bold tracking-tight">Awards Centre</h2>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">Inventory Management</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <button 
             onClick={() => setSidebarExpanded(!sidebarExpanded)}
             className={`p-2 hover:bg-slate-800 rounded-lg transition-colors ${!sidebarExpanded ? 'mx-auto' : ''}`}
@@ -67,8 +84,19 @@ export default function Home() {
           className={`bg-[#ffb443] hover:bg-[#fca42d] text-[#1a1f2b] font-bold py-3 rounded-lg flex items-center transition-all group overflow-hidden ${sidebarExpanded ? 'px-4 justify-between mb-6' : 'w-12 h-12 justify-center mx-auto mb-4'}`}
         >
           <div className="flex items-center gap-3">
-            <span className="text-lg">+</span>
-            {sidebarExpanded && <span className="animate-in fade-in slide-in-from-left-2">Create new</span>}
+            <span className="text-lg font-bold">+</span>
+            <AnimatePresence>
+              {sidebarExpanded && (
+                <motion.span 
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  className="whitespace-nowrap overflow-hidden"
+                >
+                  Create new
+                </motion.span>
+              )}
+            </AnimatePresence>
           </div>
           {sidebarExpanded && <span className="opacity-50 group-hover:translate-x-1 transition-transform">›</span>}
         </button>
@@ -90,7 +118,18 @@ export default function Home() {
               <span className={`transition-colors ${activeTab === item.name ? 'text-[#ffb443]' : 'text-slate-500 group-hover:text-[#ffb443]'}`}>
                 {item.icon}
               </span>
-              {sidebarExpanded && <span className="animate-in fade-in slide-in-from-left-2 truncate">{item.name}</span>}
+              <AnimatePresence>
+                {sidebarExpanded && (
+                  <motion.span 
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    className="whitespace-nowrap overflow-hidden"
+                  >
+                    {item.name}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
           ))}
         </nav>
@@ -98,15 +137,22 @@ export default function Home() {
         <div className={`pt-4 border-t border-slate-800/50 mt-2 overflow-hidden`}>
           <div className={`flex items-center gap-3 px-2 ${!sidebarExpanded ? 'justify-center' : ''}`}>
             <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex-shrink-0 flex items-center justify-center font-bold text-[10px]">AC</div>
-            {sidebarExpanded && (
-              <div className="animate-in fade-in slide-in-from-left-2 truncate">
-                <div className="text-sm font-bold">Admin User</div>
-                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">System Admin</div>
-              </div>
-            )}
+            <AnimatePresence>
+              {sidebarExpanded && (
+                <motion.div 
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  className="whitespace-nowrap overflow-hidden"
+                >
+                  <div className="text-sm font-bold">Admin User</div>
+                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">System Admin</div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
