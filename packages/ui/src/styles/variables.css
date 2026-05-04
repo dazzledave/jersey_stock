@@ -1,0 +1,32 @@
+:root {
+  /* Bread Faculty Inspired Palette - Tailored for Jersey Stock */
+  --bui-bg-main: #fcf8f1; /* Warm Off-white */
+  --bui-sidebar-bg: #1a1f2b; /* Deep Navy */
+  --bui-accent: #ffb443; /* Warm Gold/Yellow */
+  --bui-accent-hover: #fca42d;
+  
+  /* Surface Colors */
+  --bui-card-bg: #ffffff;
+  --bui-border: #f0ebe4;
+  --bui-text-primary: #1a1f2b;
+  --bui-text-secondary: #8b8680;
+  --bui-text-muted: #b5b0aa;
+  
+  /* Status Colors */
+  --bui-success: #2ecc71;
+  --bui-error: #e74c3c;
+  --bui-info: #3498db;
+  
+  /* Radii & Spacing */
+  --bui-radius-lg: 24px;
+  --bui-radius-md: 16px;
+  --bui-radius-sm: 10px;
+  --bui-shadow: 0 4px 20px rgba(26, 31, 43, 0.05);
+}
+
+body {
+  background-color: var(--bui-bg-main);
+  color: var(--bui-text-primary);
+  font-family: 'Outfit', 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}

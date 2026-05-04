@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+@theme {
+  --font-outfit: "Outfit", sans-serif;
+  --font-segoe: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  
+  --color-brand-bg: #fcf8f1;
+  --color-brand-navy: #1a1f2b;
+  --color-brand-accent: #ffb443;
+  --color-brand-accent-hover: #fca42d;
+  
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+}
+
+:root {
+  --foreground-rgb: 26, 31, 43;
+  --background-start-rgb: 252, 248, 241;
+  --background-end-rgb: 252, 248, 241;
+}
+
+body {
+  color: var(--foreground-rgb);
+  background: var(--background-start-rgb);
+  font-family: var(--font-segoe);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}

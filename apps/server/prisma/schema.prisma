@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentMethod {
+  cash
+  momo
+  card
+  credit
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[]
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  name        String
+  brand       String?
+  basePrice   Float            @map("base_price")
+  description String?
+  categoryId  String           @map("category_id")
+  category    Category         @relation(fields: [categoryId], references: [id])
+  variants    ProductVariant[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("products")
+}
+
+model ProductVariant {
+  id        String          @id @default(cuid())
+  productId String          @map("product_id")
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      String?
+  color     String?
+  sku       String?         @unique
+  barcode   String?         @unique
+  inventory Inventory?
+  movements StockMovement[]
+
+  @@map("product_variants")
+}
+
+model Inventory {
+  variantId    String         @id @map("variant_id")
+  variant      ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity     Int            @default(0)
+  reorderLevel Int            @default(5) @map("reorder_level")
+
+  @@map("inventory")
+}
+
+model StockMovement {
+  id        String         @id @default(cuid())
+  variantId String         @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  quantity  Int // positive for additions, negative for reductions
+  type      String // e.g., "SALE", "ADJUSTMENT", "RESTOCK"
+  reason    String?
+  createdAt DateTime       @default(now())
+
+  @@map("StockMovement") // StockAdjustment maps to StockMovement
+}
+
+model Sale {
+  id            String        @id @default(cuid())
+  totalAmount   Float
+  paymentMethod PaymentMethod
+  createdAt     DateTime      @default(now())
+}
