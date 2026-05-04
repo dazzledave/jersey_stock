@@ -1,2 +1,3 @@
 # jersey_stock
-Jersey store stock inventory
+### Jersey Store Stock Inventory & POS Management System
+
