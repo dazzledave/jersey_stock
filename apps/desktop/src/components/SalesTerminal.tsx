@@ -1,24 +1,47 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+interface Product {
+  id: string;
+  name: string;
+  brand: string;
+  basePrice: number;
+}
 
 export default function SalesTerminal() {
   const [cart, setCart] = useState<any[]>([]);
-  const products = [
-    { id: 1, name: 'Home Jersey 2024', brand: 'Nike', price: 150, image: '👕' },
-    { id: 2, name: 'Away Jersey 2024', brand: 'Adidas', price: 140, image: '👕' },
-    { id: 3, name: 'Training Kit', brand: 'Puma', price: 80, image: '🎽' },
-    { id: 4, name: 'Goalkeeper Jersey', brand: 'Nike', price: 160, image: '🧤' },
-    { id: 5, name: 'Tech Fleece', brand: 'Nike', price: 220, image: '🧥' },
-    { id: 6, name: 'Speed Cleats', brand: 'Adidas', price: 300, image: '👟' },
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [search, setSearch] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const addToCart = (product: any) => {
-    setCart([...cart, product]);
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('http://localhost:4000/api/products');
+      const data = await res.json();
+      setProducts(data);
+    } catch (err) {
+      console.error('Failed to fetch products:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const addToCart = (product: Product) => {
+    setCart([...cart, { ...product, price: product.basePrice }]);
   };
 
   const total = cart.reduce((acc, item) => acc + item.price, 0);
+
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(search.toLowerCase()) || 
+    p.brand?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="flex gap-10 h-[calc(100vh-160px)]">
@@ -31,7 +54,7 @@ export default function SalesTerminal() {
             <p className="text-slate-400 text-sm font-medium">Tap a product to add it to the ticket.</p>
           </div>
           <div className="text-[10px] font-bold text-slate-400 bg-white px-4 py-2 rounded-lg border border-[#f0ebe4]">
-            In catalog: <span className="text-[#1a1f2b]">{products.length}</span>
+            Available: <span className="text-[#1a1f2b]">{products.length}</span>
           </div>
         </div>
 
@@ -39,27 +62,37 @@ export default function SalesTerminal() {
           <input 
             type="text" 
             placeholder="Search jerseys, kits, footwear..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-white p-5 pl-12 rounded-lg border border-[#f0ebe4] outline-none focus:border-orange-300 transition-all text-sm font-medium"
           />
           <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300">🔍</span>
         </div>
 
-        <div className="grid grid-cols-3 gap-6 overflow-y-auto pr-2 pb-10">
-          {products.map((p) => (
-            <motion.div 
-              key={p.id}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => addToCart(p)}
-              className="bg-white p-6 rounded-lg border border-[#f0ebe4] cursor-pointer group hover:border-orange-200 transition-all shadow-sm hover:shadow-md"
-            >
-              <div className="aspect-square bg-[#fcf8f1] rounded-lg flex items-center justify-center text-4xl mb-6 group-hover:scale-105 transition-transform">
-                {p.image}
-              </div>
-              <div className="font-bold text-[#1a1f2b] text-sm mb-1">{p.name}</div>
-              <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-3">{p.brand}</div>
-              <div className="text-sm font-bold text-[#1a1f2b]">GH₵{p.price.toFixed(2)}</div>
-            </motion.div>
-          ))}
+        <div className="grid grid-cols-3 gap-6 overflow-y-auto pr-2 pb-10 custom-scrollbar">
+          {isLoading ? (
+            <div className="col-span-3 text-center py-20 text-slate-300 font-bold uppercase tracking-widest animate-pulse">Loading Catalog...</div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="col-span-3 text-center py-20 bg-white rounded-lg border border-dashed border-[#f0ebe4] text-slate-300 font-bold uppercase tracking-widest">
+              No products found in system
+            </div>
+          ) : (
+            filteredProducts.map((p) => (
+              <motion.div 
+                key={p.id}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => addToCart(p)}
+                className="bg-white p-6 rounded-lg border border-[#f0ebe4] cursor-pointer group hover:border-orange-200 transition-all shadow-sm hover:shadow-md"
+              >
+                <div className="aspect-square bg-[#fcf8f1] rounded-lg flex items-center justify-center text-4xl mb-6 group-hover:scale-105 transition-transform">
+                  👕
+                </div>
+                <div className="font-bold text-[#1a1f2b] text-sm mb-1 line-clamp-1">{p.name}</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-3 line-clamp-1">{p.brand}</div>
+                <div className="text-sm font-bold text-[#1a1f2b]">GH₵{p.basePrice.toFixed(2)}</div>
+              </motion.div>
+            ))
+          )}
         </div>
       </div>
 
@@ -74,7 +107,7 @@ export default function SalesTerminal() {
             <span className="text-[10px] font-bold text-slate-400 bg-[#fcf8f1] px-3 py-1 rounded-full uppercase tracking-tighter">{cart.length} items</span>
           </div>
           
-          <div className="h-[200px] overflow-y-auto space-y-4 pr-2">
+          <div className="h-[200px] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
             <AnimatePresence>
               {cart.length === 0 ? (
                  <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-4">
@@ -89,8 +122,8 @@ export default function SalesTerminal() {
                     key={i} 
                     className="flex justify-between items-center bg-[#fcf8f1]/50 p-3 rounded-lg border border-[#fcf8f1]"
                   >
-                    <div className="text-sm font-bold">{item.name}</div>
-                    <div className="text-sm font-bold text-[#1a1f2b]">GH₵{item.price.toFixed(2)}</div>
+                    <div className="text-sm font-bold truncate pr-4">{item.name}</div>
+                    <div className="text-sm font-bold text-[#1a1f2b] whitespace-nowrap">GH₵{item.price.toFixed(2)}</div>
                   </motion.div>
                 ))
               )}
@@ -106,39 +139,31 @@ export default function SalesTerminal() {
 
           <div className="space-y-4">
             <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Customer</label>
-            <input type="text" placeholder="Search or add a customer..." className="w-full bg-white p-4 rounded-lg border border-[#f0ebe4] text-sm font-medium outline-none" />
+            <input type="text" placeholder="Search or add a customer..." className="w-full bg-white p-4 rounded-lg border border-[#f0ebe4] text-sm font-medium outline-none focus:border-orange-300 transition-all" />
           </div>
 
           <div className="space-y-4">
             <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Payment Method</label>
             <div className="grid grid-cols-2 gap-4">
-               <button className="flex flex-col items-center justify-center p-4 bg-white border-2 border-orange-200 rounded-lg">
+               <button className="flex flex-col items-center justify-center p-4 bg-white border-2 border-orange-200 rounded-lg shadow-sm">
                   <span className="text-lg">💵</span>
-                  <span className="text-xs font-bold mt-1">Cash</span>
+                  <span className="text-xs font-bold mt-1 text-[#1a1f2b]">Cash</span>
                </button>
-               <button className="flex flex-col items-center justify-center p-4 bg-white border border-[#f0ebe4] rounded-lg text-slate-400">
-                  <span className="text-lg opacity-50">📱</span>
+               <button className="flex flex-col items-center justify-center p-4 bg-white border border-[#f0ebe4] rounded-lg text-slate-400 hover:bg-slate-50 transition-all">
+                  <span className="text-lg">📱</span>
                   <span className="text-xs font-bold mt-1">MoMo</span>
                </button>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Amount Tendered</label>
-            <div className="relative">
-               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold">₵</span>
-               <input type="number" defaultValue="0.00" className="w-full bg-white p-5 pl-10 rounded-lg border border-[#f0ebe4] text-xl font-bold text-[#1a1f2b] outline-none" />
             </div>
           </div>
         </div>
 
         <div className="p-8 bg-white border-t border-[#f0ebe4]">
-          <button className="w-full bg-slate-200 text-slate-500 font-bold py-5 rounded-lg uppercase tracking-widest text-xs cursor-not-allowed">
-            Complete Sale
+          <button className={`w-full font-bold py-5 rounded-lg uppercase tracking-widest text-xs transition-all ${cart.length > 0 ? 'bg-[#1a1f2b] text-white hover:bg-emerald-600 shadow-xl shadow-[#1a1f2b]/10 active:scale-95' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}>
+            {cart.length > 0 ? 'Complete Sale' : 'Add Items to Ticket'}
           </button>
           <div className="flex justify-center gap-6 mt-4">
             <button className="text-[10px] font-bold text-slate-400 uppercase hover:text-slate-600 transition-colors">Save Draft</button>
-            <button className="text-[10px] font-bold text-slate-400 uppercase hover:text-slate-600 transition-colors">Re-print</button>
+            <button className="text-[10px] font-bold text-slate-400 uppercase hover:text-slate-600 transition-colors">Clear</button>
           </div>
         </div>
       </div>

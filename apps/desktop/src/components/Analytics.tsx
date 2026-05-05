@@ -26,11 +26,8 @@ export default function Analytics() {
                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
                   {[1,2,3,4].map(i => <div key={i} className="border-t border-slate-300 w-full" />)}
                </div>
-               {[60, 40, 90, 120, 80, 150, 200, 180, 250, 300, 280, 350].map((v, i) => (
-                 <div key={i} className="flex-1 bg-[#fdf3e7] rounded-t-lg hover:bg-orange-400 transition-all cursor-pointer relative group" style={{ height: `${(v/400)*100}%` }}>
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#1a1f2b] text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                       GH₵{v}
-                    </div>
+               {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((v, i) => (
+                 <div key={i} className="flex-1 bg-[#fdf3e7] rounded-t-lg hover:bg-orange-400 transition-all cursor-pointer relative group h-[5px]">
                  </div>
                ))}
             </div>
@@ -43,32 +40,17 @@ export default function Analytics() {
 
          <div className="col-span-4 space-y-8">
             <div className="bg-white p-10 rounded-xl border border-[#f0ebe4]">
-               <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-4">Top Categories</div>
-               <div className="space-y-6">
-                  {[
-                    { label: 'Home Jerseys', value: 45, color: 'bg-orange-400' },
-                    { label: 'Away Jerseys', value: 30, color: 'bg-blue-400' },
-                    { label: 'Training Gear', value: 15, color: 'bg-emerald-400' },
-                    { label: 'Footwear', value: 10, color: 'bg-slate-400' },
-                  ].map((c, i) => (
-                    <div key={i} className="space-y-2">
-                       <div className="flex justify-between text-xs font-bold">
-                          <span>{c.label}</span>
-                          <span className="text-slate-400">{c.value}%</span>
-                       </div>
-                       <div className="h-2 bg-[#fcf8f1] rounded-full overflow-hidden">
-                          <div className={`h-full ${c.color}`} style={{ width: `${c.value}%` }} />
-                       </div>
-                    </div>
-                  ))}
+               <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-4">Category Breakdown</div>
+               <div className="py-12 text-center">
+                  <div className="text-3xl mb-4">📊</div>
+                  <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No data available yet</p>
                </div>
             </div>
 
             <div className="bg-[#1a1f2b] p-8 rounded-xl text-white">
                <div className="text-[10px] uppercase font-bold text-orange-400 tracking-[0.2em] mb-4">Executive Summary</div>
                <p className="text-sm text-slate-400 leading-relaxed font-medium">
-                  Revenue is up <span className="text-emerald-400 font-bold">12.5%</span> compared to last month. 
-                  Home Jersey sales are peaking due to the upcoming season.
+                  Welcome to your new system. Once you record your first sales, automated performance insights will appear here.
                </p>
             </div>
          </div>

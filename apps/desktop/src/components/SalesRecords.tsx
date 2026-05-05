@@ -3,11 +3,7 @@
 import React from 'react';
 
 export default function SalesRecords() {
-  const records = [
-    { id: 'ORD-001', date: '2024-04-20 10:30', customer: 'Walk-in', amount: 150.00, method: 'Cash', status: 'Completed' },
-    { id: 'ORD-002', date: '2024-04-20 11:15', customer: 'Kristine', amount: 280.00, method: 'MoMo', status: 'Completed' },
-    { id: 'ORD-003', date: '2024-04-19 15:45', customer: 'Lydia', amount: 80.00, method: 'Cash', status: 'Refunded' },
-  ];
+  const records: any[] = [];
 
   return (
     <div className="space-y-10">
@@ -38,27 +34,35 @@ export default function SalesRecords() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#fcf8f1]">
-            {records.map((r) => (
-              <tr key={r.id} className="hover:bg-[#fcf8f1]/30 transition-all">
-                <td className="p-8 font-bold text-sm text-[#1a1f2b]">{r.id}</td>
-                <td className="p-8 text-xs text-slate-400 font-bold">{r.date}</td>
-                <td className="p-8 text-sm font-medium">{r.customer}</td>
-                <td className="p-8 font-bold text-[#1a1f2b]">GH₵{r.amount.toFixed(2)}</td>
-                <td className="p-8">
-                   <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-500 border border-slate-200 uppercase">{r.method}</span>
-                </td>
-                <td className="p-8">
-                   <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${
-                     r.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
-                   }`}>
-                     {r.status}
-                   </span>
-                </td>
-                <td className="p-8 text-right">
-                   <button className="text-[10px] font-bold text-[#1a1f2b] hover:underline">View Receipt</button>
+            {records.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="p-20 text-center text-slate-300 font-bold uppercase tracking-widest">
+                  No sales recorded yet
                 </td>
               </tr>
-            ))}
+            ) : (
+              records.map((r) => (
+                <tr key={r.id} className="hover:bg-[#fcf8f1]/30 transition-all">
+                  <td className="p-8 font-bold text-sm text-[#1a1f2b]">{r.id}</td>
+                  <td className="p-8 text-xs text-slate-400 font-bold">{r.date}</td>
+                  <td className="p-8 text-sm font-medium">{r.customer}</td>
+                  <td className="p-8 font-bold text-[#1a1f2b]">GH₵{r.amount.toFixed(2)}</td>
+                  <td className="p-8">
+                     <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-500 border border-slate-200 uppercase">{r.method}</span>
+                  </td>
+                  <td className="p-8">
+                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${
+                       r.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+                     }`}>
+                       {r.status}
+                     </span>
+                  </td>
+                  <td className="p-8 text-right">
+                     <button className="text-[10px] font-bold text-[#1a1f2b] hover:underline">View Receipt</button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
