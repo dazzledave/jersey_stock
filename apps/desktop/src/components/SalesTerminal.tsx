@@ -172,7 +172,7 @@ export default function SalesTerminal() {
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs">🔍</span>
         </div>
 
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 overflow-y-auto pr-1 pb-10 custom-scrollbar">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4 overflow-y-auto pr-1 pb-10 custom-scrollbar">
           {isLoading ? (
             <div className="col-span-full text-center py-10 text-slate-300 font-bold uppercase tracking-widest animate-pulse text-[10px]">Loading Catalog...</div>
           ) : filteredProducts.length === 0 ? (
@@ -185,20 +185,20 @@ export default function SalesTerminal() {
                 key={p.id}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleProductClick(p)}
-                className="bg-surface p-4 rounded-xl border border-border-subtle cursor-pointer group hover:border-orange-200 transition-all shadow-sm hover:shadow-md flex flex-col h-full"
+                className="bg-surface p-3 rounded-xl border border-border-subtle cursor-pointer group hover:border-orange-200 transition-all shadow-sm hover:shadow-md flex flex-col h-fit"
               >
-                <div className="aspect-square bg-brand-bg rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shrink-0 overflow-hidden">
+                <div className="aspect-square bg-brand-bg rounded-lg flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shrink-0 overflow-hidden">
                   {p.imageUrl ? (
                     <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-3xl">👕</span>
+                    <span className="text-2xl">👕</span>
                   )}
                 </div>
-                <div className="font-bold text-foreground text-xs mb-0.5 line-clamp-2 leading-tight h-8">{p.name}</div>
-                <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest mb-2">{p.brand}</div>
-                <div className="mt-auto pt-2 border-t border-border-subtle flex justify-between items-center">
-                  <div className="text-xs font-black text-foreground">{currency}{p.basePrice.toFixed(2)}</div>
-                  <div className="w-6 h-6 rounded-lg bg-orange-500 text-white flex items-center justify-center text-[12px] shadow-sm">+</div>
+                <div className="font-bold text-foreground text-[11px] mb-0.5 line-clamp-1 leading-tight">{p.name}</div>
+                <div className="text-[7px] uppercase font-black text-slate-400 tracking-widest mb-1">{p.brand}</div>
+                <div className="mt-auto pt-1.5 border-t border-border-subtle flex justify-between items-center">
+                  <div className="text-[11px] font-black text-foreground">{currency}{p.basePrice.toFixed(2)}</div>
+                  <div className="w-5 h-5 rounded bg-orange-500 text-white flex items-center justify-center text-[10px] shadow-sm">+</div>
                 </div>
               </motion.div>
             ))
@@ -218,54 +218,46 @@ export default function SalesTerminal() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+        {/* Scrollable Items List - MAXIMIZED */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
           <AnimatePresence>
             {cart.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-3 opacity-50">
-                  <div className="text-5xl">🛒</div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em]">Ticket Empty</p>
+                <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-2 opacity-50">
+                  <div className="text-4xl">🛒</div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.3em]">Empty</p>
                 </div>
             ) : (
               cart.map((item) => (
                 <motion.div 
-                  initial={{ opacity: 0, x: 20 }}
+                  initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
+                  exit={{ opacity: 0, x: -10 }}
                   key={item.variantId} 
-                  className="flex flex-col bg-brand-bg/30 p-4 rounded-xl border border-border-subtle group relative"
+                  className="flex flex-col bg-brand-bg/40 p-3 rounded-lg border border-border-subtle group relative"
                 >
-                  <div className="flex justify-between items-start mb-3">
+                  <div className="flex justify-between items-start mb-2">
                     <div className="min-w-0 flex-1 pr-4">
-                      <div className="text-xs font-black truncate text-foreground uppercase">{item.name}</div>
-                      <div className="text-[10px] font-bold text-orange-500 mt-0.5 tracking-wide">
+                      <div className="text-[11px] font-black truncate text-foreground uppercase">{item.name}</div>
+                      <div className="text-[9px] font-bold text-orange-500 tracking-wide">
                         {item.size} • {item.color}
                       </div>
                     </div>
-                    <button 
-                      onClick={() => removeFromCart(item.variantId)}
-                      className="text-slate-300 hover:text-rose-500 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <button onClick={() => removeFromCart(item.variantId)} className="text-slate-300 hover:text-rose-500">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                   </div>
                   
-                  <div className="flex justify-between items-center mt-auto">
-                    <div className="flex items-center gap-1 bg-surface rounded-lg border border-border-subtle p-1">
-                      <button 
-                        onClick={() => updateQuantity(item.variantId, -1)}
-                        className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:bg-brand-bg hover:text-foreground transition-all"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4"/></svg>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1 bg-surface rounded border border-border-subtle p-0.5">
+                      <button onClick={() => updateQuantity(item.variantId, -1)} className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-foreground">
+                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4"/></svg>
                       </button>
-                      <span className="w-8 text-center text-xs font-black text-foreground">{item.quantity}</span>
-                      <button 
-                        onClick={() => updateQuantity(item.variantId, 1)}
-                        className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:bg-brand-bg hover:text-foreground transition-all"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
+                      <span className="w-6 text-center text-[11px] font-black text-foreground">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.variantId, 1)} className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-foreground">
+                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
                       </button>
                     </div>
-                    <div className="text-sm font-black text-foreground">{currency}{(item.price * item.quantity).toLocaleString()}</div>
+                    <div className="text-xs font-black text-foreground">{currency}{(item.price * item.quantity).toLocaleString()}</div>
                   </div>
                 </motion.div>
               ))
@@ -273,47 +265,41 @@ export default function SalesTerminal() {
           </AnimatePresence>
         </div>
 
-        <div className="border-t border-border-subtle bg-brand-bg/5 p-6 space-y-6 shrink-0">
-          <div className="flex justify-between items-center">
-            <div className="text-[10px] uppercase font-black text-slate-400 tracking-widest">Total Amount Due</div>
-            <div className="text-3xl font-black text-foreground">{currency}{total.toLocaleString()}</div>
+        {/* Footer Section - Ultra Compact */}
+        <div className="border-t border-border-subtle bg-brand-bg/5 p-3 space-y-3 shrink-0">
+          <div className="flex justify-between items-center px-1">
+            <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Total Amount</div>
+            <div className="text-xl font-black text-foreground">{currency}{total.toLocaleString()}</div>
           </div>
 
-          <div className="space-y-3">
-            <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest ml-1">Select Payment Method</label>
-            <div className="grid grid-cols-2 gap-3">
-               <button 
-                 onClick={() => setPaymentMethod('Cash')}
-                 className={`flex items-center justify-center gap-2 p-4 rounded-xl border transition-all ${paymentMethod === 'Cash' ? 'bg-foreground border-foreground text-brand-bg shadow-xl' : 'bg-surface border-border-subtle text-slate-400 hover:border-orange-200'}`}
-               >
-                  <span className="text-xl">💵</span>
-                  <span className="text-xs font-black uppercase tracking-tight">Cash</span>
-               </button>
-               <button 
-                 onClick={() => setPaymentMethod('MoMo')}
-                 className={`flex items-center justify-center gap-2 p-4 rounded-xl border transition-all ${paymentMethod === 'MoMo' ? 'bg-[#ffb443] border-[#ffb443] text-[#1a1f2b] shadow-xl' : 'bg-surface border-border-subtle text-slate-400 hover:border-orange-200'}`}
-               >
-                  <span className="text-xl">📱</span>
-                  <span className="text-xs font-black uppercase tracking-tight">MoMo</span>
-               </button>
-            </div>
+          <div className="grid grid-cols-2 gap-2">
+             <button 
+               onClick={() => setPaymentMethod('Cash')}
+               className={`flex items-center justify-center gap-2 py-2 rounded-lg border transition-all ${paymentMethod === 'Cash' ? 'bg-foreground text-brand-bg border-foreground' : 'bg-surface text-slate-400 border-border-subtle'}`}
+             >
+                <span className="text-sm">💵</span>
+                <span className="text-[9px] font-black uppercase">Cash</span>
+             </button>
+             <button 
+               onClick={() => setPaymentMethod('MoMo')}
+               className={`flex items-center justify-center gap-2 py-2 rounded-lg border transition-all ${paymentMethod === 'MoMo' ? 'bg-orange-400 text-white border-orange-400' : 'bg-surface text-slate-400 border-border-subtle'}`}
+             >
+                <span className="text-sm">📱</span>
+                <span className="text-[9px] font-black uppercase">MoMo</span>
+             </button>
           </div>
 
-          <div className="space-y-3 pt-2">
-            <button 
-              onClick={handleCheckout}
-              disabled={cart.length === 0 || isProcessing}
-              className={`w-full font-black py-5 rounded-xl uppercase tracking-[0.3em] text-[11px] shadow-2xl transition-all ${cart.length > 0 && !isProcessing ? 'bg-orange-500 text-white hover:bg-orange-600 active:scale-[0.98]' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'}`}
-            >
-              {isProcessing ? 'Finalizing...' : cart.length > 0 ? 'Proceed to Checkout' : 'Cart Empty'}
-            </button>
-            <button 
-              onClick={() => setCart([])}
-              className="w-full text-[9px] font-black text-slate-400 uppercase hover:text-rose-500 transition-colors tracking-widest"
-            >
-              Void Current Order
-            </button>
-          </div>
+          <button 
+            onClick={handleCheckout}
+            disabled={cart.length === 0 || isProcessing}
+            className={`w-full font-black py-3 rounded-lg uppercase tracking-[0.2em] text-[9px] transition-all ${cart.length > 0 && !isProcessing ? 'bg-orange-500 text-white shadow-lg active:scale-95' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'}`}
+          >
+            {isProcessing ? 'Wait...' : 'Complete Sale'}
+          </button>
+          
+          <button onClick={() => setCart([])} className="w-full text-[8px] font-black text-slate-400 uppercase hover:text-rose-500 text-center">
+            Void Order
+          </button>
         </div>
       </div>
 
