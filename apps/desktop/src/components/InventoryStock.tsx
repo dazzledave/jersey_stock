@@ -61,7 +61,6 @@ export default function InventoryStock() {
         body: JSON.stringify({ quantity: newQuantity })
       });
       if (res.ok) {
-        // Optimistic update for better UX
         setProducts(prev => prev.map(p => ({
           ...p,
           variants: p.variants.map(v => v.id === variantId ? { ...v, inventory: { ...v.inventory, quantity: newQuantity } } : v)
@@ -90,6 +89,26 @@ export default function InventoryStock() {
       }
     } catch (err) {
       console.error('Failed to update price:', err);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string, productName: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete "${productName}" and all its inventory records?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`http://localhost:4000/api/products/${productId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setProducts(prev => prev.filter(p => p.id !== productId));
+      } else {
+        alert('Failed to delete product.');
+      }
+    } catch (err) {
+      console.error('Failed to delete product:', err);
+      alert('Connection error. Is the server running?');
     }
   };
 
@@ -170,36 +189,47 @@ export default function InventoryStock() {
                     </div>
                   </div>
                   
-                  {/* Price Editing Section */}
-                  <div className="flex items-center gap-4 bg-surface p-2 px-4 rounded-xl border border-border-subtle">
-                    <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Base Price:</div>
-                    {editingPrice?.id === product.id ? (
-                      <div className="flex items-center gap-2">
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{currency}</span>
-                          <input 
-                            type="number"
-                            value={editingPrice.price}
-                            onChange={(e) => setEditingPrice({ ...editingPrice, price: e.target.value })}
-                            onKeyDown={(e) => e.key === 'Enter' && handlePriceUpdate(product.id)}
-                            className="bg-brand-bg border border-orange-200 rounded-lg px-6 py-1.5 text-sm font-bold text-foreground w-28 focus:outline-none"
-                            autoFocus
-                          />
+                  {/* Controls Section */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 bg-surface p-2 px-4 rounded-xl border border-border-subtle">
+                      <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Base Price:</div>
+                      {editingPrice?.id === product.id ? (
+                        <div className="flex items-center gap-2">
+                          <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{currency}</span>
+                            <input 
+                              type="number"
+                              value={editingPrice.price}
+                              onChange={(e) => setEditingPrice({ ...editingPrice, price: e.target.value })}
+                              onKeyDown={(e) => e.key === 'Enter' && handlePriceUpdate(product.id)}
+                              className="bg-brand-bg border border-orange-200 rounded-lg px-6 py-1.5 text-sm font-bold text-foreground w-28 focus:outline-none"
+                              autoFocus
+                            />
+                          </div>
+                          <button onClick={() => handlePriceUpdate(product.id)} className="text-[10px] font-bold text-emerald-500 uppercase hover:underline">Save</button>
+                          <button onClick={() => setEditingPrice(null)} className="text-[10px] font-bold text-slate-300 uppercase hover:underline">Cancel</button>
                         </div>
-                        <button onClick={() => handlePriceUpdate(product.id)} className="text-[10px] font-bold text-emerald-500 uppercase hover:underline">Save</button>
-                        <button onClick={() => setEditingPrice(null)} className="text-[10px] font-bold text-slate-300 uppercase hover:underline">Cancel</button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3">
-                        <div className="text-lg font-black text-foreground">{currency}{product.basePrice.toFixed(2)}</div>
-                        <button 
-                          onClick={() => setEditingPrice({ id: product.id, price: product.basePrice.toString() })}
-                          className="w-8 h-8 rounded-lg bg-brand-bg flex items-center justify-center text-slate-300 hover:text-orange-500 hover:bg-orange-500/10 transition-all shadow-sm"
-                        >
-                          ✏️
-                        </button>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <div className="text-lg font-black text-foreground">{currency}{product.basePrice.toFixed(2)}</div>
+                          <button 
+                            onClick={() => setEditingPrice({ id: product.id, price: product.basePrice.toString() })}
+                            className="w-8 h-8 rounded-lg bg-brand-bg flex items-center justify-center text-slate-300 hover:text-orange-500 hover:bg-orange-500/10 transition-all shadow-sm"
+                          >
+                            ✏️
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Delete Button */}
+                    <button 
+                      onClick={() => handleDeleteProduct(product.id, product.name)}
+                      className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm group-hover:scale-105 active:scale-95"
+                      title="Delete Product"
+                    >
+                      <span className="text-lg">🗑️</span>
+                    </button>
                   </div>
                </div>
                
