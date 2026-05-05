@@ -15,6 +15,10 @@ const productService = {
     });
   },
 
+  async getAllCategories() {
+    return await prisma.category.findMany();
+  },
+
   async getProductById(id) {
     return await prisma.product.findUnique({
       where: { id },
@@ -43,12 +47,12 @@ const productService = {
           create: variants.map(v => ({
             size: v.size,
             color: v.color,
-            sku: v.sku,
-            barcode: v.barcode,
+            sku: v.sku || null,
+            barcode: v.barcode || null,
             inventory: {
               create: {
-                quantity: v.quantity || 0,
-                reorderLevel: v.reorderLevel || 5
+                quantity: parseInt(v.quantity) || 0,
+                reorderLevel: parseInt(v.reorderLevel) || 5
               }
             }
           }))

@@ -11,6 +11,16 @@ router.post('/adjust', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});router.put('/:variantId', async (req, res) => {
+  const { variantId } = req.params;
+  const { quantity } = req.body;
+  try {
+    const inventory = await inventoryService.setStock(variantId, quantity);
+    req.io.emit('stock_updated', { variantId, quantity: inventory.quantity });
+    res.json(inventory);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 router.get('/low-stock', async (req, res) => {

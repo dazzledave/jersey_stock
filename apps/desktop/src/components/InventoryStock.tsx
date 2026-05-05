@@ -1,12 +1,69 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface Inventory {
+  quantity: number;
+  reorderLevel: number;
+}
+
+interface Variant {
+  id: string;
+  size: string;
+  color: string;
+  sku: string;
+  inventory: Inventory;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  brand: string;
+  category: { name: string };
+  variants: Variant[];
+}
 
 export default function InventoryStock() {
-  const stock = [
-    { id: 1, name: 'Sugar Bread', code: 'BRD-SGR-01', made: 10, target: 20, status: 'Short 10 → tomorrow' },
-    { id: 2, name: 'Tea Bread', code: 'BRD-TEA-01', made: 40, target: 80, status: 'Short 40 → tomorrow' },
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [search, setSearch] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('http://localhost:4000/api/products');
+      const data = await res.json();
+      setProducts(data);
+    } catch (err) {
+      console.error('Failed to fetch stock:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateStock = async (variantId: string, newQuantity: number) => {
+    try {
+      const res = await fetch(`http://localhost:4000/api/inventory/${variantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantity: newQuantity })
+      });
+      if (res.ok) {
+        fetchProducts(); // Refresh
+      }
+    } catch (err) {
+      console.error('Failed to update stock:', err);
+    }
+  };
+
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(search.toLowerCase()) || 
+    p.brand?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="space-y-10">
@@ -14,97 +71,111 @@ export default function InventoryStock() {
         <div>
           <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1">Stock Control</div>
           <h2 className="text-3xl font-bold text-[#1a1f2b]">Inventory Management</h2>
+          <p className="text-slate-400 text-sm font-medium">Track and adjust stock levels for your jersey catalog.</p>
         </div>
         <div className="flex gap-3">
-          <button className="bg-[#1a1f2b] text-white text-xs font-bold px-6 py-3 rounded-xl hover:opacity-90 transition-all">
-             Scan Barcode
-          </button>
+          <div className="relative">
+            <input 
+              type="text" 
+              placeholder="Search products..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="bg-white px-10 py-3 rounded-lg border border-[#f0ebe4] text-xs font-bold outline-none focus:border-orange-300 transition-all"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300">🔍</span>
+          </div>
         </div>
       </div>
 
-      {/* Production Run Card Replication */}
-      <section className="bg-emerald-50/50 p-10 rounded-[40px] border border-emerald-100 relative overflow-hidden">
+      {/* Stock Overview Banner */}
+      <section className="bg-orange-50/50 p-10 rounded-xl border border-orange-100 relative overflow-hidden">
         <div className="relative z-10">
-          <div className="text-[10px] uppercase font-bold text-emerald-600 tracking-[0.2em] mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" /> Production Run
+          <div className="text-[10px] uppercase font-bold text-orange-600 tracking-[0.2em] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-orange-500" /> Active Inventory Status
           </div>
           <div className="flex items-start gap-8">
-             <div className="text-7xl font-bold text-[#1a1f2b]">19</div>
+             <div className="text-7xl font-bold text-[#1a1f2b]">{products.reduce((acc, p) => acc + p.variants.length, 0)}</div>
              <div className="pt-2">
-                <div className="text-2xl font-bold text-[#1a1f2b]">Sunday</div>
-                <div className="text-sm font-bold text-slate-400">April 2026</div>
+                <div className="text-2xl font-bold text-[#1a1f2b]">Unique SKUs</div>
+                <div className="text-sm font-bold text-slate-400">Monitoring Stock Health</div>
              </div>
           </div>
-          <p className="text-sm text-slate-500 font-medium mt-6 max-w-md">
-            All actuals recorded. Any shortage carries forward to tomorrow's plan.
-          </p>
         </div>
         <div className="absolute top-10 right-10 flex flex-col items-end gap-4">
-           <span className="px-4 py-1.5 bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase rounded-full border border-emerald-200">Day Closed</span>
-           <div className="bg-white p-4 rounded-2xl border border-emerald-100 flex items-center gap-3">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Plan for</span>
-              <span className="text-sm font-bold text-[#1a1f2b]">04/19/2026 📅</span>
-           </div>
+           <span className="px-4 py-1.5 bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase rounded-full border border-emerald-200">System Live</span>
         </div>
       </section>
 
-      {/* Stats Summary */}
-      <div className="grid grid-cols-4 gap-6">
-         {[
-           { label: 'Jersey Types', value: '05', sub: 'active in catalog' },
-           { label: 'Carry-over', value: '0', sub: 'no debt to clear' },
-           { label: 'Total Target', value: '300', sub: 'units across all lanes' },
-           { label: 'Progress', value: '83%', sub: '248 / 300 units', progress: 83 },
-         ].map((s, i) => (
-           <div key={i} className="bg-white p-8 rounded-[32px] border border-[#f0ebe4] relative overflow-hidden">
-              <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-4">{s.label}</div>
-              <div className="text-3xl font-bold text-[#1a1f2b] mb-1">{s.value}</div>
-              <div className="text-[10px] font-bold text-slate-400">{s.sub}</div>
-              {s.progress && (
-                <div className="absolute right-8 top-8 w-12 h-12 rounded-full border-4 border-[#fcf8f1] flex items-center justify-center text-[10px] font-black text-orange-500">
-                   {s.progress}%
-                </div>
-              )}
+      {/* Inventory List */}
+      <div className="space-y-6">
+         {isLoading ? (
+           <div className="text-center py-20 text-slate-300 font-bold uppercase tracking-widest animate-pulse">Loading Inventory...</div>
+         ) : filteredProducts.length === 0 ? (
+           <div className="text-center py-20 bg-white rounded-xl border border-dashed border-[#f0ebe4] text-slate-300 font-bold uppercase tracking-widest">
+             No products found in catalog
            </div>
-         ))}
-      </div>
-
-      {/* Production Lanes */}
-      <div className="space-y-4">
-         <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-[#1a1f2b]">Production Lanes</h3>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">🏷️ 5 lanes</span>
-         </div>
-         {stock.map((s, i) => (
-           <div key={i} className="bg-white p-8 rounded-[32px] border border-[#f0ebe4] flex justify-between items-center hover:border-emerald-200 transition-all group">
-              <div className="flex items-center gap-8">
-                 <div className="text-2xl font-bold text-slate-200">0{i+1}</div>
-                 <div>
-                    <div className="text-lg font-bold text-[#1a1f2b] group-hover:text-emerald-600 transition-colors">{s.name}</div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{s.code}</div>
-                 </div>
-              </div>
-              <div className="flex items-center gap-16">
-                 <div className="text-center">
-                    <div className="text-[8px] uppercase font-bold text-slate-400 mb-1">Made</div>
-                    <div className="text-xl font-bold text-[#1a1f2b]">{s.made}</div>
-                 </div>
-                 <div className="text-center">
-                    <div className="text-[8px] uppercase font-bold text-slate-400 mb-1">Target</div>
-                    <div className="text-xl font-bold text-slate-400">{s.target}</div>
-                 </div>
-                 <div className="bg-orange-50 px-4 py-2 rounded-full border border-orange-100 flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-orange-600">↺ {s.status}</span>
-                 </div>
-                 <div className="text-right">
-                    <div className="text-[8px] uppercase font-bold text-slate-400 mb-1">Actual</div>
-                    <div className="px-6 py-2 bg-[#fcf8f1] rounded-xl border border-[#f0ebe4] font-bold text-[#1a1f2b]">
-                       {s.made} <span className="text-[10px] text-slate-400 uppercase ml-1">Units</span>
+         ) : (
+           filteredProducts.map((product) => (
+             <div key={product.id} className="bg-white rounded-xl border border-[#f0ebe4] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+               <div className="bg-[#fcf8f1]/50 p-6 border-b border-[#fcf8f1] flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-bold text-[#1a1f2b]">{product.name}</h3>
+                    <div className="flex gap-4 mt-1">
+                      <span className="text-[10px] font-black uppercase text-orange-500 tracking-widest">{product.brand}</span>
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{product.category.name}</span>
                     </div>
-                 </div>
-              </div>
-           </div>
-         ))}
+                  </div>
+               </div>
+               
+               <div className="p-0">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="text-[8px] uppercase font-black text-slate-300 tracking-[0.2em] border-b border-[#fcf8f1]">
+                        <th className="px-8 py-4">Variant (Size/Color)</th>
+                        <th className="px-8 py-4">SKU</th>
+                        <th className="px-8 py-4">In Stock</th>
+                        <th className="px-8 py-4">Status</th>
+                        <th className="px-8 py-4 text-right">Quick Adjust</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#fcf8f1]">
+                      {product.variants.map((v) => (
+                        <tr key={v.id} className="hover:bg-[#fcf8f1]/20 transition-colors">
+                          <td className="px-8 py-4 font-bold text-sm text-[#1a1f2b]">
+                            {v.size} / {v.color}
+                          </td>
+                          <td className="px-8 py-4 text-xs font-mono text-slate-400">{v.sku}</td>
+                          <td className="px-8 py-4 font-bold text-[#1a1f2b]">
+                            {v.inventory?.quantity || 0}
+                          </td>
+                          <td className="px-8 py-4">
+                            {v.inventory?.quantity <= v.inventory?.reorderLevel ? (
+                              <span className="text-[8px] font-black uppercase px-2 py-1 bg-rose-50 text-rose-500 border border-rose-100 rounded-full">Low Stock</span>
+                            ) : (
+                              <span className="text-[8px] font-black uppercase px-2 py-1 bg-emerald-50 text-emerald-500 border border-emerald-100 rounded-full">In Stock</span>
+                            )}
+                          </td>
+                          <td className="px-8 py-4 text-right">
+                             <div className="flex items-center justify-end gap-2">
+                                <button 
+                                  onClick={() => updateStock(v.id, (v.inventory?.quantity || 0) - 1)}
+                                  className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-rose-100 hover:text-rose-500 transition-all font-bold"
+                                >-</button>
+                                <span className="w-12 text-center text-sm font-bold">{v.inventory?.quantity || 0}</span>
+                                <button 
+                                  onClick={() => updateStock(v.id, (v.inventory?.quantity || 0) + 1)}
+                                  className="w-8 h-8 rounded-lg bg-[#1a1f2b] text-white flex items-center justify-center hover:bg-orange-500 transition-all font-bold"
+                                >+</button>
+                             </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+               </div>
+             </div>
+           ))
+         )}
       </div>
     </div>
   );
