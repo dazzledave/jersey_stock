@@ -62,10 +62,10 @@ export default function Home() {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="overflow-hidden whitespace-nowrap"
+                className="overflow-hidden"
               >
-                <h2 className="text-sm font-black tracking-widest text-[#ffb443] uppercase">Awards Centre</h2>
-                <h3 className="text-lg font-bold text-white mt-1">Management System</h3>
+                <h2 className="text-[10px] font-black tracking-[0.2em] text-[#ffb443] uppercase opacity-80">Awards Centre</h2>
+                <h3 className="text-base font-bold text-white mt-0.5 leading-tight">Management System</h3>
               </motion.div>
             )}
           </AnimatePresence>
