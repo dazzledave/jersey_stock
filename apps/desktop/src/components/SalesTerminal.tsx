@@ -66,7 +66,7 @@ export default function SalesTerminal() {
 
   const handleProductClick = (product: Product) => {
     const totalStock = product.variants.reduce((acc, v) => acc + (v.inventory?.quantity || 0), 0);
-    if (totalStock <= 0) return; // Block out of stock
+    if (totalStock <= 0) return; 
 
     if (product.variants.length > 1) {
       setVariantSelector(product);
@@ -83,7 +83,7 @@ export default function SalesTerminal() {
       const existing = prev.find(item => item.variantId === variant.id);
       if (existing) {
         if (existing.quantity >= available) {
-          alert(`Cannot add more. Only ${available} in stock.`);
+          alert(`Insufficient stock. Only ${available} available.`);
           return prev;
         }
         return prev.map(item => 
@@ -111,7 +111,7 @@ export default function SalesTerminal() {
       if (item.variantId === variantId) {
         const newQty = item.quantity + delta;
         if (newQty > item.stockAvailable) {
-          alert(`Only ${item.stockAvailable} available in stock.`);
+          alert(`Only ${item.stockAvailable} in stock.`);
           return item;
         }
         return { ...item, quantity: Math.max(1, newQty) };
@@ -147,14 +147,14 @@ export default function SalesTerminal() {
 
       if (response.ok) {
         setCart([]);
-        fetchProducts(); // Refresh stock
+        fetchProducts(); 
         alert('Sale completed successfully!');
       } else {
         const error = await response.json();
-        alert(`Failed to complete sale: ${error.error || 'Check inventory levels.'}`);
+        alert(`Error: ${error.error || 'Checkout failed.'}`);
       }
     } catch (err) {
-      alert('Network error. Is the server running?');
+      alert('Network error.');
     } finally {
       setIsProcessing(false);
     }
@@ -166,7 +166,7 @@ export default function SalesTerminal() {
   );
 
   return (
-    <div className="flex gap-4 h-full relative p-4">
+    <div className="flex gap-4 h-full relative p-4 bg-brand-bg/50">
       {/* Product Selection Area */}
       <div className="flex-1 flex flex-col space-y-3 min-w-0">
         <div className="flex justify-between items-end">
@@ -185,9 +185,11 @@ export default function SalesTerminal() {
             placeholder="Search jerseys..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface p-2.5 pl-9 rounded-lg border border-border-subtle outline-none focus:border-orange-300 transition-all text-[11px] font-medium text-foreground shadow-sm"
+            className="w-full bg-surface p-2.5 pl-10 rounded-lg border border-border-subtle outline-none focus:border-orange-300 transition-all text-[11px] font-medium text-foreground shadow-sm"
           />
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 text-[10px]">🔍</span>
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300">
+             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
         </div>
 
         <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3 overflow-y-auto pr-1 pb-4 custom-scrollbar">
@@ -195,7 +197,7 @@ export default function SalesTerminal() {
             <div className="col-span-full text-center py-10 text-slate-300 font-bold uppercase tracking-widest animate-pulse text-[10px]">Loading Catalog...</div>
           ) : filteredProducts.length === 0 ? (
             <div className="col-span-full text-center py-10 bg-surface rounded-lg border border-dashed border-border-subtle text-slate-300 font-bold uppercase tracking-widest text-[10px]">
-              No products found in system
+              No products found
             </div>
           ) : (
             filteredProducts.map((p) => {
@@ -207,7 +209,7 @@ export default function SalesTerminal() {
                   key={p.id}
                   whileTap={outOfStock ? {} : { scale: 0.98 }}
                   onClick={() => handleProductClick(p)}
-                  className={`bg-surface p-3 rounded-xl border border-border-subtle cursor-pointer group transition-all shadow-sm hover:shadow-md flex flex-col h-fit relative ${outOfStock ? 'opacity-50 cursor-not-allowed border-dashed' : 'hover:border-orange-200'}`}
+                  className={`bg-surface p-3 rounded-xl border border-border-subtle cursor-pointer group transition-all shadow-sm hover:shadow-md flex flex-col h-fit relative ${outOfStock ? 'opacity-50 cursor-not-allowed' : 'hover:border-orange-200'}`}
                 >
                   {outOfStock && (
                     <div className="absolute top-2 right-2 z-10 bg-rose-500 text-white text-[7px] font-black uppercase px-2 py-0.5 rounded shadow-lg">Sold Out</div>
@@ -216,14 +218,18 @@ export default function SalesTerminal() {
                     {p.imageUrl ? (
                       <img src={p.imageUrl} alt={p.name} className={`w-full h-full object-cover ${outOfStock ? 'grayscale' : ''}`} />
                     ) : (
-                      <span className="text-2xl opacity-50">👕</span>
+                      <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                     )}
                   </div>
                   <div className="font-bold text-foreground text-[11px] mb-0.5 line-clamp-1 leading-tight">{p.name}</div>
                   <div className="text-[7px] uppercase font-black text-slate-400 tracking-widest mb-1">{p.brand}</div>
                   <div className="mt-auto pt-1.5 border-t border-border-subtle flex justify-between items-center">
                     <div className="text-[11px] font-black text-foreground">{currency}{p.basePrice.toFixed(2)}</div>
-                    {!outOfStock && <div className="w-5 h-5 rounded bg-orange-500 text-white flex items-center justify-center text-[10px] shadow-sm">+</div>}
+                    {!outOfStock && (
+                      <div className="w-5 h-5 rounded bg-orange-500 text-white flex items-center justify-center">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               );
@@ -235,19 +241,22 @@ export default function SalesTerminal() {
       {/* Order Ticket */}
       <div className="w-[420px] bg-surface rounded-xl border border-border-subtle flex flex-col overflow-hidden shadow-2xl shadow-brand-navy/5 h-full">
         <div className="p-3 px-4 border-b border-border-subtle bg-brand-bg/10 flex justify-between items-center">
-          <div>
-            <h3 className="text-xs font-black text-foreground uppercase tracking-tight">Order Ticket</h3>
-            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Awards Centre POS</p>
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+            <div>
+              <h3 className="text-xs font-black text-foreground uppercase tracking-tight">Order Ticket</h3>
+              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Awards Centre POS</p>
+            </div>
           </div>
           <span className="text-[8px] font-black text-white bg-orange-500 px-2 py-1 rounded-full uppercase tracking-widest">{cart.reduce((acc, i) => acc + i.quantity, 0)} Items</span>
         </div>
 
-        {/* Scrollable Items List - MAXIMIZED */}
+        {/* Scrollable Items List */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
           <AnimatePresence>
             {cart.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-2 opacity-50">
-                  <div className="text-4xl">🛒</div>
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                   <p className="text-[9px] font-black uppercase tracking-[0.3em]">Empty</p>
                 </div>
             ) : (
@@ -266,7 +275,7 @@ export default function SalesTerminal() {
                         {item.size} • {item.color}
                       </div>
                     </div>
-                    <button onClick={() => removeFromCart(item.variantId)} className="text-slate-300 hover:text-rose-500">
+                    <button onClick={() => removeFromCart(item.variantId)} className="text-slate-300 hover:text-rose-500 transition-colors">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                   </div>
@@ -289,7 +298,7 @@ export default function SalesTerminal() {
           </AnimatePresence>
         </div>
 
-        {/* Footer Section - Ultra Compact */}
+        {/* Footer Section */}
         <div className="border-t border-border-subtle bg-brand-bg/5 p-3 space-y-3 shrink-0">
           <div className="flex justify-between items-center px-1">
             <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Total Amount</div>
@@ -299,29 +308,30 @@ export default function SalesTerminal() {
           <div className="grid grid-cols-2 gap-2">
              <button 
                onClick={() => setPaymentMethod('Cash')}
-               className={`flex items-center justify-center gap-2 py-2 rounded-lg border transition-all ${paymentMethod === 'Cash' ? 'bg-foreground text-brand-bg border-foreground' : 'bg-surface text-slate-400 border-border-subtle'}`}
+               className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border transition-all ${paymentMethod === 'Cash' ? 'bg-foreground text-brand-bg border-foreground shadow-md' : 'bg-surface text-slate-400 border-border-subtle'}`}
              >
-                <span className="text-sm">💵</span>
-                <span className="text-[9px] font-black uppercase">Cash</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <span className="text-[10px] font-black uppercase">Cash</span>
              </button>
              <button 
                onClick={() => setPaymentMethod('MoMo')}
-               className={`flex items-center justify-center gap-2 py-2 rounded-lg border transition-all ${paymentMethod === 'MoMo' ? 'bg-orange-400 text-white border-orange-400' : 'bg-surface text-slate-400 border-border-subtle'}`}
+               className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border transition-all ${paymentMethod === 'MoMo' ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-surface text-slate-400 border-border-subtle'}`}
              >
-                <span className="text-sm">📱</span>
-                <span className="text-[9px] font-black uppercase">MoMo</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <span className="text-[10px] font-black uppercase">MoMo</span>
              </button>
           </div>
 
           <button 
             onClick={handleCheckout}
             disabled={cart.length === 0 || isProcessing}
-            className={`w-full font-black py-3 rounded-lg uppercase tracking-[0.2em] text-[9px] transition-all ${cart.length > 0 && !isProcessing ? 'bg-orange-500 text-white shadow-lg active:scale-95' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'}`}
+            className={`w-full font-black py-4 rounded-lg uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-2 ${cart.length > 0 && !isProcessing ? 'bg-emerald-600 text-white shadow-lg active:scale-95' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'}`}
           >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
             {isProcessing ? 'Wait...' : 'Complete Sale'}
           </button>
           
-          <button onClick={() => setCart([])} className="w-full text-[8px] font-black text-slate-400 uppercase hover:text-rose-500 text-center">
+          <button onClick={() => setCart([])} className="w-full text-[8px] font-black text-slate-400 uppercase hover:text-rose-500 text-center transition-colors">
             Void Order
           </button>
         </div>
@@ -337,14 +347,17 @@ export default function SalesTerminal() {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="bg-surface w-full max-w-md rounded-2xl border border-border-subtle shadow-2xl overflow-hidden"
             >
-              <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-brand-bg/20">
-                <div>
-                  <h3 className="text-base font-black text-foreground uppercase tracking-tight">{variantSelector.name}</h3>
-                  <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest mt-1">Available Variations</p>
+              <div className="p-5 border-b border-border-subtle flex justify-between items-center bg-brand-bg/20">
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 11h.01M7 15h.01M11 7h.01M11 11h.01M11 15h.01M15 7h.01M15 11h.01M15 15h.01M19 7h.01M19 11h.01M19 15h.01M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+                  <div>
+                    <h3 className="text-sm font-black text-foreground uppercase tracking-tight">{variantSelector.name}</h3>
+                    <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mt-0.5">Select Variation</p>
+                  </div>
                 </div>
-                <button onClick={() => setVariantSelector(null)} className="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-slate-400 hover:text-foreground shadow-sm border border-border-subtle">×</button>
+                <button onClick={() => setVariantSelector(null)} className="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-slate-400 hover:text-foreground shadow-sm border border-border-subtle transition-colors">×</button>
               </div>
-              <div className="p-6 space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+              <div className="p-5 space-y-2.5 max-h-[400px] overflow-y-auto custom-scrollbar">
                 {variantSelector.variants.map((v) => {
                   const qty = v.inventory?.quantity || 0;
                   const variantOutOfStock = qty <= 0;
@@ -354,22 +367,22 @@ export default function SalesTerminal() {
                       key={v.id}
                       disabled={variantOutOfStock}
                       onClick={() => addToCart(variantSelector, v)}
-                      className={`w-full flex justify-between items-center p-5 bg-brand-bg rounded-xl border border-border-subtle transition-all group ${variantOutOfStock ? 'opacity-40 grayscale cursor-not-allowed' : 'hover:border-orange-500 hover:bg-orange-500/5'}`}
+                      className={`w-full flex justify-between items-center p-4 bg-brand-bg rounded-xl border border-border-subtle transition-all group ${variantOutOfStock ? 'opacity-40 grayscale cursor-not-allowed' : 'hover:border-orange-500 hover:bg-orange-500/5'}`}
                     >
                       <div className="text-left">
-                        <div className="text-sm font-black text-foreground">Size: {v.size} {variantOutOfStock && "(Out of Stock)"}</div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Color: {v.color}</div>
+                        <div className="text-xs font-black text-foreground uppercase tracking-tight">Size: {v.size} {variantOutOfStock && "(Out)"}</div>
+                        <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Color: {v.color}</div>
                       </div>
                       <div className="flex flex-col items-end">
                          <div className={`text-sm font-black ${variantOutOfStock ? 'text-slate-400' : 'text-orange-500'}`}>{currency}{variantSelector.basePrice.toLocaleString()}</div>
-                         <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{variantOutOfStock ? 'Unavailable' : 'Add to cart'}</div>
+                         <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-0.5">{variantOutOfStock ? 'Unavailable' : 'Select'}</div>
                       </div>
                     </button>
                   );
                 })}
               </div>
-              <div className="p-6 bg-brand-bg/30 text-center border-t border-border-subtle">
-                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Select an available size to continue</p>
+              <div className="p-4 bg-brand-bg/30 text-center border-t border-border-subtle">
+                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Minimalist Uniform Logic Enabled</p>
               </div>
             </motion.div>
           </div>

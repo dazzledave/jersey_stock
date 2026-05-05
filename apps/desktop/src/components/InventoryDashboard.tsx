@@ -62,10 +62,38 @@ export default function InventoryDashboard() {
   };
 
   const stats = [
-    { label: 'Total Revenue', value: `${currency}${(summary?.totalRevenue || 0).toLocaleString()}`, sub: `Revenue across ${summary?.totalOrders || 0} orders`, icon: '💵' },
-    { label: 'Marginal Profit', value: `${currency}${(summary?.totalProfit || 0).toLocaleString()}`, sub: 'Net earnings (Calculated)', icon: '📈' },
-    { label: 'Low Stock Items', value: (summary?.lowStockCount || 0).toString(), sub: 'Require attention', icon: '🚨' },
-    { label: 'Orders Completed', value: (summary?.totalOrders || 0).toString(), sub: 'System total', icon: '🛒' },
+    { 
+      label: 'Total Revenue', 
+      value: `${currency}${(summary?.totalRevenue || 0).toLocaleString()}`, 
+      sub: `Across ${summary?.totalOrders || 0} transactions`, 
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      ) 
+    },
+    { 
+      label: 'Marginal Profit', 
+      value: `${currency}${(summary?.totalProfit || 0).toLocaleString()}`, 
+      sub: 'Net business earnings', 
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      ) 
+    },
+    { 
+      label: 'Inventory Health', 
+      value: (summary?.lowStockCount || 0).toString(), 
+      sub: 'Low stock alerts', 
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      ) 
+    },
+    { 
+      label: 'Order Volume', 
+      value: (summary?.totalOrders || 0).toString(), 
+      sub: 'Completed sales', 
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+      ) 
+    },
   ];
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -104,7 +132,7 @@ export default function InventoryDashboard() {
             transition={{ delay: i * 0.1 }}
             className="bg-surface p-8 rounded-lg border border-border-subtle shadow-sm hover:shadow-md transition-shadow group relative"
           >
-            <div className="w-10 h-10 rounded-xl bg-brand-bg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform text-xl">
+            <div className="w-10 h-10 rounded-xl bg-brand-bg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform text-orange-500">
               {stat.icon}
             </div>
             <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{stat.label}</div>
@@ -118,9 +146,12 @@ export default function InventoryDashboard() {
         {/* Sales Performance Chart */}
         <div className="col-span-8 bg-surface p-10 rounded-xl border border-border-subtle shadow-sm">
           <div className="flex justify-between items-end mb-10">
-            <div>
-              <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1">Revenue Tracking</div>
-              <h3 className="text-xl font-bold text-foreground">Sales Performance</h3>
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+              <div>
+                <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1">Revenue Tracking</div>
+                <h3 className="text-xl font-bold text-foreground">Sales Performance</h3>
+              </div>
             </div>
             <div className="text-right">
               <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">7-Day Period</div>
@@ -129,23 +160,23 @@ export default function InventoryDashboard() {
           </div>
           <div className="h-[200px] flex items-end gap-8 px-4">
              {(summary?.chartData || []).map((day, i) => {
-               const maxValue = Math.max(...(summary?.chartData.map(d => d.value) || [1]));
-               const height = (day.value / maxValue) * 180 || 5;
-               return (
-                 <div key={i} className="flex-1 flex flex-col items-center gap-4 group">
-                    <div className="relative w-full flex justify-center">
-                       <motion.div 
-                         initial={{ height: 0 }}
-                         animate={{ height }}
-                         className={`w-full rounded-t-lg bg-orange-500/20 group-hover:bg-orange-500/40 transition-all cursor-pointer`} 
-                       />
-                       <div className="absolute -top-8 bg-foreground text-brand-bg text-[9px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                         {currency}{day.value.toLocaleString()}
-                       </div>
-                    </div>
-                    <div className="text-[10px] font-bold text-slate-300 uppercase">{day.name}</div>
-                 </div>
-               );
+                const maxValue = Math.max(...(summary?.chartData.map(d => d.value) || [1]));
+                const height = (day.value / maxValue) * 180 || 5;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-4 group">
+                     <div className="relative w-full flex justify-center">
+                        <motion.div 
+                          initial={{ height: 0 }}
+                          animate={{ height }}
+                          className={`w-full rounded-t-lg bg-orange-500/20 group-hover:bg-orange-500/40 transition-all cursor-pointer`} 
+                        />
+                        <div className="absolute -top-8 bg-foreground text-brand-bg text-[9px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                          {currency}{day.value.toLocaleString()}
+                        </div>
+                     </div>
+                     <div className="text-[10px] font-bold text-slate-300 uppercase">{day.name}</div>
+                  </div>
+                );
              })}
           </div>
         </div>
@@ -153,9 +184,12 @@ export default function InventoryDashboard() {
         {/* Inventory Watch */}
         <div className="col-span-4 bg-surface p-10 rounded-xl border border-border-subtle shadow-sm">
           <div className="flex justify-between items-start mb-8">
-            <div>
-              <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1">Stock Watch</div>
-              <h3 className="text-xl font-bold text-foreground">Inventory Alerts</h3>
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              <div>
+                <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1">Stock Watch</div>
+                <h3 className="text-xl font-bold text-foreground">Inventory Alerts</h3>
+              </div>
             </div>
             <span className={`text-[8px] font-black uppercase px-3 py-1 rounded-full border ${alerts.length > 0 ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 animate-pulse' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'}`}>
               {alerts.length} Critical
@@ -165,7 +199,9 @@ export default function InventoryDashboard() {
           <div className="space-y-4 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
             {alerts.length === 0 ? (
               <div className="bg-brand-bg p-6 rounded-lg border border-border-subtle flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-emerald-500 text-xs">✓</div>
+                <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-emerald-500">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
+                </div>
                 <p className="text-xs text-slate-400 leading-relaxed font-medium">
                   Stock levels are optimal. No reorder actions required currently.
                 </p>
