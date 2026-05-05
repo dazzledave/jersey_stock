@@ -13,6 +13,7 @@ export default function SystemSetup() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,13 +23,7 @@ export default function SystemSetup() {
       setSettings(parsed);
       applyTheme(parsed.darkMode);
     }
-    fetchLastSync();
   }, []);
-
-  const fetchLastSync = async () => {
-    // This could be fetched from the backend sync logs
-    // For now, we'll just check local storage or a quick API call if we had a logs endpoint
-  };
 
   const applyTheme = (isDark: boolean) => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
@@ -107,6 +102,25 @@ export default function SystemSetup() {
       downloadAnchorNode.remove();
     } catch (error) {
       alert('Failed to generate backup. Is the server running?');
+    }
+  };
+
+  const handleResetLogs = async () => {
+    if (!window.confirm('Are you sure you want to permanently delete all synchronization logs?')) return;
+    
+    setIsResetting(true);
+    try {
+      const res = await fetch('http://localhost:4000/api/sync/logs', {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setLastSync(null);
+        alert('Sync logs have been purged successfully.');
+      }
+    } catch (err) {
+      alert('Failed to reset logs.');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -240,7 +254,13 @@ export default function SystemSetup() {
                   >
                     Download JSON Backup
                   </button>
-                  <button className="px-6 py-2 bg-surface text-rose-500 text-[10px] font-black uppercase rounded-lg border border-rose-500/20 shadow-sm opacity-50 cursor-not-allowed">Reset Logs</button>
+                  <button 
+                    onClick={handleResetLogs}
+                    disabled={isResetting}
+                    className="px-6 py-2 bg-surface text-rose-500 text-[10px] font-black uppercase rounded-lg border border-rose-500/20 shadow-sm hover:bg-rose-500/10 transition-colors disabled:opacity-50"
+                  >
+                    {isResetting ? 'Resetting...' : 'Reset Logs'}
+                  </button>
                </div>
             </div>
          </div>

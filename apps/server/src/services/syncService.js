@@ -5,6 +5,7 @@ const prisma = new PrismaClient();
 const mapToSnakeCase = (obj) => {
   const mapping = {
     'basePrice': 'base_price',
+    'costPrice': 'cost_price',
     'categoryId': 'category_id',
     'imageUrl': 'image_url',
     'productId': 'product_id',
@@ -89,4 +90,8 @@ const syncToCloud = async (supabaseUrl, supabaseKey) => {
   }
 };
 
-module.exports = { syncToCloud };
+const clearLogs = async () => {
+  return await prisma.syncLog.deleteMany({});
+};
+
+module.exports = { syncToCloud, clearLogs };
