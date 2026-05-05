@@ -177,9 +177,9 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Dynamic Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-10 custom-scrollbar pb-24">
-          <div className="max-w-[1400px] w-full mx-auto animate-in fade-in duration-500">
+        {/* Dynamic Content - Full Height for POS */}
+        <div className={`flex-1 overflow-y-auto custom-scrollbar ${activeTab === 'Sales Terminal' ? 'p-0' : 'p-10 pb-24'}`}>
+          <div className={`${activeTab === 'Sales Terminal' ? 'max-w-none h-full' : 'max-w-[1400px]'} w-full mx-auto animate-in fade-in duration-500`}>
           {activeTab === 'Dashboard' && <InventoryDashboard />}
           {activeTab === 'Sales Terminal' && <SalesTerminal />}
           {activeTab === 'Sales Records' && <SalesRecords />}

@@ -7,6 +7,9 @@ interface Variant {
   id: string;
   size: string;
   color: string;
+  inventory?: {
+    quantity: number;
+  };
 }
 
 interface Product {
@@ -26,6 +29,7 @@ interface CartItem {
   size: string;
   color: string;
   quantity: number;
+  stockAvailable: number;
 }
 
 export default function SalesTerminal() {
@@ -61,19 +65,27 @@ export default function SalesTerminal() {
   };
 
   const handleProductClick = (product: Product) => {
+    const totalStock = product.variants.reduce((acc, v) => acc + (v.inventory?.quantity || 0), 0);
+    if (totalStock <= 0) return; // Block out of stock
+
     if (product.variants.length > 1) {
       setVariantSelector(product);
     } else if (product.variants.length === 1) {
       addToCart(product, product.variants[0]);
-    } else {
-      alert('This product has no variants and cannot be sold.');
     }
   };
 
   const addToCart = (product: Product, variant: Variant) => {
+    const available = variant.inventory?.quantity || 0;
+    if (available <= 0) return;
+
     setCart(prev => {
       const existing = prev.find(item => item.variantId === variant.id);
       if (existing) {
+        if (existing.quantity >= available) {
+          alert(`Cannot add more. Only ${available} in stock.`);
+          return prev;
+        }
         return prev.map(item => 
           item.variantId === variant.id 
           ? { ...item, quantity: item.quantity + 1 } 
@@ -87,7 +99,8 @@ export default function SalesTerminal() {
         price: product.basePrice,
         size: variant.size,
         color: variant.color,
-        quantity: 1
+        quantity: 1,
+        stockAvailable: available
       }];
     });
     setVariantSelector(null);
@@ -96,8 +109,12 @@ export default function SalesTerminal() {
   const updateQuantity = (variantId: string, delta: number) => {
     setCart(prev => prev.map(item => {
       if (item.variantId === variantId) {
-        const newQty = Math.max(1, item.quantity + delta);
-        return { ...item, quantity: newQty };
+        const newQty = item.quantity + delta;
+        if (newQty > item.stockAvailable) {
+          alert(`Only ${item.stockAvailable} available in stock.`);
+          return item;
+        }
+        return { ...item, quantity: Math.max(1, newQty) };
       }
       return item;
     }));
@@ -130,10 +147,11 @@ export default function SalesTerminal() {
 
       if (response.ok) {
         setCart([]);
+        fetchProducts(); // Refresh stock
         alert('Sale completed successfully!');
       } else {
         const error = await response.json();
-        alert(`Failed to complete sale: ${error.error}`);
+        alert(`Failed to complete sale: ${error.error || 'Check inventory levels.'}`);
       }
     } catch (err) {
       alert('Network error. Is the server running?');
@@ -148,15 +166,15 @@ export default function SalesTerminal() {
   );
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-140px)] relative">
+    <div className="flex gap-4 h-full relative p-4">
       {/* Product Selection Area */}
-      <div className="flex-1 flex flex-col space-y-4 min-w-0">
+      <div className="flex-1 flex flex-col space-y-3 min-w-0">
         <div className="flex justify-between items-end">
           <div>
-            <div className="text-[9px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1">Sales Terminal</div>
-            <h2 className="text-2xl font-bold text-foreground">Ring up an order</h2>
+            <div className="text-[8px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1">Sales Terminal</div>
+            <h2 className="text-xl font-bold text-foreground">Ring up an order</h2>
           </div>
-          <div className="text-[9px] font-bold text-slate-400 bg-surface px-3 py-1.5 rounded-lg border border-border-subtle">
+          <div className="text-[8px] font-bold text-slate-400 bg-surface px-2 py-1 rounded-lg border border-border-subtle">
             Available: <span className="text-foreground">{products.length}</span>
           </div>
         </div>
@@ -164,15 +182,15 @@ export default function SalesTerminal() {
         <div className="relative">
           <input 
             type="text" 
-            placeholder="Search jerseys, kits, footwear..."
+            placeholder="Search jerseys..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface p-3.5 pl-10 rounded-lg border border-border-subtle outline-none focus:border-orange-300 transition-all text-xs font-medium text-foreground shadow-sm"
+            className="w-full bg-surface p-2.5 pl-9 rounded-lg border border-border-subtle outline-none focus:border-orange-300 transition-all text-[11px] font-medium text-foreground shadow-sm"
           />
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs">🔍</span>
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 text-[10px]">🔍</span>
         </div>
 
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4 overflow-y-auto pr-1 pb-10 custom-scrollbar">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3 overflow-y-auto pr-1 pb-4 custom-scrollbar">
           {isLoading ? (
             <div className="col-span-full text-center py-10 text-slate-300 font-bold uppercase tracking-widest animate-pulse text-[10px]">Loading Catalog...</div>
           ) : filteredProducts.length === 0 ? (
@@ -180,42 +198,48 @@ export default function SalesTerminal() {
               No products found in system
             </div>
           ) : (
-            filteredProducts.map((p) => (
-              <motion.div 
-                key={p.id}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleProductClick(p)}
-                className="bg-surface p-3 rounded-xl border border-border-subtle cursor-pointer group hover:border-orange-200 transition-all shadow-sm hover:shadow-md flex flex-col h-fit"
-              >
-                <div className="aspect-square bg-brand-bg rounded-lg flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shrink-0 overflow-hidden">
-                  {p.imageUrl ? (
-                    <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-2xl">👕</span>
+            filteredProducts.map((p) => {
+              const totalStock = p.variants.reduce((acc, v) => acc + (v.inventory?.quantity || 0), 0);
+              const outOfStock = totalStock <= 0;
+
+              return (
+                <motion.div 
+                  key={p.id}
+                  whileTap={outOfStock ? {} : { scale: 0.98 }}
+                  onClick={() => handleProductClick(p)}
+                  className={`bg-surface p-3 rounded-xl border border-border-subtle cursor-pointer group transition-all shadow-sm hover:shadow-md flex flex-col h-fit relative ${outOfStock ? 'opacity-50 cursor-not-allowed border-dashed' : 'hover:border-orange-200'}`}
+                >
+                  {outOfStock && (
+                    <div className="absolute top-2 right-2 z-10 bg-rose-500 text-white text-[7px] font-black uppercase px-2 py-0.5 rounded shadow-lg">Sold Out</div>
                   )}
-                </div>
-                <div className="font-bold text-foreground text-[11px] mb-0.5 line-clamp-1 leading-tight">{p.name}</div>
-                <div className="text-[7px] uppercase font-black text-slate-400 tracking-widest mb-1">{p.brand}</div>
-                <div className="mt-auto pt-1.5 border-t border-border-subtle flex justify-between items-center">
-                  <div className="text-[11px] font-black text-foreground">{currency}{p.basePrice.toFixed(2)}</div>
-                  <div className="w-5 h-5 rounded bg-orange-500 text-white flex items-center justify-center text-[10px] shadow-sm">+</div>
-                </div>
-              </motion.div>
-            ))
+                  <div className="aspect-square bg-brand-bg rounded-lg flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shrink-0 overflow-hidden">
+                    {p.imageUrl ? (
+                      <img src={p.imageUrl} alt={p.name} className={`w-full h-full object-cover ${outOfStock ? 'grayscale' : ''}`} />
+                    ) : (
+                      <span className="text-2xl opacity-50">👕</span>
+                    )}
+                  </div>
+                  <div className="font-bold text-foreground text-[11px] mb-0.5 line-clamp-1 leading-tight">{p.name}</div>
+                  <div className="text-[7px] uppercase font-black text-slate-400 tracking-widest mb-1">{p.brand}</div>
+                  <div className="mt-auto pt-1.5 border-t border-border-subtle flex justify-between items-center">
+                    <div className="text-[11px] font-black text-foreground">{currency}{p.basePrice.toFixed(2)}</div>
+                    {!outOfStock && <div className="w-5 h-5 rounded bg-orange-500 text-white flex items-center justify-center text-[10px] shadow-sm">+</div>}
+                  </div>
+                </motion.div>
+              );
+            })
           )}
         </div>
       </div>
 
       {/* Order Ticket */}
       <div className="w-[420px] bg-surface rounded-xl border border-border-subtle flex flex-col overflow-hidden shadow-2xl shadow-brand-navy/5 h-full">
-        <div className="p-6 border-b border-border-subtle bg-brand-bg/10">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-lg font-black text-foreground uppercase tracking-tight">Order Ticket</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Awards Centre POS</p>
-            </div>
-            <span className="text-[10px] font-black text-white bg-orange-500 px-3 py-1.5 rounded-full uppercase tracking-widest">{cart.reduce((acc, i) => acc + i.quantity, 0)} Items</span>
+        <div className="p-3 px-4 border-b border-border-subtle bg-brand-bg/10 flex justify-between items-center">
+          <div>
+            <h3 className="text-xs font-black text-foreground uppercase tracking-tight">Order Ticket</h3>
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Awards Centre POS</p>
           </div>
+          <span className="text-[8px] font-black text-white bg-orange-500 px-2 py-1 rounded-full uppercase tracking-widest">{cart.reduce((acc, i) => acc + i.quantity, 0)} Items</span>
         </div>
 
         {/* Scrollable Items List - MAXIMIZED */}
@@ -321,25 +345,31 @@ export default function SalesTerminal() {
                 <button onClick={() => setVariantSelector(null)} className="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-slate-400 hover:text-foreground shadow-sm border border-border-subtle">×</button>
               </div>
               <div className="p-6 space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
-                {variantSelector.variants.map((v) => (
-                  <button 
-                    key={v.id}
-                    onClick={() => addToCart(variantSelector, v)}
-                    className="w-full flex justify-between items-center p-5 bg-brand-bg rounded-xl border border-border-subtle hover:border-orange-500 hover:bg-orange-500/5 transition-all group"
-                  >
-                    <div className="text-left">
-                      <div className="text-sm font-black text-foreground">Size: {v.size}</div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Color: {v.color}</div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                       <div className="text-sm font-black text-orange-500">{currency}{variantSelector.basePrice.toLocaleString()}</div>
-                       <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Add to cart</div>
-                    </div>
-                  </button>
-                ))}
+                {variantSelector.variants.map((v) => {
+                  const qty = v.inventory?.quantity || 0;
+                  const variantOutOfStock = qty <= 0;
+
+                  return (
+                    <button 
+                      key={v.id}
+                      disabled={variantOutOfStock}
+                      onClick={() => addToCart(variantSelector, v)}
+                      className={`w-full flex justify-between items-center p-5 bg-brand-bg rounded-xl border border-border-subtle transition-all group ${variantOutOfStock ? 'opacity-40 grayscale cursor-not-allowed' : 'hover:border-orange-500 hover:bg-orange-500/5'}`}
+                    >
+                      <div className="text-left">
+                        <div className="text-sm font-black text-foreground">Size: {v.size} {variantOutOfStock && "(Out of Stock)"}</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Color: {v.color}</div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                         <div className={`text-sm font-black ${variantOutOfStock ? 'text-slate-400' : 'text-orange-500'}`}>{currency}{variantSelector.basePrice.toLocaleString()}</div>
+                         <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{variantOutOfStock ? 'Unavailable' : 'Add to cart'}</div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
               <div className="p-6 bg-brand-bg/30 text-center border-t border-border-subtle">
-                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Select a size to continue</p>
+                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Select an available size to continue</p>
               </div>
             </motion.div>
           </div>

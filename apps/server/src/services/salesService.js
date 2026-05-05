@@ -6,7 +6,18 @@ const salesService = {
     const { totalAmount, paymentMethod, items, customerId } = data;
     
     return await prisma.$transaction(async (tx) => {
-      // 1. Create Sale record with items and customer
+      // 1. Verify all items have enough stock
+      for (const item of items) {
+        const inventory = await tx.inventory.findUnique({
+          where: { variantId: item.variantId }
+        });
+
+        if (!inventory || inventory.quantity < (item.quantity || 1)) {
+          throw new Error(`Insufficient stock for one or more items.`);
+        }
+      }
+
+      // 2. Create the sale
       const sale = await tx.sale.create({
         data: {
           totalAmount,
