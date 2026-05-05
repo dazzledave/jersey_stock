@@ -26,6 +26,9 @@ export default function SalesTerminal() {
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [isProcessing, setIsProcessing] = useState(false);
   const [currency, setCurrency] = useState('GH₵');
+  
+  // Variant Selection State
+  const [variantSelector, setVariantSelector] = useState<Product | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('ac_settings');
@@ -48,17 +51,24 @@ export default function SalesTerminal() {
     }
   };
 
-  const addToCart = (product: Product) => {
-    // For now, use the first variant ID for inventory tracking
-    const variantId = product.variants?.[0]?.id;
+  const handleProductClick = (product: Product) => {
+    if (product.variants.length > 1) {
+      setVariantSelector(product);
+    } else {
+      addToCart(product, product.variants[0]);
+    }
+  };
+
+  const addToCart = (product: Product, variant: Variant) => {
     setCart([...cart, { 
       id: product.id, 
-      variantId, 
+      variantId: variant.id, 
       name: product.name, 
       price: product.basePrice,
-      size: product.variants?.[0]?.size,
-      color: product.variants?.[0]?.color
+      size: variant.size,
+      color: variant.color
     }]);
+    setVariantSelector(null);
   };
 
   const removeFromCart = (index: number) => {
@@ -103,7 +113,7 @@ export default function SalesTerminal() {
   );
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-140px)]">
+    <div className="flex gap-6 h-[calc(100vh-140px)] relative">
       {/* Product Selection Area */}
       <div className="flex-1 flex flex-col space-y-4 min-w-0">
         <div className="flex justify-between items-end">
@@ -139,7 +149,7 @@ export default function SalesTerminal() {
               <motion.div 
                 key={p.id}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => addToCart(p)}
+                onClick={() => handleProductClick(p)}
                 className="bg-surface p-4 rounded-xl border border-border-subtle cursor-pointer group hover:border-orange-200 transition-all shadow-sm hover:shadow-md flex flex-col"
               >
                 <div className="aspect-square bg-brand-bg rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shrink-0 overflow-hidden">
@@ -161,19 +171,20 @@ export default function SalesTerminal() {
         </div>
       </div>
 
-      {/* Right Sidebar - Order Ticket - Compact Design */}
-      <div className="w-[360px] bg-surface rounded-xl border border-border-subtle flex flex-col overflow-hidden shadow-2xl shadow-brand-navy/5">
-        <div className="p-5 border-b border-border-subtle bg-surface">
-          <div className="flex justify-between items-center mb-3">
+      {/* Right Sidebar - Order Ticket - Spacious Design */}
+      <div className="w-[380px] bg-surface rounded-xl border border-border-subtle flex flex-col overflow-hidden shadow-2xl shadow-brand-navy/5">
+        <div className="p-6 border-b border-border-subtle bg-surface">
+          <div className="flex justify-between items-center mb-4">
             <h3 className="text-base font-bold text-foreground">Current Sale</h3>
             <span className="text-[9px] font-bold text-slate-400 bg-brand-bg px-2 py-0.5 rounded-full uppercase">{cart.length} items</span>
           </div>
           
-          <div className="max-h-[220px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+          {/* Taller Ticket Area */}
+          <div className="max-h-[350px] overflow-y-auto space-y-2.5 pr-1 custom-scrollbar">
             <AnimatePresence>
               {cart.length === 0 ? (
-                 <div className="py-6 flex flex-col items-center justify-center text-slate-300 gap-2">
-                    <div className="text-xl">🛒</div>
+                 <div className="py-12 flex flex-col items-center justify-center text-slate-300 gap-3">
+                    <div className="text-2xl">🛒</div>
                     <p className="text-[9px] font-bold uppercase tracking-widest">Ticket Empty</p>
                  </div>
               ) : (
@@ -182,7 +193,7 @@ export default function SalesTerminal() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     key={i} 
-                    className="flex justify-between items-center bg-brand-bg/30 p-2.5 rounded-lg border border-border-subtle group relative"
+                    className="flex justify-between items-center bg-brand-bg/30 p-3 rounded-lg border border-border-subtle group relative"
                   >
                     <div className="min-w-0 flex-1 pr-4">
                       <div className="text-[11px] font-bold truncate text-foreground">{item.name}</div>
@@ -202,56 +213,91 @@ export default function SalesTerminal() {
           </div>
         </div>
 
-        <div className="flex-1 p-5 space-y-5 overflow-y-auto custom-scrollbar bg-brand-bg/10">
-          <div className="flex justify-between items-end">
-            <div className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Total Amount</div>
-            <div className="text-3xl font-bold text-foreground">{currency}{total.toFixed(2)}</div>
+        <div className="flex-1 p-6 space-y-8 overflow-y-auto custom-scrollbar bg-brand-bg/5">
+          <div className="flex justify-between items-end border-b border-border-subtle pb-6">
+            <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Total Amount</div>
+            <div className="text-4xl font-bold text-foreground">{currency}{total.toFixed(2)}</div>
           </div>
 
-          <div className="space-y-2.5">
-            <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest ml-1">Payment</label>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-4">
+            <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest ml-1">Payment Method</label>
+            <div className="grid grid-cols-2 gap-3">
                <button 
                  onClick={() => setPaymentMethod('Cash')}
-                 className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${paymentMethod === 'Cash' ? 'bg-foreground border-foreground text-brand-bg shadow-md' : 'bg-surface border-border-subtle text-slate-400'}`}
+                 className={`flex items-center justify-center gap-2 p-4 rounded-xl border transition-all ${paymentMethod === 'Cash' ? 'bg-foreground border-foreground text-brand-bg shadow-lg scale-[1.02]' : 'bg-surface border-border-subtle text-slate-400'}`}
                >
-                  <span className="text-sm">💵</span>
-                  <span className="text-[11px] font-bold">Cash</span>
+                  <span className="text-lg">💵</span>
+                  <span className="text-xs font-bold">Cash</span>
                </button>
                <button 
                  onClick={() => setPaymentMethod('MoMo')}
-                 className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${paymentMethod === 'MoMo' ? 'bg-[#ffb443] border-[#ffb443] text-[#1a1f2b] shadow-md' : 'bg-surface border-border-subtle text-slate-400'}`}
+                 className={`flex items-center justify-center gap-2 p-4 rounded-xl border transition-all ${paymentMethod === 'MoMo' ? 'bg-[#ffb443] border-[#ffb443] text-[#1a1f2b] shadow-lg scale-[1.02]' : 'bg-surface border-border-subtle text-slate-400'}`}
                >
-                  <span className="text-sm">📱</span>
-                  <span className="text-[11px] font-bold">MoMo</span>
+                  <span className="text-lg">📱</span>
+                  <span className="text-xs font-bold">MoMo</span>
                </button>
             </div>
           </div>
-
-          <div className="space-y-2.5">
-            <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest ml-1">Customer</label>
-            <input type="text" placeholder="Search..." className="w-full bg-surface p-3 rounded-lg border border-border-subtle text-xs font-medium outline-none focus:border-orange-300 transition-all text-foreground" />
-          </div>
         </div>
 
-        <div className="p-5 bg-surface border-t border-border-subtle">
+        <div className="p-6 bg-surface border-t border-border-subtle">
           <button 
             onClick={handleCheckout}
             disabled={cart.length === 0 || isProcessing}
-            className={`w-full font-bold py-3.5 rounded-lg uppercase tracking-widest text-[10px] transition-all ${cart.length > 0 && !isProcessing ? 'bg-foreground text-brand-bg hover:bg-emerald-600 shadow-lg active:scale-95' : 'bg-slate-50 dark:bg-slate-800 text-slate-300 cursor-not-allowed'}`}
+            className={`w-full font-bold py-4 rounded-xl uppercase tracking-[0.2em] text-[10px] transition-all ${cart.length > 0 && !isProcessing ? 'bg-foreground text-brand-bg hover:bg-emerald-600 shadow-xl active:scale-95' : 'bg-slate-50 dark:bg-slate-800 text-slate-300 cursor-not-allowed'}`}
           >
             {isProcessing ? 'Processing...' : cart.length > 0 ? 'Complete Sale' : 'Select Items'}
           </button>
-          <div className="flex justify-center gap-4 mt-3">
-            <button 
-              onClick={() => setCart([])}
-              className="text-[9px] font-bold text-slate-400 uppercase hover:text-rose-500 transition-colors"
-            >
-              Clear Order
-            </button>
-          </div>
+          <button 
+            onClick={() => setCart([])}
+            className="w-full mt-4 text-[9px] font-bold text-slate-400 uppercase hover:text-rose-500 transition-colors tracking-widest"
+          >
+            Clear Current Order
+          </button>
         </div>
       </div>
+
+      {/* Variant Selection Modal */}
+      <AnimatePresence>
+        {variantSelector && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-surface w-full max-w-md rounded-2xl border border-border-subtle shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-border-subtle flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-bold text-foreground leading-tight">{variantSelector.name}</h3>
+                  <p className="text-[10px] font-black uppercase text-orange-500 tracking-widest mt-1">Select Variation</p>
+                </div>
+                <button onClick={() => setVariantSelector(null)} className="w-8 h-8 rounded-full bg-brand-bg flex items-center justify-center text-slate-400 hover:text-foreground">×</button>
+              </div>
+              <div className="p-6 space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                {variantSelector.variants.map((v) => (
+                  <button 
+                    key={v.id}
+                    onClick={() => addToCart(variantSelector, v)}
+                    className="w-full flex justify-between items-center p-4 bg-brand-bg rounded-xl border border-border-subtle hover:border-orange-300 hover:bg-orange-500/5 transition-all group"
+                  >
+                    <div className="text-left">
+                      <div className="text-sm font-bold text-foreground">Size: {v.size}</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Color: {v.color}</div>
+                    </div>
+                    <div className="text-sm font-black text-foreground group-hover:text-orange-500 transition-colors">
+                      {currency}{variantSelector.basePrice.toFixed(2)}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="p-6 bg-brand-bg/30 text-center">
+                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Select a size to add to cart</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
