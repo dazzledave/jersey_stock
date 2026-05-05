@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Variant {
@@ -22,12 +22,13 @@ export default function ProductForm() {
     name: '',
     brand: '',
     basePrice: '',
-    description: '',
+    imageUrl: '',
     categoryId: ''
   });
   const [variants, setVariants] = useState<Variant[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState({ text: '', type: '' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch('http://localhost:4000/api/products/categories')
@@ -42,6 +43,17 @@ export default function ProductForm() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, imageUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const updateVariant = (index: number, field: keyof Variant, value: string | number) => {
@@ -72,8 +84,9 @@ export default function ProductForm() {
 
       if (response.ok) {
         setStatusMessage({ text: 'Product published successfully!', type: 'success' });
-        setFormData({ name: '', brand: '', basePrice: '', description: '', categoryId: categories[0]?.id || '' });
+        setFormData({ name: '', brand: '', basePrice: '', imageUrl: '', categoryId: categories[0]?.id || '' });
         setVariants([]);
+        if (fileInputRef.current) fileInputRef.current.value = '';
       } else {
         const error = await response.json();
         setStatusMessage({ text: `Failed: ${error.error}`, type: 'error' });
@@ -96,85 +109,107 @@ export default function ProductForm() {
       </div>
 
       <div className="bg-surface rounded-xl border border-border-subtle p-10 shadow-sm space-y-12">
-        {/* Basic Info Section */}
-        <div className="grid grid-cols-2 gap-12">
-          <div className="space-y-6">
+        <div className="grid grid-cols-12 gap-12">
+          {/* Image Upload Area */}
+          <div className="col-span-4 space-y-6">
             <div className="text-[10px] uppercase font-bold text-slate-400 tracking-[0.2em] flex items-center gap-2">
-               <span className="w-2 h-2 bg-orange-200 rounded-sm" /> Basic Information
+               <span className="w-2 h-2 bg-orange-200 rounded-sm" /> Product Image
             </div>
-            
-            <div className="space-y-4">
-               <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground ml-1">Product Name</label>
-                  <input 
-                    type="text" 
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Championship Gold Trophy" 
-                    className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-medium outline-none focus:border-orange-300 transition-all placeholder:text-slate-400 text-foreground" 
-                  />
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                     <label className="text-xs font-bold text-foreground ml-1">Brand / Manufacturer</label>
-                     <input 
-                        type="text" 
-                        name="brand"
-                        value={formData.brand}
-                        onChange={handleInputChange}
-                        placeholder="e.g. Nike" 
-                        className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-medium outline-none focus:border-orange-300 transition-all placeholder:text-slate-400 text-foreground" 
-                     />
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="aspect-square bg-brand-bg rounded-xl border-2 border-dashed border-border-subtle flex flex-col items-center justify-center cursor-pointer hover:border-orange-300 transition-all overflow-hidden relative group"
+            >
+              {formData.imageUrl ? (
+                <>
+                  <img src={formData.imageUrl} className="w-full h-full object-cover" alt="Preview" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-black uppercase tracking-widest">
+                    Change Image
                   </div>
-                  <div className="space-y-2">
-                     <label className="text-xs font-bold text-foreground ml-1">Base Retail Price</label>
-                     <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">GH₵</span>
-                        <input 
-                           type="number" 
-                           name="basePrice"
-                           value={formData.basePrice}
-                           onChange={handleInputChange}
-                           placeholder="0.00" 
-                           className="w-full bg-brand-bg p-4 pl-12 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-300 transition-all text-foreground" 
-                        />
-                     </div>
-                  </div>
-               </div>
+                </>
+              ) : (
+                <div className="text-center p-6">
+                  <div className="text-3xl mb-2 opacity-20">📸</div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Click to upload photo</p>
+                </div>
+              )}
             </div>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handleImageChange}
+              accept="image/*"
+              className="hidden" 
+            />
           </div>
 
-          <div className="space-y-6">
-            <div className="text-[10px] uppercase font-bold text-slate-400 tracking-[0.2em] flex items-center gap-2">
-               <span className="w-2 h-2 bg-orange-200 rounded-sm" /> Classification
-            </div>
-            
-            <div className="space-y-4">
-               <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground ml-1">Category</label>
-                  <select 
-                    name="categoryId"
-                    value={formData.categoryId}
-                    onChange={handleInputChange}
-                    className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-300 transition-all text-foreground appearance-none cursor-pointer"
-                  >
-                    {categories.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-               </div>
-               <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground ml-1">Detailed Description</label>
-                  <textarea 
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Describe the product quality, material, and features..." 
-                    className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-medium outline-none focus:border-orange-300 transition-all placeholder:text-slate-400 text-foreground h-[92px] resize-none" 
-                  />
-               </div>
-            </div>
+          {/* Details Section */}
+          <div className="col-span-8 space-y-10">
+             <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div className="text-[10px] uppercase font-bold text-slate-400 tracking-[0.2em] flex items-center gap-2">
+                    <span className="w-2 h-2 bg-orange-200 rounded-sm" /> Basic Information
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-foreground ml-1">Product Name</label>
+                        <input 
+                          type="text" 
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Championship Gold Trophy" 
+                          className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-medium outline-none focus:border-orange-300 transition-all placeholder:text-slate-400 text-foreground" 
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-foreground ml-1">Brand / Manufacturer</label>
+                        <input 
+                          type="text" 
+                          name="brand"
+                          value={formData.brand}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Nike" 
+                          className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-medium outline-none focus:border-orange-300 transition-all placeholder:text-slate-400 text-foreground" 
+                        />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="text-[10px] uppercase font-bold text-slate-400 tracking-[0.2em] flex items-center gap-2">
+                    <span className="w-2 h-2 bg-orange-200 rounded-sm" /> Classification & Pricing
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-foreground ml-1">Category</label>
+                        <select 
+                          name="categoryId"
+                          value={formData.categoryId}
+                          onChange={handleInputChange}
+                          className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-300 transition-all text-foreground appearance-none cursor-pointer"
+                        >
+                          {categories.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-foreground ml-1">Base Retail Price</label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">GH₵</span>
+                          <input 
+                              type="number" 
+                              name="basePrice"
+                              value={formData.basePrice}
+                              onChange={handleInputChange}
+                              placeholder="0.00" 
+                              className="w-full bg-brand-bg p-4 pl-12 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-300 transition-all text-foreground" 
+                          />
+                        </div>
+                    </div>
+                  </div>
+                </div>
+             </div>
           </div>
         </div>
 

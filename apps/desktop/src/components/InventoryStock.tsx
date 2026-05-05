@@ -37,7 +37,7 @@ export default function InventoryStock() {
     try {
       const res = await fetch('http://localhost:4000/api/products');
       const data = await res.json();
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch stock:', err);
     } finally {

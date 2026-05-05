@@ -25,8 +25,8 @@ model Product {
   name        String
   brand       String?
   basePrice   Float            @map("base_price")
-  description String?
   categoryId  String           @map("category_id")
+  imageUrl    String?          @map("image_url")
   category    Category         @relation(fields: [categoryId], references: [id])
   variants    ProductVariant[]
   createdAt   DateTime         @default(now())

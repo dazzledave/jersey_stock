@@ -14,6 +14,7 @@ interface Product {
   name: string;
   brand: string;
   basePrice: number;
+  imageUrl?: string;
   variants: Variant[];
 }
 
@@ -39,7 +40,7 @@ export default function SalesTerminal() {
     try {
       const res = await fetch('http://localhost:4000/api/products');
       const data = await res.json();
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch products:', err);
     } finally {
@@ -141,8 +142,12 @@ export default function SalesTerminal() {
                 onClick={() => addToCart(p)}
                 className="bg-surface p-4 rounded-xl border border-border-subtle cursor-pointer group hover:border-orange-200 transition-all shadow-sm hover:shadow-md flex flex-col"
               >
-                <div className="aspect-square bg-brand-bg rounded-lg flex items-center justify-center text-3xl mb-3 group-hover:scale-105 transition-transform shrink-0">
-                  👕
+                <div className="aspect-square bg-brand-bg rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shrink-0 overflow-hidden">
+                  {p.imageUrl ? (
+                    <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-3xl">👕</span>
+                  )}
                 </div>
                 <div className="font-bold text-foreground text-xs mb-0.5 line-clamp-2 leading-tight h-8">{p.name}</div>
                 <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest mb-2">{p.brand}</div>

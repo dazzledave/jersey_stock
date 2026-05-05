@@ -34,14 +34,14 @@ const productService = {
   },
 
   async createProduct(data) {
-    const { name, brand, basePrice, description, categoryId, variants } = data;
+    const { name, brand, basePrice, imageUrl, categoryId, variants } = data;
     
     return await prisma.product.create({
       data: {
         name,
         brand,
         basePrice,
-        description,
+        imageUrl,
         category: { connect: { id: categoryId } },
         variants: {
           create: variants.map(v => ({
@@ -69,14 +69,14 @@ const productService = {
   },
 
   async updateProduct(id, data) {
-    const { name, brand, basePrice, description, categoryId } = data;
+    const { name, brand, basePrice, imageUrl, categoryId } = data;
     return await prisma.product.update({
       where: { id },
       data: {
         name,
         brand,
         basePrice,
-        description,
+        imageUrl,
         category: { connect: { id: categoryId } }
       }
     });
