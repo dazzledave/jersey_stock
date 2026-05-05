@@ -6,8 +6,17 @@ router.get('/summary', async (req, res) => {
   try {
     const summary = await analyticsService.getSummary();
     res.json(summary);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/detailed', async (req, res) => {
+  try {
+    const detailed = await analyticsService.getDetailedAnalytics();
+    res.json(detailed);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

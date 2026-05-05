@@ -72,19 +72,29 @@ export default function SalesRecords() {
 
   const exportCSV = () => {
     const headers = ['Reference', 'Timestamp', 'Customer', 'Amount', 'Method', 'Items'];
-    const rows = filteredRecords.map(r => [
-      r.id,
-      new Date(r.createdAt).toLocaleString(),
-      r.customer?.name || 'Walk-in',
-      r.totalAmount,
-      r.paymentMethod,
-      r.items.map(i => `${i.variant.product.name} (x${i.quantity})`).join('; ')
-    ]);
+    
+    // Helper to escape values for CSV
+    const escape = (val: any) => {
+      const stringVal = String(val === null || val === undefined ? '' : val);
+      // Escape double quotes by doubling them
+      const escaped = stringVal.replace(/"/g, '""');
+      // Wrap in double quotes to handle commas and newlines
+      return `"${escaped}"`;
+    };
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + headers.join(',') + "\n" 
-      + rows.map(e => e.join(",")).join("\n");
+    const csvRows = [
+      headers.map(escape).join(','),
+      ...filteredRecords.map(r => [
+        r.id,
+        new Date(r.createdAt).toLocaleString().replace(',', ''), // Remove internal comma from date
+        r.customer?.name || 'Walk-in',
+        r.totalAmount,
+        r.paymentMethod,
+        r.items.map(i => `${i.variant.product.name} (x${i.quantity})`).join('; ')
+      ].map(escape).join(','))
+    ];
 
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
