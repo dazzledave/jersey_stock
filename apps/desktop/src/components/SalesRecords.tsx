@@ -270,7 +270,8 @@ export default function SalesRecords() {
                     <div key={idx} className="flex justify-between">
                        <div className="flex-1">
                           <p className="font-bold">{item.variant.product.name}</p>
-                          <p className="opacity-70">{item.variant.sku} x {item.quantity}</p>
+                          <p className="opacity-70 text-[9px] uppercase">{item.variant.size} • {item.variant.color}</p>
+                          <p className="opacity-70">Qty: {item.quantity}</p>
                        </div>
                        <p className="font-bold">{currency}{(item.price * item.quantity).toLocaleString()}</p>
                     </div>
