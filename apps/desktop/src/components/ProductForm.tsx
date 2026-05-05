@@ -48,6 +48,10 @@ export default function ProductForm() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 1.5 * 1024 * 1024) {
+        setStatusMessage({ text: 'Image is too large (Limit: 1.5MB)', type: 'error' });
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData(prev => ({ ...prev, imageUrl: reader.result as string }));
