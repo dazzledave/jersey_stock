@@ -5,25 +5,38 @@
   --font-outfit: "Outfit", sans-serif;
   --font-segoe: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
   
-  --color-brand-bg: #fcf8f1;
+  --color-brand-bg: var(--bg-color);
   --color-brand-navy: #1a1f2b;
   --color-brand-accent: #ffb443;
   --color-brand-accent-hover: #fca42d;
+  
+  --color-surface: var(--surface-color);
+  --color-border-subtle: var(--border-color);
+  --color-foreground: var(--text-color);
   
   --radius-xl: 12px;
   --radius-2xl: 16px;
 }
 
 :root {
-  --foreground-rgb: 26, 31, 43;
-  --background-start-rgb: 252, 248, 241;
-  --background-end-rgb: 252, 248, 241;
+  --bg-color: #fcf8f1;
+  --surface-color: #ffffff;
+  --border-color: #f0ebe4;
+  --text-color: #1a1f2b;
+}
+
+.dark {
+  --bg-color: #0f111a;
+  --surface-color: #1a1f2b;
+  --border-color: #2d3446;
+  --text-color: #f8fafc;
 }
 
 body {
-  color: var(--foreground-rgb);
-  background: var(--background-start-rgb);
+  color: var(--text-color);
+  background: var(--bg-color);
   font-family: var(--font-segoe);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .custom-scrollbar::-webkit-scrollbar {

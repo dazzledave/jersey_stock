@@ -16,7 +16,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const settings = JSON.parse(localStorage.getItem('ac_settings'));
+                  if (settings && settings.darkMode) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className={inter.className}>{children}</body>
     </html>
   );

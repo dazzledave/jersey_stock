@@ -1,13 +1,23 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 export default function InventoryDashboard() {
+  const [currency, setCurrency] = useState('GH₵');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('ac_settings');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.currency) setCurrency(parsed.currency);
+    }
+  }, []);
+
   const stats = [
-    { label: 'Total Cash-Ins', value: 'GH₵0.00', sub: 'Revenue across 0 orders', icon: '💵' },
-    { label: 'Marginal Profit', value: 'GH₵0.00', sub: 'After expenses', icon: '📈' },
-    { label: 'Today\'s Expenses', value: 'GH₵0.00', sub: 'Stock & bills', icon: '🧾' },
+    { label: 'Total Cash-Ins', value: `${currency}0.00`, sub: 'Revenue across 0 orders', icon: '💵' },
+    { label: 'Marginal Profit', value: `${currency}0.00`, sub: 'After expenses', icon: '📈' },
+    { label: 'Today\'s Expenses', value: `${currency}0.00`, sub: 'Stock & bills', icon: '🧾' },
     { label: 'Orders Rung Up', value: '0', sub: 'System total', icon: '🛒' },
   ];
 
@@ -71,7 +81,7 @@ export default function InventoryDashboard() {
             </div>
             <div className="text-right">
               <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">7-Day Period</div>
-              <div className="text-xl font-bold text-[#1a1f2b]">GH₵0.00</div>
+              <div className="text-xl font-bold text-[#1a1f2b]">{currency}0.00</div>
             </div>
           </div>
           <div className="h-[200px] flex items-end gap-8 px-4">

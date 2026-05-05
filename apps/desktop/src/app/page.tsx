@@ -43,7 +43,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#fcf8f1] font-['Segoe_UI_Variable_Text',_system-ui,_sans-serif]">
+    <div className="flex h-screen overflow-hidden bg-brand-bg font-['Segoe_UI_Variable_Text',_system-ui,_sans-serif]">
       {/* Sidebar - Collapsible with Framer Motion for smoothness */}
       <motion.aside 
         initial={false}
@@ -157,7 +157,7 @@ export default function Home() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header - Sticky */}
-        <header className="h-20 flex items-center justify-between px-10 flex-shrink-0 bg-[#fcf8f1]/80 backdrop-blur-md sticky top-0 z-50">
+        <header className="h-20 flex items-center justify-between px-10 flex-shrink-0 bg-brand-bg/80 backdrop-blur-md sticky top-0 z-50 border-b border-border-subtle/50">
           <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-400">
              <div className="flex items-center gap-2">
                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -168,10 +168,10 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-sm font-bold text-[#1a1f2b]">Admin User</div>
+              <div className="text-sm font-bold text-foreground">Admin User</div>
               <div className="text-[10px] text-orange-500 font-bold uppercase tracking-widest">Master Seller</div>
             </div>
-            <button className="bg-[#1a1f2b] text-white text-xs font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-all">
+            <button className="bg-foreground text-brand-bg text-xs font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-all">
               Logout
             </button>
           </div>

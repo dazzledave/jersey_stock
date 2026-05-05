@@ -24,8 +24,14 @@ export default function SalesTerminal() {
   const [isLoading, setIsLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currency, setCurrency] = useState('GH₵');
 
   useEffect(() => {
+    const saved = localStorage.getItem('ac_settings');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.currency) setCurrency(parsed.currency);
+    }
     fetchProducts();
   }, []);
 
@@ -141,7 +147,7 @@ export default function SalesTerminal() {
                 <div className="font-bold text-[#1a1f2b] text-xs mb-0.5 line-clamp-2 leading-tight h-8">{p.name}</div>
                 <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest mb-2">{p.brand}</div>
                 <div className="mt-auto pt-2 border-t border-[#fcf8f1] flex justify-between items-center">
-                  <div className="text-xs font-black text-[#1a1f2b]">GH₵{p.basePrice.toFixed(2)}</div>
+                  <div className="text-xs font-black text-[#1a1f2b]">{currency}{p.basePrice.toFixed(2)}</div>
                   <div className="w-5 h-5 rounded-full bg-[#fcf8f1] flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-orange-500">+</div>
                 </div>
               </motion.div>
@@ -177,7 +183,7 @@ export default function SalesTerminal() {
                       <div className="text-[11px] font-bold truncate text-[#1a1f2b]">{item.name}</div>
                       <div className="text-[8px] font-black uppercase text-slate-400">{item.size} / {item.color}</div>
                     </div>
-                    <div className="text-xs font-bold text-[#1a1f2b] whitespace-nowrap">GH₵{item.price.toFixed(2)}</div>
+                    <div className="text-xs font-bold text-[#1a1f2b] whitespace-nowrap">{currency}{item.price.toFixed(2)}</div>
                     <button 
                       onClick={(e) => { e.stopPropagation(); removeFromCart(i); }}
                       className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
@@ -194,7 +200,7 @@ export default function SalesTerminal() {
         <div className="flex-1 p-5 space-y-5 overflow-y-auto custom-scrollbar bg-[#fcf8f1]/10">
           <div className="flex justify-between items-end">
             <div className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Total Amount</div>
-            <div className="text-3xl font-bold text-[#1a1f2b]">GH₵{total.toFixed(2)}</div>
+            <div className="text-3xl font-bold text-[#1a1f2b]">{currency}{total.toFixed(2)}</div>
           </div>
 
           <div className="space-y-2.5">
