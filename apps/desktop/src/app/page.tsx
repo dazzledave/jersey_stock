@@ -101,7 +101,7 @@ export default function Home() {
           {sidebarExpanded && <span className="opacity-50 group-hover:translate-x-1 transition-transform">›</span>}
         </button>
         
-        <nav className="flex-1 space-y-1 overflow-y-auto pr-2 custom-scrollbar">
+        <nav className={`flex-1 space-y-1 pr-2 ${sidebarExpanded ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'}`}>
           {menuItems.map((item) => (
             <button 
               key={item.name}
