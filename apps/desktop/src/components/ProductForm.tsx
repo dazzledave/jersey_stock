@@ -27,10 +27,16 @@ export default function ProductForm() {
   });
   const [variants, setVariants] = useState<Variant[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
   const [statusMessage, setStatusMessage] = useState({ text: '', type: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = () => {
     fetch('http://localhost:4000/api/products/categories')
       .then(res => res.json())
       .then(data => {
@@ -38,7 +44,27 @@ export default function ProductForm() {
         if (data.length > 0) setFormData(prev => ({ ...prev, categoryId: data[0].id }));
       })
       .catch(err => console.error('Failed to fetch categories:', err));
-  }, []);
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName) return;
+    try {
+      const res = await fetch('http://localhost:4000/api/products/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCategoryName })
+      });
+      if (res.ok) {
+        const newCat = await res.json();
+        setCategories([...categories, newCat]);
+        setFormData(prev => ({ ...prev, categoryId: newCat.id }));
+        setIsAddingCategory(false);
+        setNewCategoryName('');
+      }
+    } catch (err) {
+      console.error('Failed to create category:', err);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -185,17 +211,46 @@ export default function ProductForm() {
                   </div>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-foreground ml-1">Category</label>
-                        <select 
-                          name="categoryId"
-                          value={formData.categoryId}
-                          onChange={handleInputChange}
-                          className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-300 transition-all text-foreground appearance-none cursor-pointer"
-                        >
-                          {categories.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </select>
+                        <div className="flex justify-between items-center ml-1">
+                          <label className="text-xs font-bold text-foreground">Category</label>
+                          <button 
+                            type="button"
+                            onClick={() => setIsAddingCategory(!isAddingCategory)}
+                            className="text-[9px] font-black uppercase text-orange-500 hover:underline"
+                          >
+                            {isAddingCategory ? 'Cancel' : '+ New Category'}
+                          </button>
+                        </div>
+                        {isAddingCategory ? (
+                          <div className="flex gap-2">
+                            <input 
+                              type="text"
+                              value={newCategoryName}
+                              onChange={(e) => setNewCategoryName(e.target.value)}
+                              placeholder="New Category Name"
+                              className="flex-1 bg-brand-bg p-4 rounded-lg border border-orange-300 text-sm font-bold outline-none text-foreground"
+                              autoFocus
+                            />
+                            <button 
+                              type="button"
+                              onClick={handleCreateCategory}
+                              className="bg-orange-500 text-white px-4 rounded-lg text-xs font-bold"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        ) : (
+                          <select 
+                            name="categoryId"
+                            value={formData.categoryId}
+                            onChange={handleInputChange}
+                            className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-300 transition-all text-foreground appearance-none cursor-pointer"
+                          >
+                            {categories.map(c => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                        )}
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-foreground ml-1">Base Retail Price</label>
