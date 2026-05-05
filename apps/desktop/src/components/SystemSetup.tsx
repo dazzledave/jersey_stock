@@ -21,7 +21,7 @@ export default function SystemSetup() {
             <div className="space-y-6">
                <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Shop Name</label>
-                  <input type="text" defaultValue="Jersey Stock" className="w-full bg-[#fcf8f1] p-4 rounded-lg border border-[#f0ebe4] text-sm font-bold outline-none" />
+                  <input type="text" defaultValue="Awards Centre" className="w-full bg-[#fcf8f1] p-4 rounded-lg border border-[#f0ebe4] text-sm font-bold outline-none" />
                </div>
                <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Currency Symbol</label>

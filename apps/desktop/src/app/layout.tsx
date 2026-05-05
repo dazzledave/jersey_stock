@@ -6,7 +6,7 @@ import "../../../../packages/ui/src/styles/variables.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Awards Centre Inventory system",
+  title: "Awards Centre Management System",
   description: "Enterprise management for awards and sportswear",
 };
 

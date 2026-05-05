@@ -64,8 +64,8 @@ export default function Home() {
                 exit={{ opacity: 0, x: -10 }}
                 className="overflow-hidden whitespace-nowrap"
               >
-                <h2 className="text-xl font-bold tracking-tight">Awards Centre</h2>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">Inventory Management</p>
+                <h2 className="text-sm font-black tracking-widest text-[#ffb443] uppercase">Awards Centre</h2>
+                <h3 className="text-lg font-bold text-white mt-1">Management System</h3>
               </motion.div>
             )}
           </AnimatePresence>
