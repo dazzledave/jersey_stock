@@ -40,6 +40,16 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+router.put('/:id', async (req, res) => {
+  try {
+    const product = await productService.updateProduct(req.params.id, req.body);
+    req.io.emit('product_updated', product);
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.delete('/:id', async (req, res) => {
   try {
     await productService.deleteProduct(req.params.id);

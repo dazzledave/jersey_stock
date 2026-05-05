@@ -3,26 +3,38 @@ const prisma = new PrismaClient();
 
 const salesService = {
   async createSale(data) {
-    const { totalAmount, paymentMethod, items } = data;
+    const { totalAmount, paymentMethod, items, customerId } = data;
     
     return await prisma.$transaction(async (tx) => {
-      // 1. Create Sale record
+      // 1. Create Sale record with items and customer
       const sale = await tx.sale.create({
         data: {
           totalAmount,
-          paymentMethod: paymentMethod.toLowerCase()
+          paymentMethod: paymentMethod.toLowerCase(),
+          customerId: customerId || null,
+          items: {
+            create: items.map(item => ({
+              variantId: item.variantId,
+              quantity: item.quantity || 1,
+              price: item.price || (totalAmount / items.length) // Fallback
+            }))
+          }
+        },
+        include: {
+          items: true,
+          customer: true
         }
       });
 
-      // 2. Update Inventory for each item
+      // 2. Update Inventory and record movements for each item
       for (const item of items) {
-        // We'd ideally need variantId here. For now, we'll assume the frontend sends it.
+        const qty = item.quantity || 1;
         if (item.variantId) {
           await tx.inventory.update({
             where: { variantId: item.variantId },
             data: {
               quantity: {
-                decrement: 1 // Assuming qty 1 for now
+                decrement: qty
               }
             }
           });
@@ -30,9 +42,9 @@ const salesService = {
           await tx.stockMovement.create({
             data: {
               variantId: item.variantId,
-              quantity: -1,
+              quantity: -qty,
               type: 'SALE',
-              reason: `Sale ${sale.id}`
+              reason: `Sale Ref: ${sale.id}`
             }
           });
         }
@@ -44,6 +56,18 @@ const salesService = {
 
   async getAllSales() {
     return await prisma.sale.findMany({
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: true
+              }
+            }
+          }
+        },
+        customer: true
+      },
       orderBy: { createdAt: 'desc' }
     });
   }

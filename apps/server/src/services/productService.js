@@ -69,13 +69,14 @@ const productService = {
   },
 
   async updateProduct(id, data) {
-    const { name, brand, basePrice, imageUrl, categoryId } = data;
+    const { name, brand, basePrice, costPrice, imageUrl, categoryId } = data;
     return await prisma.product.update({
       where: { id },
       data: {
         name,
         brand,
         basePrice,
+        costPrice,
         imageUrl,
         category: { connect: { id: categoryId } }
       }

@@ -29,6 +29,7 @@ model Product {
   name       String
   brand      String?
   basePrice  Float            @map("base_price")
+  costPrice  Float            @default(0) @map("cost_price")
   categoryId String           @map("category_id")
   imageUrl   String?          @map("image_url")
   category   Category         @relation(fields: [categoryId], references: [id])
