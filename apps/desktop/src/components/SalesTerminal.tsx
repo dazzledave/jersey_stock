@@ -27,7 +27,6 @@ export default function SalesTerminal() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currency, setCurrency] = useState('GH₵');
   
-  // Variant Selection State
   const [variantSelector, setVariantSelector] = useState<Product | null>(null);
 
   useEffect(() => {
@@ -171,89 +170,91 @@ export default function SalesTerminal() {
         </div>
       </div>
 
-      {/* Right Sidebar - Order Ticket - Spacious Design */}
-      <div className="w-[380px] bg-surface rounded-xl border border-border-subtle flex flex-col overflow-hidden shadow-2xl shadow-brand-navy/5">
-        <div className="p-6 border-b border-border-subtle bg-surface">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-base font-bold text-foreground">Current Sale</h3>
-            <span className="text-[9px] font-bold text-slate-400 bg-brand-bg px-2 py-0.5 rounded-full uppercase">{cart.length} items</span>
-          </div>
-          
-          {/* Taller Ticket Area */}
-          <div className="max-h-[350px] overflow-y-auto space-y-2.5 pr-1 custom-scrollbar">
-            <AnimatePresence>
-              {cart.length === 0 ? (
-                 <div className="py-12 flex flex-col items-center justify-center text-slate-300 gap-3">
-                    <div className="text-2xl">🛒</div>
-                    <p className="text-[9px] font-bold uppercase tracking-widest">Ticket Empty</p>
-                 </div>
-              ) : (
-                cart.map((item, i) => (
-                  <motion.div 
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    key={i} 
-                    className="flex justify-between items-center bg-brand-bg/30 p-3 rounded-lg border border-border-subtle group relative"
-                  >
-                    <div className="min-w-0 flex-1 pr-4">
-                      <div className="text-[11px] font-bold truncate text-foreground">{item.name}</div>
-                      <div className="text-[8px] font-black uppercase text-slate-400">{item.size} / {item.color}</div>
-                    </div>
-                    <div className="text-xs font-bold text-foreground whitespace-nowrap">{currency}{item.price.toFixed(2)}</div>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); removeFromCart(i); }}
-                      className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                    >
-                      ×
-                    </button>
-                  </motion.div>
-                ))
-              )}
-            </AnimatePresence>
+      {/* Right Sidebar - Order Ticket - Fixed Layout */}
+      <div className="w-[400px] bg-surface rounded-xl border border-border-subtle flex flex-col overflow-hidden shadow-2xl shadow-brand-navy/5 h-full">
+        {/* Header */}
+        <div className="p-6 border-b border-border-subtle">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-bold text-foreground">Current Sale</h3>
+            <span className="text-[10px] font-bold text-slate-400 bg-brand-bg px-3 py-1 rounded-full uppercase tracking-widest">{cart.length} items</span>
           </div>
         </div>
 
-        <div className="flex-1 p-6 space-y-8 overflow-y-auto custom-scrollbar bg-brand-bg/5">
-          <div className="flex justify-between items-end border-b border-border-subtle pb-6">
+        {/* Scrollable Items List */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar">
+          <AnimatePresence>
+            {cart.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-3 opacity-50">
+                  <div className="text-4xl">🛒</div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Ticket Empty</p>
+                </div>
+            ) : (
+              cart.map((item, i) => (
+                <motion.div 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  key={i} 
+                  className="flex justify-between items-center bg-brand-bg/30 p-4 rounded-xl border border-border-subtle group relative"
+                >
+                  <div className="min-w-0 flex-1 pr-4">
+                    <div className="text-xs font-bold truncate text-foreground">{item.name}</div>
+                    <div className="text-[9px] font-black uppercase text-slate-400 mt-0.5">{item.size} / {item.color}</div>
+                  </div>
+                  <div className="text-sm font-bold text-foreground whitespace-nowrap">{currency}{item.price.toFixed(2)}</div>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); removeFromCart(i); }}
+                    className="absolute -right-2 top-1/2 -translate-y-1/2 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:scale-110 active:scale-90"
+                  >
+                    ×
+                  </button>
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Footer Section - Fixed Height to prevent scrolling */}
+        <div className="border-t border-border-subtle bg-brand-bg/5 p-6 space-y-6 shrink-0">
+          <div className="flex justify-between items-center">
             <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Total Amount</div>
-            <div className="text-4xl font-bold text-foreground">{currency}{total.toFixed(2)}</div>
+            <div className="text-3xl font-bold text-foreground">{currency}{total.toFixed(2)}</div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest ml-1">Payment Method</label>
             <div className="grid grid-cols-2 gap-3">
                <button 
                  onClick={() => setPaymentMethod('Cash')}
-                 className={`flex items-center justify-center gap-2 p-4 rounded-xl border transition-all ${paymentMethod === 'Cash' ? 'bg-foreground border-foreground text-brand-bg shadow-lg scale-[1.02]' : 'bg-surface border-border-subtle text-slate-400'}`}
+                 className={`flex items-center justify-center gap-2 p-3.5 rounded-xl border transition-all ${paymentMethod === 'Cash' ? 'bg-foreground border-foreground text-brand-bg shadow-lg' : 'bg-surface border-border-subtle text-slate-400 hover:border-orange-200'}`}
                >
                   <span className="text-lg">💵</span>
                   <span className="text-xs font-bold">Cash</span>
                </button>
                <button 
                  onClick={() => setPaymentMethod('MoMo')}
-                 className={`flex items-center justify-center gap-2 p-4 rounded-xl border transition-all ${paymentMethod === 'MoMo' ? 'bg-[#ffb443] border-[#ffb443] text-[#1a1f2b] shadow-lg scale-[1.02]' : 'bg-surface border-border-subtle text-slate-400'}`}
+                 className={`flex items-center justify-center gap-2 p-3.5 rounded-xl border transition-all ${paymentMethod === 'MoMo' ? 'bg-[#ffb443] border-[#ffb443] text-[#1a1f2b] shadow-lg' : 'bg-surface border-border-subtle text-slate-400 hover:border-orange-200'}`}
                >
                   <span className="text-lg">📱</span>
                   <span className="text-xs font-bold">MoMo</span>
                </button>
             </div>
           </div>
-        </div>
 
-        <div className="p-6 bg-surface border-t border-border-subtle">
-          <button 
-            onClick={handleCheckout}
-            disabled={cart.length === 0 || isProcessing}
-            className={`w-full font-bold py-4 rounded-xl uppercase tracking-[0.2em] text-[10px] transition-all ${cart.length > 0 && !isProcessing ? 'bg-foreground text-brand-bg hover:bg-emerald-600 shadow-xl active:scale-95' : 'bg-slate-50 dark:bg-slate-800 text-slate-300 cursor-not-allowed'}`}
-          >
-            {isProcessing ? 'Processing...' : cart.length > 0 ? 'Complete Sale' : 'Select Items'}
-          </button>
-          <button 
-            onClick={() => setCart([])}
-            className="w-full mt-4 text-[9px] font-bold text-slate-400 uppercase hover:text-rose-500 transition-colors tracking-widest"
-          >
-            Clear Current Order
-          </button>
+          <div className="space-y-3 pt-2">
+            <button 
+              onClick={handleCheckout}
+              disabled={cart.length === 0 || isProcessing}
+              className={`w-full font-bold py-4 rounded-xl uppercase tracking-[0.2em] text-[10px] transition-all ${cart.length > 0 && !isProcessing ? 'bg-foreground text-brand-bg hover:bg-emerald-600 shadow-xl active:scale-95' : 'bg-slate-100 dark:bg-slate-800 text-slate-300 cursor-not-allowed'}`}
+            >
+              {isProcessing ? 'Processing...' : cart.length > 0 ? 'Complete Sale' : 'Select Items'}
+            </button>
+            <button 
+              onClick={() => setCart([])}
+              className="w-full text-[9px] font-bold text-slate-400 uppercase hover:text-rose-500 transition-colors tracking-widest"
+            >
+              Clear Current Order
+            </button>
+          </div>
         </div>
       </div>
 
