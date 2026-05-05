@@ -36,10 +36,12 @@ app.use((req, res, next) => {
 const productRoutes = require('./routes/productRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const salesRoutes = require('./routes/salesRoutes');
+const syncRoutes = require('./routes/syncRoutes');
 
 app.use('/api/products', productRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/sales', salesRoutes);
+app.use('/api/sync', syncRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

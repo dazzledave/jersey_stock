@@ -15,22 +15,26 @@ enum PaymentMethod {
 }
 
 model Category {
-  id       String    @id @default(cuid())
-  name     String    @unique
-  products Product[]
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+
+  @@map("categories")
 }
 
 model Product {
-  id          String           @id @default(cuid())
-  name        String
-  brand       String?
-  basePrice   Float            @map("base_price")
-  categoryId  String           @map("category_id")
-  imageUrl    String?          @map("image_url")
-  category    Category         @relation(fields: [categoryId], references: [id])
-  variants    ProductVariant[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id         String           @id @default(cuid())
+  name       String
+  brand      String?
+  basePrice  Float            @map("base_price")
+  categoryId String           @map("category_id")
+  imageUrl   String?          @map("image_url")
+  category   Category         @relation(fields: [categoryId], references: [id])
+  variants   ProductVariant[]
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @default(now()) @updatedAt
 
   @@map("products")
 }
@@ -45,6 +49,8 @@ model ProductVariant {
   barcode   String?         @unique
   inventory Inventory?
   movements StockMovement[]
+  saleItems SaleItem[]
+  updatedAt DateTime        @default(now()) @updatedAt
 
   @@map("product_variants")
 }
@@ -54,6 +60,7 @@ model Inventory {
   variant      ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   quantity     Int            @default(0)
   reorderLevel Int            @default(5) @map("reorder_level")
+  updatedAt    DateTime       @default(now()) @updatedAt
 
   @@map("inventory")
 }
@@ -67,12 +74,53 @@ model StockMovement {
   reason    String?
   createdAt DateTime       @default(now())
 
-  @@map("StockMovement") // StockAdjustment maps to StockMovement
+  @@map("StockMovement")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?  @unique
+  email     String?  @unique
+  address   String?
+  sales     Sale[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("customers")
 }
 
 model Sale {
   id            String        @id @default(cuid())
-  totalAmount   Float
-  paymentMethod PaymentMethod
+  totalAmount   Float         @map("total_amount")
+  paymentMethod PaymentMethod @map("payment_method")
+  customerId    String?       @map("customer_id")
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  items         SaleItem[]
   createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @default(now()) @updatedAt
+
+  @@map("sales")
+}
+
+model SaleItem {
+  id        String         @id @default(cuid())
+  saleId    String         @map("sale_id")
+  sale      Sale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  variantId String         @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  quantity  Int            @default(1)
+  price     Float // price at time of sale
+  createdAt DateTime       @default(now())
+
+  @@map("sale_items")
+}
+
+model SyncLog {
+  id        String   @id @default(cuid())
+  status    String // "SUCCESS", "FAILED"
+  message   String?
+  syncedAt  DateTime @default(now())
+
+  @@map("sync_logs")
 }

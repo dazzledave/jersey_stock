@@ -135,13 +135,15 @@ export default function InventoryStock() {
               onChange={(e) => setSearch(e.target.value)}
               className="bg-surface px-10 py-3 rounded-xl border border-border-subtle text-xs font-bold outline-none focus:border-orange-300 transition-all text-foreground w-[300px]"
             />
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </span>
             {search && (
               <button 
                 onClick={() => setSearch('')}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-rose-500 transition-colors"
               >
-                ×
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             )}
           </div>
@@ -173,9 +175,9 @@ export default function InventoryStock() {
            <div className="text-center py-20 text-slate-300 font-bold uppercase tracking-widest animate-pulse">Loading Inventory...</div>
          ) : filteredProducts.length === 0 ? (
            <div className="text-center py-20 bg-surface rounded-xl border border-dashed border-border-subtle text-slate-300 font-bold uppercase tracking-widest flex flex-col items-center gap-4">
-             <div className="text-4xl">📦</div>
-             <p>No products found {search ? `matching "${search}"` : 'in catalog'}</p>
-             {search && <button onClick={() => setSearch('')} className="text-orange-500 text-[10px] font-black uppercase">Clear Search</button>}
+             <div className="text-4xl opacity-20">📦</div>
+             <p className="text-sm">No products found {search ? `matching "${search}"` : 'in catalog'}</p>
+             {search && <button onClick={() => setSearch('')} className="text-orange-500 text-[10px] font-black uppercase tracking-widest hover:underline">Clear Search Results</button>}
            </div>
          ) : (
            filteredProducts.map((product) => (
@@ -190,7 +192,7 @@ export default function InventoryStock() {
                   </div>
                   
                   {/* Controls Section */}
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div className="flex items-center gap-4 bg-surface p-2 px-4 rounded-xl border border-border-subtle">
                       <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Base Price:</div>
                       {editingPrice?.id === product.id ? (
@@ -214,21 +216,21 @@ export default function InventoryStock() {
                           <div className="text-lg font-black text-foreground">{currency}{product.basePrice.toFixed(2)}</div>
                           <button 
                             onClick={() => setEditingPrice({ id: product.id, price: product.basePrice.toString() })}
-                            className="w-8 h-8 rounded-lg bg-brand-bg flex items-center justify-center text-slate-300 hover:text-orange-500 hover:bg-orange-500/10 transition-all shadow-sm"
+                            className="p-2 rounded-lg bg-brand-bg text-slate-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all"
+                            title="Edit Price"
                           >
-                            ✏️
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                           </button>
                         </div>
                       )}
                     </div>
                     
-                    {/* Delete Button */}
                     <button 
                       onClick={() => handleDeleteProduct(product.id, product.name)}
-                      className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm group-hover:scale-105 active:scale-95"
+                      className="p-3 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all group-hover:scale-105 active:scale-95"
                       title="Delete Product"
                     >
-                      <span className="text-lg">🗑️</span>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     </button>
                   </div>
                </div>
@@ -266,12 +268,16 @@ export default function InventoryStock() {
                                 <button 
                                   onClick={() => updateStock(v.id, (v.inventory?.quantity || 0) - 1)}
                                   className="w-8 h-8 rounded-lg bg-brand-bg text-slate-500 flex items-center justify-center hover:bg-rose-500/10 hover:text-rose-500 transition-all font-bold border border-border-subtle shadow-sm"
-                                >-</button>
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4"/></svg>
+                                </button>
                                 <span className="w-12 text-center text-sm font-bold text-foreground">{v.inventory?.quantity || 0}</span>
                                 <button 
                                   onClick={() => updateStock(v.id, (v.inventory?.quantity || 0) + 1)}
                                   className="w-8 h-8 rounded-lg bg-foreground text-brand-bg flex items-center justify-center hover:bg-orange-500 transition-all font-bold border border-border-subtle shadow-sm"
-                                >+</button>
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
+                                </button>
                              </div>
                           </td>
                         </tr>
