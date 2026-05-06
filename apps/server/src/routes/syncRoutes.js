@@ -17,6 +17,17 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.post('/credentials', async (req, res) => {
+  const { supabaseUrl, supabaseKey } = req.body;
+  const cloudSyncService = require('../services/cloudSyncService');
+  try {
+    await cloudSyncService.saveCredentials(supabaseUrl, supabaseKey);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.delete('/logs', async (req, res) => {
   try {
     await clearLogs();
