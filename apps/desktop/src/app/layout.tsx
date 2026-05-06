@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: "Enterprise management for awards and sportswear",
 };
 
+import { AuthProvider } from "@/components/AuthContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -37,7 +39,11 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   );
 }
