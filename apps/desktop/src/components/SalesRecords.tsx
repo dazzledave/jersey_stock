@@ -22,6 +22,9 @@ interface Sale {
   createdAt: string;
   totalAmount: number;
   paymentMethod: string;
+  soldBy?: string;
+  debtorName?: string;
+  authorizer?: string;
   customer?: {
     name: string;
     phone: string;
@@ -73,14 +76,12 @@ export default function SalesRecords() {
   };
 
   const exportCSV = () => {
-    const headers = ['Reference', 'Timestamp', 'Customer', 'Amount', 'Method', 'Items'];
+    const headers = ['Reference', 'Timestamp', 'Staff', 'Type', 'Customer', 'Amount', 'Method', 'Debtor/Authorizer', 'Items'];
     
     // Helper to escape values for CSV
     const escape = (val: any) => {
       const stringVal = String(val === null || val === undefined ? '' : val);
-      // Escape double quotes by doubling them
       const escaped = stringVal.replace(/"/g, '""');
-      // Wrap in double quotes to handle commas and newlines
       return `"${escaped}"`;
     };
 
@@ -88,10 +89,13 @@ export default function SalesRecords() {
       headers.map(escape).join(','),
       ...filteredRecords.map(r => [
         r.id,
-        new Date(r.createdAt).toLocaleString().replace(',', ''), // Remove internal comma from date
+        new Date(r.createdAt).toLocaleString().replace(',', ''),
+        r.soldBy || 'System',
+        r.debtorName ? 'Credit' : r.paymentMethod === 'free' ? 'Free' : 'Standard',
         r.customer?.name || 'Walk-in',
         r.totalAmount,
         r.paymentMethod,
+        r.debtorName || r.authorizer || 'N/A',
         r.items.map(i => `${i.variant.product.name} (x${i.quantity})`).join('; ')
       ].map(escape).join(','))
     ];
@@ -139,7 +143,8 @@ export default function SalesRecords() {
             <tr className="bg-brand-bg/50 text-[10px] uppercase font-black text-slate-400 tracking-widest">
               <th className="p-8 border-b border-border-subtle/50">Reference</th>
               <th className="p-8 border-b border-border-subtle/50">Timestamp</th>
-              <th className="p-8 border-b border-border-subtle/50">Customer</th>
+              <th className="p-8 border-b border-border-subtle/50">Staff</th>
+              <th className="p-8 border-b border-border-subtle/50">Type</th>
               <th className="p-8 border-b border-border-subtle/50">Amount</th>
               <th className="p-8 border-b border-border-subtle/50">Method</th>
               <th className="p-8 border-b border-border-subtle/50 text-right">Action</th>
@@ -148,37 +153,25 @@ export default function SalesRecords() {
           <tbody className="divide-y divide-border-subtle/30">
             {isLoading ? (
                <tr>
-                 <td colSpan={6} className="p-20 text-center text-slate-300 font-bold uppercase tracking-widest animate-pulse">
-                   Accessing sales database...
-                 </td>
+                 <td colSpan={7} className="p-20 text-center text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Loading Transaction History...</td>
                </tr>
             ) : filteredRecords.length === 0 ? (
                <tr>
-                 <td colSpan={6} className="p-20 text-center text-slate-300 font-bold uppercase tracking-widest">
-                   {dateFilter ? 'No records for this date' : 'No transactions recorded'}
-                 </td>
+                 <td colSpan={7} className="p-20 text-center text-xs font-bold text-slate-400 uppercase tracking-widest opacity-40">No records found for this period.</td>
                </tr>
             ) : (
               filteredRecords.map((r) => (
-                <tr key={r.id} className="hover:bg-brand-bg/30 transition-all group">
+                <tr key={r.id} className="hover:bg-brand-bg/20 transition-colors group">
+                  <td className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-tight">#{r.id.substring(0, 8)}</td>
+                  <td className="p-8 text-[10px] font-bold text-foreground">{new Date(r.createdAt).toLocaleString()}</td>
+                  <td className="p-8 text-[10px] font-black text-orange-500 uppercase tracking-widest">{r.soldBy || 'System'}</td>
                   <td className="p-8">
-                     <div className="font-mono text-[10px] font-bold text-orange-500 bg-orange-500/5 px-2 py-1 rounded inline-block border border-orange-500/10">
-                        #{r.id.slice(-6).toUpperCase()}
-                     </div>
-                  </td>
-                  <td className="p-8 text-[11px] text-slate-400 font-bold">
-                    {new Date(r.createdAt).toLocaleDateString()} <br/>
-                    <span className="text-[10px] opacity-60 font-medium">{new Date(r.createdAt).toLocaleTimeString()}</span>
-                  </td>
-                  <td className="p-8 text-sm font-bold text-foreground uppercase tracking-tight">
-                    {r.customer?.name || 'Walk-in'}
-                  </td>
-                  <td className="p-8 font-black text-foreground">{currency}{(r.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                  <td className="p-8">
-                     <span className="px-3 py-1 bg-brand-bg rounded text-[10px] font-black text-slate-500 border border-border-subtle uppercase tracking-tighter">
-                        {r.paymentMethod}
+                     <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${r.debtorName ? 'bg-orange-500/10 text-orange-500' : r.paymentMethod === 'free' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-500/10 text-slate-500'}`}>
+                        {r.debtorName ? 'Credit' : r.paymentMethod === 'free' ? 'Free' : 'Standard'}
                      </span>
                   </td>
+                  <td className="p-8 text-[10px] font-black text-foreground">{currency}{(r.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                  <td className="p-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{r.paymentMethod}</td>
                   <td className="p-8 text-right">
                      <button 
                        onClick={() => setSelectedSale(r)}
@@ -216,76 +209,108 @@ export default function SalesRecords() {
                       <h4 className="text-xl font-black text-foreground uppercase tracking-tight">Awards Centre</h4>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Transaction Record</p>
                    </div>
-                   
-                   <div className="space-y-4 pt-4 border-t border-dashed border-border-subtle">
-                      <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                         <span>#{selectedSale.id.slice(-8).toUpperCase()}</span>
-                         <span>{new Date(selectedSale.createdAt).toLocaleString()}</span>
-                      </div>
-                      <div className="space-y-3">
-                         {selectedSale.items.map((item, idx) => (
-                            <div key={idx} className="flex justify-between items-center">
-                               <div>
-                                  <p className="text-xs font-black text-foreground uppercase tracking-tight">{item.variant.product.name}</p>
-                                  <p className="text-[9px] text-slate-400 font-bold uppercase">{item.variant.size} • {item.variant.color} (x{item.quantity})</p>
-                               </div>
-                               <p className="text-xs font-black text-foreground">{currency}{((item.price * item.quantity) / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                                  <div className="space-y-4 pt-4 border-t border-dashed border-border-subtle">
+                       <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                          <span>#{selectedSale.id.slice(-8).toUpperCase()}</span>
+                          <span>{new Date(selectedSale.createdAt).toLocaleString()}</span>
+                       </div>
+                       
+                       {/* Accountability Section */}
+                       <div className="bg-brand-bg/40 p-4 rounded-xl border border-border-subtle/30 space-y-2">
+                          <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                             <span className="text-slate-400">Processed By</span>
+                             <span className="text-orange-500">{selectedSale.soldBy || 'System'}</span>
+                          </div>
+                          {selectedSale.debtorName && (
+                            <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                               <span className="text-slate-400">Debtor</span>
+                               <span className="text-foreground">{selectedSale.debtorName}</span>
                             </div>
-                         ))}
-                      </div>
-                   </div>
+                          )}
+                          {selectedSale.authorizer && (
+                            <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                               <span className="text-slate-400">Authorizer</span>
+                               <span className="text-emerald-500">{selectedSale.authorizer}</span>
+                            </div>
+                          )}
+                       </div>
 
-                   <div className="pt-6 border-t border-dashed border-border-subtle space-y-2">
-                      <div className="flex justify-between text-xl font-black text-foreground">
-                         <span>TOTAL</span>
-                         <span>{currency}{(selectedSale.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                      </div>
-                      <p className="text-[9px] font-bold text-slate-400 text-right uppercase tracking-widest italic">Method: {selectedSale.paymentMethod}</p>
-                   </div>
-                </div>
-                <div className="p-6 bg-brand-bg/30 flex gap-4">
-                   <button 
-                     onClick={() => window.print()}
-                     className="flex-1 bg-foreground text-brand-bg font-black py-4 rounded-xl text-[10px] uppercase tracking-widest hover:bg-orange-500 transition-all flex items-center justify-center gap-2"
-                   >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                      Print Receipt
-                   </button>
-                </div>
-             </motion.div>
+                       <div className="space-y-3">
+                          {selectedSale.items.map((item, idx) => (
+                             <div key={idx} className="flex justify-between items-center">
+                                <div>
+                                   <p className="text-xs font-black text-foreground uppercase tracking-tight">{item.variant.product.name}</p>
+                                   <p className="text-[9px] text-slate-400 font-bold uppercase">{item.variant.size} • {item.variant.color} (x{item.quantity})</p>
+                                </div>
+                                <p className="text-xs font-black text-foreground">{currency}{((item.price * item.quantity) / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                             </div>
+                          ))}
+                       </div>
+                    </div>
 
-             {/* HIDDEN THERMAL PRINT VIEW */}
-             <div className="hidden print:block print:fixed print:inset-0 print:bg-white print:p-0 print:m-0" id="thermal-receipt">
-                <style dangerouslySetInnerHTML={{ __html: `
-                  @media print {
-                    body * { visibility: hidden !important; }
-                    #thermal-receipt, #thermal-receipt * { visibility: visible !important; }
-                    #thermal-receipt { 
-                      position: absolute !important; 
-                      left: 0 !important; 
-                      top: 0 !important; 
-                      width: 80mm !important; 
-                      padding: 5mm !important;
-                      font-family: 'Courier New', Courier, monospace !important;
-                      color: black !important;
-                      background: white !important;
-                    }
-                    @page { size: 80mm auto; margin: 0; }
-                  }
-                `}} />
-                <div className="text-center space-y-1 mb-4 border-b border-black pb-4">
-                   <h2 className="text-xl font-bold uppercase">Awards Centre</h2>
-                   <p className="text-[10px]">Accra, Ghana</p>
-                   <p className="text-[10px]">Official Sales Receipt</p>
-                </div>
-                
-                <div className="text-[10px] space-y-1 mb-4">
-                   <div className="flex justify-between">
-                      <span>REF: {selectedSale.id.slice(-8).toUpperCase()}</span>
-                      <span>{new Date(selectedSale.createdAt).toLocaleDateString()}</span>
-                   </div>
-                   <p>CUSTOMER: {selectedSale.customer?.name || 'WALK-IN'}</p>
-                </div>
+                    <div className="pt-6 border-t border-dashed border-border-subtle space-y-2">
+                       <div className="flex justify-between text-xl font-black text-foreground">
+                          <span>TOTAL</span>
+                          <span>{currency}{(selectedSale.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                       </div>
+                       <div className="flex justify-between items-center">
+                          <span className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest ${selectedSale.debtorName ? 'bg-orange-500 text-white' : selectedSale.paymentMethod === 'free' ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-300'}`}>
+                             {selectedSale.debtorName ? 'Credit Sale' : selectedSale.paymentMethod === 'free' ? 'Free Items' : 'Standard Sale'}
+                          </span>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic">Method: {selectedSale.paymentMethod}</p>
+                       </div>
+                    </div>
+                 </div>
+                 <div className="p-6 bg-brand-bg/30 flex gap-4">
+                    <button 
+                      onClick={() => window.print()}
+                      className="flex-1 bg-foreground text-brand-bg font-black py-4 rounded-xl text-[10px] uppercase tracking-widest hover:bg-orange-500 transition-all flex items-center justify-center gap-2"
+                    >
+                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                       Print Receipt
+                    </button>
+                 </div>
+              </motion.div>
+
+              {/* HIDDEN THERMAL PRINT VIEW */}
+              <div className="hidden print:block print:fixed print:inset-0 print:bg-white print:p-0 print:m-0" id="thermal-receipt">
+                 <style dangerouslySetInnerHTML={{ __html: `
+                   @media print {
+                     body * { visibility: hidden !important; }
+                     #thermal-receipt, #thermal-receipt * { visibility: visible !important; }
+                     #thermal-receipt { 
+                       position: absolute !important; 
+                       left: 0 !important; 
+                       top: 0 !important; 
+                       width: 80mm !important; 
+                       padding: 5mm !important;
+                       font-family: 'Courier New', Courier, monospace !important;
+                       color: black !important;
+                       background: white !important;
+                       line-height: 1.2 !important;
+                     }
+                     @page { size: 80mm auto; margin: 0; }
+                   }
+                 `}} />
+                 <div className="text-center space-y-1 mb-4 border-b border-black pb-4">
+                    <h2 className="text-xl font-bold uppercase">Awards Centre</h2>
+                    <p className="text-[10px]">Accra, Ghana</p>
+                    <p className="text-[10px]">Official Sales Receipt</p>
+                 </div>
+                 
+                 <div className="text-[10px] space-y-1 mb-4">
+                    <div className="flex justify-between">
+                       <span>REF: {selectedSale.id.slice(-8).toUpperCase()}</span>
+                       <span>{new Date(selectedSale.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                       <span>STAFF: {(selectedSale.soldBy || 'SYSTEM').toUpperCase()}</span>
+                       <span>TYPE: {(selectedSale.debtorName ? 'CREDIT' : selectedSale.paymentMethod === 'free' ? 'FREE' : 'STANDARD')}</span>
+                    </div>
+                    <p>CUSTOMER: {selectedSale.customer?.name || 'WALK-IN'}</p>
+                    {selectedSale.debtorName && <p className="font-bold">DEBTOR: {selectedSale.debtorName.toUpperCase()}</p>}
+                    {selectedSale.authorizer && <p className="font-bold">AUTH BY: {selectedSale.authorizer.toUpperCase()}</p>}
+                 </div>
 
                 <div className="border-b border-dashed border-black mb-2" />
                 <div className="space-y-2 text-[10px] mb-4">
