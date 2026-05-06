@@ -99,7 +99,12 @@ export default function SystemSetup() {
 
   const handleSave = () => {
     setIsSaving(true);
-    localStorage.setItem('ac_settings', JSON.stringify(settings));
+    const finalSettings = {
+      ...settings,
+      exchangeRate: settings.currency === 'GH₵' ? 1 : settings.exchangeRate
+    };
+    setSettings(finalSettings);
+    localStorage.setItem('ac_settings', JSON.stringify(finalSettings));
     setTimeout(() => {
       setIsSaving(false);
       alert('Settings saved successfully!');
@@ -249,17 +254,19 @@ export default function SystemSetup() {
                       </div>
                     </div>
                  </div>
-                 <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Exchange Rate (vs GHS)</label>
-                    <input 
-                      type="number" 
-                      value={settings.exchangeRate || 1}
-                      onChange={(e) => setSettings({...settings, exchangeRate: parseFloat(e.target.value) || 1})}
-                      placeholder="e.g. 15.0"
-                      className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
-                    />
-                    <p className="text-[9px] text-slate-400 mt-1">Example: If 1 USD = 15 GHS, enter 15</p>
-                 </div>
+                 {settings.currency !== 'GH₵' && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Exchange Rate (vs GHS)</label>
+                        <input 
+                          type="number" 
+                          value={settings.exchangeRate || 1}
+                          onChange={(e) => setSettings({...settings, exchangeRate: parseFloat(e.target.value) || 1})}
+                          placeholder="e.g. 15.0"
+                          className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
+                        />
+                        <p className="text-[9px] text-slate-400 mt-1">Example: If 1 USD = 15 GHS, enter 15</p>
+                    </div>
+                 )}
                </div>
                <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Store Address</label>
