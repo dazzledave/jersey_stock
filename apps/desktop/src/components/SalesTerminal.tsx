@@ -50,6 +50,10 @@ export default function SalesTerminal() {
   const [debtorName, setDebtorName] = useState('');
   const [debtorPhone, setDebtorPhone] = useState('');
   const [authorizer, setAuthorizer] = useState('');
+  // Multi-Payment States
+  const [showMultiPayment, setShowMultiPayment] = useState(false);
+  const [splitPayments, setSplitPayments] = useState<{method: string, amount: number}[]>([]);
+  const [showReceipt, setShowReceipt] = useState<any>(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -138,7 +142,21 @@ export default function SalesTerminal() {
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
+    
+    // Validation for Credit/Free
+    if (saleType === 'Credit' && !debtorName) {
+      alert("Please enter a Debtor Name for credit sales.");
+      return;
+    }
+    if (saleType === 'Free' && !authorizer) {
+      alert("Please enter the name of the Admin who authorized this free sale.");
+      return;
+    }
+
     setIsProcessing(true);
+
+    const finalPaymentMethod = saleType === 'Free' ? 'free' : (saleType === 'Credit' ? 'credit' : paymentMethod.toLowerCase());
+    const timestamp = new Date();
 
     try {
       const response = await fetch('http://localhost:4000/api/sales', {
@@ -146,12 +164,13 @@ export default function SalesTerminal() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           totalAmount: total,
-          paymentMethod: saleType === 'Free' ? 'free' : paymentMethod,
+          paymentMethod: finalPaymentMethod,
           userId: user?.id,
           soldBy: user?.username,
           debtorName: saleType === 'Credit' ? debtorName : null,
           debtorPhone: saleType === 'Credit' ? debtorPhone : null,
           authorizer: saleType === 'Free' ? authorizer : null,
+          payments: splitPayments.length > 0 ? splitPayments : [{ method: finalPaymentMethod, amount: total }],
           items: cart.map(item => ({ 
             variantId: item.variantId,
             quantity: item.quantity,
@@ -161,13 +180,30 @@ export default function SalesTerminal() {
       });
 
       if (response.ok) {
+        const saleData = await response.json();
+        // Set receipt data
+        setShowReceipt({
+          id: saleData.id || 'N/A',
+          date: timestamp.toLocaleDateString(),
+          time: timestamp.toLocaleTimeString(),
+          items: [...cart],
+          total: saleType === 'Free' ? 0 : total,
+          paymentMethod: finalPaymentMethod,
+          debtorName,
+          authorizer,
+          currency,
+          exchangeRate,
+          soldBy: user?.username
+        });
+
         setCart([]);
         setDebtorName('');
         setDebtorPhone('');
         setAuthorizer('');
         setSaleType('Standard');
+        setSplitPayments([]);
+        setShowMultiPayment(false);
         fetchProducts(); 
-        alert('Sale completed successfully!');
       } else {
         const error = await response.json();
         alert(`Error: ${error.error || 'Checkout failed.'}`);
@@ -398,6 +434,17 @@ export default function SalesTerminal() {
           </div>
 
           <button 
+            onClick={() => {
+              setSplitPayments([{ method: paymentMethod, amount: total }]);
+              setShowMultiPayment(true);
+            }}
+            disabled={cart.length === 0 || isProcessing}
+            className="w-full bg-brand-bg border border-border-subtle text-slate-400 font-black py-2.5 rounded-lg text-[9px] uppercase tracking-widest hover:text-orange-500 transition-all mb-2"
+          >
+            Split / Partial Payment
+          </button>
+
+          <button 
             onClick={handleCheckout}
             disabled={cart.length === 0 || isProcessing}
             className={`w-full font-black py-4 rounded-lg uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-2 ${cart.length > 0 && !isProcessing ? 'bg-emerald-600 text-white shadow-lg active:scale-95' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'}`}
@@ -411,6 +458,96 @@ export default function SalesTerminal() {
           </button>
         </div>
       </div>
+
+      {/* Multi-Payment Modal */}
+      <AnimatePresence>
+        {showMultiPayment && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/70 backdrop-blur-md">
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.9 }}
+               animate={{ opacity: 1, scale: 1 }}
+               exit={{ opacity: 0, scale: 0.9 }}
+               className="bg-surface w-full max-w-lg rounded-2xl border border-border-subtle shadow-2xl overflow-hidden"
+             >
+                <div className="p-6 border-b border-border-subtle bg-brand-bg/30 flex justify-between items-center">
+                   <div>
+                      <h3 className="text-sm font-black uppercase tracking-tight">Split Payment Setup</h3>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Distribute total across multiple methods</p>
+                   </div>
+                   <button onClick={() => setShowMultiPayment(false)} className="text-slate-400 hover:text-foreground">✕</button>
+                </div>
+                
+                <div className="p-8 space-y-6">
+                   <div className="flex justify-between items-end">
+                      <div>
+                         <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Total to Pay</div>
+                         <div className="text-2xl font-black text-foreground">{currency}{total.toFixed(2)}</div>
+                      </div>
+                      <div className="text-right">
+                         <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Remaining</div>
+                         <div className={`text-xl font-black ${total - splitPayments.reduce((acc, p) => acc + p.amount, 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {currency}{(total - splitPayments.reduce((acc, p) => acc + p.amount, 0)).toFixed(2)}
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="space-y-3">
+                      {['Cash', 'MoMo', 'Card', 'Credit'].map((method) => {
+                         const current = splitPayments.find(p => p.method === method);
+                         return (
+                            <div key={method} className="flex items-center gap-4 bg-brand-bg/40 p-4 rounded-xl border border-border-subtle group">
+                               <div className="w-10 h-10 rounded-lg bg-surface border border-border-subtle flex items-center justify-center font-black text-[10px] uppercase text-slate-400 group-hover:text-orange-500 transition-colors">
+                                  {method.substring(0, 2)}
+                               </div>
+                               <div className="flex-1">
+                                  <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">{method} Amount</div>
+                                  <div className="relative">
+                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{currency}</span>
+                                     <input 
+                                       type="number" 
+                                       placeholder="0.00"
+                                       value={current?.amount || ''}
+                                       onChange={(e) => {
+                                          const val = parseFloat(e.target.value) || 0;
+                                          setSplitPayments(prev => {
+                                             const existing = prev.filter(p => p.method !== method);
+                                             return [...existing, { method, amount: val }];
+                                          });
+                                       }}
+                                       className="w-full bg-surface p-2.5 pl-8 rounded-lg border border-border-subtle text-sm font-bold text-foreground outline-none focus:border-orange-500 transition-all" 
+                                     />
+                                  </div>
+                               </div>
+                               <button 
+                                 onClick={() => {
+                                    const currentAllocated = splitPayments.reduce((acc, p) => p.method !== method ? acc + p.amount : acc, 0);
+                                    const remaining = total - currentAllocated;
+                                    setSplitPayments(prev => {
+                                       const existing = prev.filter(p => p.method !== method);
+                                       return [...existing, { method, amount: Math.max(0, remaining) }];
+                                    });
+                                 }}
+                                 className="h-10 px-4 bg-orange-500 text-white text-[8px] font-black uppercase tracking-widest rounded-lg shadow-lg hover:bg-orange-600 transition-all"
+                               >
+                                  All
+                               </button>
+                            </div>
+                         );
+                      })}
+                   </div>
+
+                   <button 
+                     onClick={handleCheckout}
+                     disabled={Math.abs(total - splitPayments.reduce((acc, p) => acc + p.amount, 0)) > 0.01 || isProcessing}
+                     className={`w-full font-black py-4 rounded-xl uppercase tracking-[0.2em] text-xs shadow-xl transition-all ${Math.abs(total - splitPayments.reduce((acc, p) => acc + p.amount, 0)) <= 0.01 ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'}`}
+                   >
+                      {isProcessing ? 'Wait...' : 'Confirm Multi-Payment Sale'}
+                   </button>
+                </div>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Variant Selector */}
       <AnimatePresence>
@@ -459,8 +596,93 @@ export default function SalesTerminal() {
                   );
                 })}
               </div>
-              <div className="p-4 bg-brand-bg/30 text-center border-t border-border-subtle">
-                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Minimalist Uniform Logic Enabled</p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Digital Receipt Modal */}
+      <AnimatePresence>
+        {showReceipt && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
+            >
+              <div className="p-8 space-y-6">
+                <div className="text-center space-y-2">
+                  <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500 mx-auto mb-4">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Sale Successful</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Transaction Complete</p>
+                </div>
+
+                <div className="space-y-4 py-6 border-y border-dashed border-slate-200 dark:border-slate-800">
+                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    <span>Receipt ID</span>
+                    <span className="text-slate-900 dark:text-white">{showReceipt.id.substring(0, 8)}...</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    <span>Date / Time</span>
+                    <span className="text-slate-900 dark:text-white">{showReceipt.date} • {showReceipt.time}</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    <span>Payment Method</span>
+                    <span className={`px-2 py-0.5 rounded ${
+                      showReceipt.paymentMethod === 'credit' ? 'bg-amber-500 text-white' : 
+                      showReceipt.paymentMethod === 'free' ? 'bg-rose-500 text-white' : 'text-slate-900 dark:text-white'
+                    }`}>
+                      {showReceipt.paymentMethod.toUpperCase()}
+                    </span>
+                  </div>
+                  {showReceipt.debtorName && (
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      <span>Debtor</span>
+                      <span className="text-amber-500">{showReceipt.debtorName}</span>
+                    </div>
+                  )}
+                  {showReceipt.authorizer && (
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      <span>Authorized By</span>
+                      <span className="text-rose-500">{showReceipt.authorizer}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    <span>Cashier</span>
+                    <span className="text-slate-900 dark:text-white">{showReceipt.soldBy}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
+                  {showReceipt.items.map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between text-[10px] font-medium">
+                      <span className="text-slate-500 truncate pr-4">{item.quantity}x {item.name} ({item.size})</span>
+                      <span className="text-slate-900 dark:text-white shrink-0">
+                        {showReceipt.currency}{((item.price * item.quantity) / (showReceipt.currency === 'GH₵' ? 1 : (showReceipt.exchangeRate || 1))).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-between items-center pt-4">
+                  <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">Total Amount</span>
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">
+                    {showReceipt.currency}{(showReceipt.total / (showReceipt.currency === 'GH₵' ? 1 : (showReceipt.exchangeRate || 1))).toFixed(2)}
+                  </span>
+                </div>
+
+                <button 
+                  onClick={() => setShowReceipt(null)}
+                  className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black py-4 rounded-xl uppercase tracking-[0.2em] text-xs shadow-xl active:scale-95 transition-all"
+                >
+                  New Transaction
+                </button>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-3 text-center">
+                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Awards Centre POS • Official Digital Record</p>
               </div>
             </motion.div>
           </div>

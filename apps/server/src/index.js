@@ -40,6 +40,8 @@ const syncRoutes = require('./routes/syncRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
+const customerRoutes = require('./routes/customerRoutes');
 
 app.use('/api/products', productRoutes);
 app.use('/api/inventory', inventoryRoutes);
@@ -48,6 +50,8 @@ app.use('/api/sync', syncRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/customers', customerRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

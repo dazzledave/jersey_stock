@@ -4,11 +4,11 @@ const cloudSyncService = require('./cloudSyncService');
 
 const salesService = {
   async createSale(data) {
-    const { 
-      totalAmount, paymentMethod, items, customerId, 
-      userId, soldBy, debtorName, debtorPhone, authorizer 
+    const {
+      totalAmount, paymentMethod, items, customerId,
+      userId, soldBy, debtorName, debtorPhone, authorizer, payments
     } = data;
-    
+
     const sale = await prisma.$transaction(async (tx) => {
       // 1. Verify all items have enough stock
       for (const item of items) {
@@ -32,6 +32,7 @@ const salesService = {
           debtorName: debtorName || null,
           debtorPhone: debtorPhone || null,
           authorizer: authorizer || null,
+          payments: payments || null,
           items: {
             create: items.map(item => ({
               variantId: item.variantId,
@@ -69,7 +70,11 @@ const salesService = {
 
     // Queue for Cloud Sync
     cloudSyncService.queueSync('Sale', sale.id).catch(console.error);
-    
+    for (const item of sale.items) {
+      cloudSyncService.queueSync('SaleItem', item.id).catch(console.error);
+      cloudSyncService.queueSync('Inventory', item.variantId).catch(console.error);
+    }
+
     return sale;
   },
 

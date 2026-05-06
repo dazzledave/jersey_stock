@@ -93,13 +93,14 @@ model Customer {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String
-  role      String   @default("STAFF") // "ADMIN" or "STAFF"
-  sales     Sale[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id              String   @id @default(cuid())
+  username        String   @unique
+  password        String
+  visiblePassword String?  @map("visible_password")
+  role            String   @default("STAFF") // "ADMIN" or "STAFF"
+  sales           Sale[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
 
   @@map("users")
 }
@@ -137,6 +138,7 @@ model Sale {
   customerId    String?       @map("customer_id")
   customer      Customer?     @relation(fields: [customerId], references: [id])
   items         SaleItem[]
+  payments      Json?         // Stores multi-payment details: [{ method, amount }]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @default(now()) @updatedAt
 

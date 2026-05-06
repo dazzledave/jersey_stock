@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from './AuthContext';
 
 interface Variant {
   size: string;
@@ -17,7 +18,9 @@ interface Category {
 }
 
 export default function ProductForm() {
+  const { isAdmin } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
+  // ... existing states ...
   const [formData, setFormData] = useState({
     name: '',
     brand: '',
@@ -35,6 +38,20 @@ export default function ProductForm() {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  if (!isAdmin) {
+    return (
+      <div className="h-[60vh] flex flex-col items-center justify-center space-y-6 text-center">
+        <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-500">
+          <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-foreground tracking-tight">Restricted Access</h2>
+          <p className="text-slate-400 font-medium">Only administrators can add or manage catalog products.</p>
+        </div>
+      </div>
+    );
+  }
 
   const fetchCategories = () => {
     fetch('http://localhost:4000/api/products/categories')
@@ -75,7 +92,8 @@ export default function ProductForm() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 1.5 * 1024 * 1024) {
-        setStatusMessage({ text: 'Image is too large (Limit: 1.5MB)', type: 'error' });
+        setStatusMessage({ text: 'IMAGE TOO LARGE: 1.5MB limit reached. Please resize and try again.', type: 'error' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
       const reader = new FileReader();
@@ -94,7 +112,8 @@ export default function ProductForm() {
 
   const handlePublish = async () => {
     if (!formData.name || !formData.basePrice || !formData.categoryId) {
-      setStatusMessage({ text: 'Please fill in name, price and category.', type: 'error' });
+      setStatusMessage({ text: 'MISSING FIELDS: Please provide a name, price, and category before publishing.', type: 'error' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -126,24 +145,59 @@ export default function ProductForm() {
       });
 
       if (response.ok) {
-        setStatusMessage({ text: 'Product published successfully!', type: 'success' });
+        setStatusMessage({ text: 'SUCCESS: Product has been added to the master catalog.', type: 'success' });
         setFormData({ name: '', brand: '', basePrice: '', imageUrl: '', categoryId: categories[0]?.id || '' });
         setVariants([]);
         if (fileInputRef.current) fileInputRef.current.value = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         const error = await response.json();
-        setStatusMessage({ text: `Failed: ${error.error}`, type: 'error' });
+        setStatusMessage({ text: `PUBLISH FAILED: ${error.error}`, type: 'error' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (err) {
-      setStatusMessage({ text: 'Connection error. Is the server running?', type: 'error' });
+      setStatusMessage({ text: 'CONNECTION ERROR: Could not reach the server. Please check your connection.', type: 'error' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="space-y-10 bg-brand-bg/50">
-      <div className="flex justify-between items-end">
+    <div className="space-y-8 bg-brand-bg/50 pb-20">
+      {/* Universal Status Banner */}
+      <AnimatePresence>
+        {statusMessage.text && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`sticky top-0 z-50 p-4 shadow-2xl flex items-center justify-between gap-4 border-b ${
+              statusMessage.type === 'error' ? 'bg-rose-600 border-rose-500' : 
+              statusMessage.type === 'success' ? 'bg-emerald-600 border-emerald-500' : 'bg-orange-600 border-orange-500'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                {statusMessage.type === 'error' ? (
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                ) : (
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                )}
+              </div>
+              <p className="text-sm font-black text-white uppercase tracking-wider">{statusMessage.text}</p>
+            </div>
+            <button 
+              onClick={() => setStatusMessage({ text: '', type: '' })}
+              className="text-white/60 hover:text-white transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex justify-between items-end px-1">
         <div>
           <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

@@ -171,7 +171,9 @@ export default function SalesRecords() {
                      </span>
                   </td>
                   <td className="p-8 text-[10px] font-black text-foreground">{currency}{(r.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                  <td className="p-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{r.paymentMethod}</td>
+                  <td className="p-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    {r.debtorName ? 'Credit' : r.paymentMethod === 'free' ? 'Free' : r.paymentMethod}
+                  </td>
                   <td className="p-8 text-right">
                      <button 
                        onClick={() => setSelectedSale(r)}

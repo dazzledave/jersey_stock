@@ -15,6 +15,7 @@ router.get('/', async (req, res) => {
         id: true,
         username: true,
         role: true,
+        visiblePassword: true,
         createdAt: true
       }
     });
@@ -32,10 +33,32 @@ router.post('/', async (req, res) => {
       data: {
         username,
         password: hashedPassword,
+        visiblePassword: password, // Store plain for admin oversight
         role: role || 'STAFF'
       }
     });
     res.status(201).json(user);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Self-service profile update
+router.put('/profile', async (req, res) => {
+  const { userId, username, password } = req.body;
+  try {
+    const data = {};
+    if (username) data.username = username;
+    if (password) {
+      data.password = await bcrypt.hash(password, 10);
+      data.visiblePassword = password; // Keep admin oversight in sync
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data
+    });
+    res.json({ message: 'Profile updated successfully', user: { id: user.id, username: user.username, role: user.role } });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

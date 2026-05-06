@@ -22,8 +22,14 @@ function startServer() {
   logStream.write(`Resources Path: ${process.resourcesPath}\n`);
 
   const dbPath = path.join(process.resourcesPath, 'app.asar.unpacked/server_dist/dev.db');
+  const internalNodePath = path.join(process.resourcesPath, 'app.asar.unpacked/server_dist/node.exe');
   
-  serverProcess = spawn('node', [serverPath], {
+  // Use bundled node.exe in production if available, fallback to system node in dev
+  const nodeExe = (isDev || !fs.existsSync(internalNodePath)) ? 'node' : internalNodePath;
+
+  logStream.write(`Using node engine: ${nodeExe}\n`);
+
+  serverProcess = spawn(nodeExe, [serverPath], {
     env: { 
       ...process.env, 
       PORT: 4000, 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from './AuthContext';
 
 interface Inventory {
   quantity: number;
@@ -29,7 +30,9 @@ interface Product {
 }
 
 export default function InventoryStock() {
+  const { isAdmin } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
+  // ... existing states ...
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [currency, setCurrency] = useState('GH₵');
@@ -74,6 +77,7 @@ export default function InventoryStock() {
   };
 
   const updateStock = async (variantId: string, newQuantity: number) => {
+    if (!isAdmin) return;
     try {
       const res = await fetch(`http://localhost:4000/api/inventory/${variantId}`, {
         method: 'PUT',
@@ -92,7 +96,7 @@ export default function InventoryStock() {
   };
 
   const handlePriceUpdate = async (productId: string) => {
-    if (!editingPrice || editingPrice.id !== productId) return;
+    if (!isAdmin || !editingPrice || editingPrice.id !== productId) return;
     
     const newPrice = parseFloat(editingPrice.price);
     if (isNaN(newPrice)) return;
@@ -113,7 +117,7 @@ export default function InventoryStock() {
   };
 
   const handleFullUpdate = async () => {
-    if (!editingProduct) return;
+    if (!isAdmin || !editingProduct) return;
     try {
       const res = await fetch(`http://localhost:4000/api/products/${editingProduct.id}`, {
         method: 'PUT',
@@ -148,6 +152,7 @@ export default function InventoryStock() {
   };
 
   const handleDeleteProduct = async (productId: string, productName: string) => {
+    if (!isAdmin) return;
     if (!window.confirm(`Are you sure you want to permanently delete "${productName}"?`)) return;
 
     try {
@@ -176,9 +181,17 @@ export default function InventoryStock() {
     <div className="space-y-10 pb-20">
       <div className="flex justify-between items-end">
         <div>
-          <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1">Stock Control</div>
-          <h2 className="text-3xl font-bold text-foreground">Inventory Management</h2>
-          <p className="text-slate-400 text-sm font-medium">Track and adjust stock levels and pricing for your catalog.</p>
+          <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            Stock Control
+          </div>
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-bold text-foreground tracking-tight">Inventory Management</h2>
+            {!isAdmin && (
+              <span className="px-3 py-1 rounded-full bg-slate-500/10 text-slate-400 text-[8px] font-black uppercase tracking-[0.2em] border border-slate-500/20">View Only</span>
+            )}
+          </div>
+          <p className="text-slate-400 text-sm font-medium mt-1">Track and adjust stock levels and pricing for your catalog.</p>
         </div>
         <div className="flex gap-3">
           <div className="relative group">
@@ -242,27 +255,28 @@ export default function InventoryStock() {
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-4 bg-surface p-2 px-4 rounded-xl border border-border-subtle">
-                      <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Retail Price:</div>
-                      <div className="text-lg font-black text-foreground">{currency}{(product.basePrice / (exchangeRate || 1)).toFixed(2)}</div>
+                                {isAdmin && (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-4 bg-surface p-2 px-4 rounded-xl border border-border-subtle">
+                        <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Retail Price:</div>
+                        <div className="text-lg font-black text-foreground">{currency}{(product.basePrice / (exchangeRate || 1)).toFixed(2)}</div>
+                        <button 
+                          onClick={() => setEditingProduct(product)}
+                          className="p-2 rounded-lg bg-brand-bg text-slate-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all"
+                          title="Edit Details"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        </button>
+                      </div>
+                      
                       <button 
-                        onClick={() => setEditingProduct(product)}
-                        className="p-2 rounded-lg bg-brand-bg text-slate-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all"
-                        title="Edit Details"
+                        onClick={() => handleDeleteProduct(product.id, product.name)}
+                        className="p-3 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                       </button>
                     </div>
-                    
-                    <button 
-                      onClick={() => handleDeleteProduct(product.id, product.name)}
-                      className="p-3 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    </button>
-                  </div>
+                   )}
                </div>
                
                <div className="p-0">
@@ -288,11 +302,15 @@ export default function InventoryStock() {
                              </span>
                           </td>
                           <td className="px-8 py-4 text-right">
-                             <div className="flex items-center justify-end gap-2">
-                                <button onClick={() => updateStock(v.id, (v.inventory?.quantity || 0) - 1)} className="w-8 h-8 rounded bg-brand-bg text-slate-500 flex items-center justify-center font-bold border border-border-subtle">-</button>
-                                <span className="w-8 text-center text-xs font-bold text-foreground">{v.inventory?.quantity || 0}</span>
-                                <button onClick={() => updateStock(v.id, (v.inventory?.quantity || 0) + 1)} className="w-8 h-8 rounded bg-foreground text-brand-bg flex items-center justify-center font-bold border border-border-subtle">+</button>
-                             </div>
+                             {isAdmin ? (
+                              <div className="flex items-center justify-end gap-2">
+                                 <button onClick={() => updateStock(v.id, (v.inventory?.quantity || 0) - 1)} className="w-8 h-8 rounded bg-brand-bg text-slate-500 flex items-center justify-center font-bold border border-border-subtle">-</button>
+                                 <span className="w-8 text-center text-xs font-bold text-foreground">{v.inventory?.quantity || 0}</span>
+                                 <button onClick={() => updateStock(v.id, (v.inventory?.quantity || 0) + 1)} className="w-8 h-8 rounded bg-foreground text-brand-bg flex items-center justify-center font-bold border border-border-subtle">+</button>
+                              </div>
+                             ) : (
+                               <span className="text-xs font-bold text-foreground">{v.inventory?.quantity || 0}</span>
+                             )}
                           </td>
                         </tr>
                       ))}

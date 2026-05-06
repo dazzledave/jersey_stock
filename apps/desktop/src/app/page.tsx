@@ -41,6 +41,20 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    // Focus Fixer: Ensures that clicks always register correctly and text boxes don't get 'stuck'
+    const handleGlobalFocus = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // If clicking on a non-input/non-button area, ensure we don't have a focus trap
+      if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && target.tagName !== 'BUTTON') {
+        // Force a small blur/focus cycle to reset Electron's focus manager if it hangs
+        (document.activeElement as HTMLElement)?.blur();
+      }
+    };
+    window.addEventListener('mousedown', handleGlobalFocus);
+    return () => window.removeEventListener('mousedown', handleGlobalFocus);
+  }, []);
+
   if (setupRequired === null) {
     return (
       <div className="h-screen bg-[#0f172a] flex items-center justify-center">

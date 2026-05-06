@@ -32,6 +32,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
     }
+    
+    // Global Settings Sync
+    fetch('http://localhost:4000/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (Object.keys(data).length > 0) {
+          // Merge with current local settings to avoid losing UI-only keys if any
+          const local = localStorage.getItem('ac_settings');
+          const current = local ? JSON.parse(local) : {};
+          const merged = { ...current, ...data };
+          
+          // Handle types
+          if (data.darkMode !== undefined) merged.darkMode = data.darkMode === 'true';
+          if (data.exchangeRate !== undefined) merged.exchangeRate = parseFloat(data.exchangeRate);
+          
+          localStorage.setItem('ac_settings', JSON.stringify(merged));
+          
+          // Apply theme if dark mode is set
+          if (merged.darkMode) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        }
+      })
+      .catch(err => console.error('Settings sync failed:', err));
+
     setIsLoading(false);
   }, []);
 
