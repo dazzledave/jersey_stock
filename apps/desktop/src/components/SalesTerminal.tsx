@@ -32,17 +32,14 @@ interface CartItem {
   stockAvailable: number;
 }
 
-export default function SalesTerminal() {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [search, setSearch] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState('Cash');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currency, setCurrency] = useState('GH₵');
-  const [exchangeRate, setExchangeRate] = useState(1);
-  
   const [variantSelector, setVariantSelector] = useState<Product | null>(null);
+  
+  // Accountability States
+  const [saleType, setSaleType] = useState('Standard'); // 'Standard', 'Credit', 'Free'
+  const [debtorName, setDebtorName] = useState('');
+  const [debtorPhone, setDebtorPhone] = useState('');
+  const [authorizer, setAuthorizer] = useState('');
+  const { user } = useAuth();
 
   useEffect(() => {
     const saved = localStorage.getItem('ac_settings');
@@ -138,17 +135,26 @@ export default function SalesTerminal() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           totalAmount: total,
-          paymentMethod,
+          paymentMethod: saleType === 'Free' ? 'free' : paymentMethod,
+          userId: user?.id,
+          soldBy: user?.username,
+          debtorName: saleType === 'Credit' ? debtorName : null,
+          debtorPhone: saleType === 'Credit' ? debtorPhone : null,
+          authorizer: saleType === 'Free' ? authorizer : null,
           items: cart.map(item => ({ 
             variantId: item.variantId,
             quantity: item.quantity,
-            price: item.price
+            price: saleType === 'Free' ? 0 : item.price
           }))
         })
       });
 
       if (response.ok) {
         setCart([]);
+        setDebtorName('');
+        setDebtorPhone('');
+        setAuthorizer('');
+        setSaleType('Standard');
         fetchProducts(); 
         alert('Sale completed successfully!');
       } else {
@@ -304,7 +310,63 @@ export default function SalesTerminal() {
         <div className="border-t border-border-subtle bg-brand-bg/5 p-3 space-y-3 shrink-0">
           <div className="flex justify-between items-center px-1">
             <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Total Amount</div>
-            <div className="text-xl font-black text-foreground">{currency}{(total / (exchangeRate || 1)).toLocaleString()}</div>
+            <div className="text-xl font-black text-foreground">{currency}{(saleType === 'Free' ? 0 : (total / (exchangeRate || 1))).toLocaleString()}</div>
+          </div>
+
+          <div className="space-y-3">
+             <div className="flex bg-surface rounded-xl border border-border-subtle p-1">
+                {['Standard', 'Credit', 'Free'].map((type) => (
+                   <button 
+                     key={type}
+                     onClick={() => setSaleType(type)}
+                     className={`flex-1 py-2 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all ${saleType === type ? 'bg-orange-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                   >
+                     {type}
+                   </button>
+                ))}
+             </div>
+
+             <AnimatePresence mode="wait">
+                {saleType === 'Credit' && (
+                   <motion.div 
+                     initial={{ height: 0, opacity: 0 }}
+                     animate={{ height: 'auto', opacity: 1 }}
+                     exit={{ height: 0, opacity: 0 }}
+                     className="space-y-2 overflow-hidden"
+                   >
+                      <input 
+                        type="text" 
+                        placeholder="Debtor Name"
+                        value={debtorName}
+                        onChange={(e) => setDebtorName(e.target.value)}
+                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500"
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Phone Number"
+                        value={debtorPhone}
+                        onChange={(e) => setDebtorPhone(e.target.value)}
+                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500"
+                      />
+                   </motion.div>
+                )}
+                {saleType === 'Free' && (
+                   <motion.div 
+                     initial={{ height: 0, opacity: 0 }}
+                     animate={{ height: 'auto', opacity: 1 }}
+                     exit={{ height: 0, opacity: 0 }}
+                     className="space-y-2 overflow-hidden"
+                   >
+                      <input 
+                        type="text" 
+                        placeholder="Authorized By (Admin Name)"
+                        value={authorizer}
+                        onChange={(e) => setAuthorizer(e.target.value)}
+                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500"
+                      />
+                   </motion.div>
+                )}
+             </AnimatePresence>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
