@@ -362,6 +362,7 @@ export default function SystemSetup() {
                </div>
             </div>
          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-12 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
            <div className="col-span-4 bg-surface p-10 rounded-xl border border-border-subtle space-y-8 shadow-sm h-fit">

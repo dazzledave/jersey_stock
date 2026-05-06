@@ -106,9 +106,10 @@ model User {
 
 model SyncLog {
   id        String   @id @default(cuid())
-  entity    String   // "Sale", "Product", etc.
-  entityId  String   @map("entity_id")
+  entity    String?  // "Sale", "Product", etc.
+  entityId  String?  @map("entity_id")
   status    String   @default("PENDING") // "PENDING", "SYNCED", "FAILED"
+  message   String?  // For manual sync logs
   error     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -153,13 +154,4 @@ model SaleItem {
   createdAt DateTime       @default(now())
 
   @@map("sale_items")
-}
-
-model SyncLog {
-  id        String   @id @default(cuid())
-  status    String // "SUCCESS", "FAILED"
-  message   String?
-  syncedAt  DateTime @default(now())
-
-  @@map("sync_logs")
 }

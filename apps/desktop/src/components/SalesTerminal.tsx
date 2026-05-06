@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from './AuthContext';
 
 interface Variant {
   id: string;
@@ -32,6 +33,16 @@ interface CartItem {
   stockAvailable: number;
 }
 
+export default function SalesTerminal() {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [search, setSearch] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [currency, setCurrency] = useState('GH₵');
+  const [exchangeRate, setExchangeRate] = useState(1);
+  
   const [variantSelector, setVariantSelector] = useState<Product | null>(null);
   
   // Accountability States
