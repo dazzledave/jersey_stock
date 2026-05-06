@@ -108,7 +108,20 @@ export default function ProductForm() {
         body: JSON.stringify({
           ...formData,
           basePrice: parseFloat(formData.basePrice),
-          variants: variants.map(v => ({ ...v, quantity: parseInt(v.quantity.toString() || '0') }))
+          variants: variants.map(v => {
+            const namePrefix = formData.name.substring(0, 3).toUpperCase();
+            const brandPrefix = formData.brand.substring(0, 2).toUpperCase() || 'NA';
+            const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+            
+            // Auto-generate SKU if empty
+            const finalSku = v.sku.trim() || `AC-${brandPrefix}-${namePrefix}-${v.size.substring(0,1).toUpperCase() || 'X'}-${v.color.substring(0,1).toUpperCase() || 'X'}-${randomSuffix}`;
+            
+            return { 
+              ...v, 
+              sku: finalSku,
+              quantity: parseInt(v.quantity.toString() || '0') 
+            };
+          })
         })
       });
 
