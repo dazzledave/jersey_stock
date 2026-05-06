@@ -214,7 +214,7 @@ export default function SystemSetup() {
 
       {activeSubTab === 'profile' ? (
         <div className="grid grid-cols-2 gap-10">
-         <div className="bg-surface p-10 rounded-xl border border-border-subtle space-y-8 shadow-sm">
+          <div className="bg-surface p-10 rounded-xl border border-border-subtle space-y-8 shadow-sm">
             <div>
                <h3 className="text-xl font-bold text-foreground mb-1">Shop Profile</h3>
                <p className="text-xs text-slate-400 font-medium">Manage your public store information.</p>
@@ -277,10 +277,9 @@ export default function SystemSetup() {
             >
               {isSaving ? 'Saving...' : 'Save Settings'}
             </button>
-         </div>
+          </div>
 
-         <div className="space-y-8">
-            {/* Supabase Sync Card */}
+          <div className="space-y-8">
             <div className="bg-surface p-10 rounded-xl border border-border-subtle space-y-8 shadow-sm">
                <div>
                   <h3 className="text-xl font-bold text-foreground mb-1">Cloud Sync (Supabase)</h3>
@@ -324,7 +323,6 @@ export default function SystemSetup() {
                </div>
             </div>
 
-            {/* Dark Mode Toggle */}
             <div className="bg-surface p-10 rounded-xl border border-border-subtle space-y-6 shadow-sm">
                <div className="flex justify-between items-center">
                   <div>
@@ -361,7 +359,7 @@ export default function SystemSetup() {
                   </button>
                </div>
             </div>
-         </div>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-12 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -376,7 +374,7 @@ export default function SystemSetup() {
                     <input 
                       type="text" 
                       value={newUser.username}
-                      onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                      onChange={(e) => setNewUser(prev => ({...prev, username: e.target.value}))}
                       required
                       className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
                       placeholder="e.g. kojo_sales"
@@ -387,7 +385,7 @@ export default function SystemSetup() {
                     <input 
                       type="password" 
                       value={newUser.password}
-                      onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                      onChange={(e) => setNewUser(prev => ({...prev, password: e.target.value}))}
                       required
                       className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
                       placeholder="••••••••"
@@ -397,7 +395,7 @@ export default function SystemSetup() {
                     <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Assigned Role</label>
                     <select 
                       value={newUser.role}
-                      onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                      onChange={(e) => setNewUser(prev => ({...prev, role: e.target.value}))}
                       className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground appearance-none"
                     >
                        <option value="STAFF">Sales Staff</option>

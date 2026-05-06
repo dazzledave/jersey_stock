@@ -173,7 +173,7 @@ export default function SalesRecords() {
                   <td className="p-8 text-sm font-bold text-foreground uppercase tracking-tight">
                     {r.customer?.name || 'Walk-in'}
                   </td>
-                  <td className="p-8 font-black text-foreground">{currency}{(r.totalAmount / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                  <td className="p-8 font-black text-foreground">{currency}{(r.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                   <td className="p-8">
                      <span className="px-3 py-1 bg-brand-bg rounded text-[10px] font-black text-slate-500 border border-border-subtle uppercase tracking-tighter">
                         {r.paymentMethod}
@@ -238,7 +238,7 @@ export default function SalesRecords() {
                    <div className="pt-6 border-t border-dashed border-border-subtle space-y-2">
                       <div className="flex justify-between text-xl font-black text-foreground">
                          <span>TOTAL</span>
-                         <span>{currency}{(selectedSale.totalAmount / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                         <span>{currency}{(selectedSale.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                       </div>
                       <p className="text-[9px] font-bold text-slate-400 text-right uppercase tracking-widest italic">Method: {selectedSale.paymentMethod}</p>
                    </div>

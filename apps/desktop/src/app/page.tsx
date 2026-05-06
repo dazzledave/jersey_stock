@@ -205,7 +205,7 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="text-sm font-bold text-foreground">{user?.username}</div>
-              <div className="text-[10px] text-orange-500 font-bold uppercase tracking-widest">{user?.role === 'ADMIN' ? 'Master Seller' : 'Point of Sale'}</div>
+              <div className="text-[10px] text-orange-500 font-bold uppercase tracking-widest">{user?.role === 'ADMIN' ? 'Administrator' : 'Staff Member'}</div>
             </div>
             <button 
               onClick={logout}
