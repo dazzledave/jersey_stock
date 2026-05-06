@@ -12,10 +12,16 @@ export default function SystemSetup() {
     supabaseUrl: '',
     supabaseKey: ''
   });
+  const [activeSubTab, setActiveSubTab] = useState('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
+
+  // Staff Management State
+  const [users, setUsers] = useState<any[]>([]);
+  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'STAFF' });
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('ac_settings');
@@ -24,7 +30,54 @@ export default function SystemSetup() {
       setSettings(parsed);
       applyTheme(parsed.darkMode);
     }
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch('http://localhost:4000/api/users');
+      const data = await res.json();
+      setUsers(data);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreatingUser(true);
+    try {
+      const res = await fetch('http://localhost:4000/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser)
+      });
+      if (res.ok) {
+        setNewUser({ username: '', password: '', role: 'STAFF' });
+        fetchUsers();
+        alert('Staff member added successfully!');
+      } else {
+        const data = await res.json();
+        alert('Error: ' + data.error);
+      }
+    } catch (err) {
+      alert('Failed to connect to server.');
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    if (!window.confirm('Delete this user permanently?')) return;
+    try {
+      const res = await fetch(`http://localhost:4000/api/users/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) fetchUsers();
+    } catch (err) {
+      alert('Failed to delete user.');
+    }
+  };
 
   const applyTheme = (isDark: boolean) => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
@@ -61,6 +114,17 @@ export default function SystemSetup() {
 
     setIsSyncing(true);
     try {
+      // 1. Save credentials to server first
+      await fetch('http://localhost:4000/api/sync/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          supabaseUrl: settings.supabaseUrl,
+          supabaseKey: settings.supabaseKey
+        })
+      });
+
+      // 2. Trigger a full manual sync test
       const res = await fetch('http://localhost:4000/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -73,7 +137,7 @@ export default function SystemSetup() {
       const data = await res.json();
       if (res.ok) {
         setLastSync(new Date().toLocaleString());
-        alert('Cloud synchronization successful!');
+        alert('Credentials saved and Cloud synchronization successful!');
       } else {
         alert('Sync failed: ' + data.error);
       }
@@ -130,11 +194,26 @@ export default function SystemSetup() {
       <div className="flex justify-between items-end">
         <div>
           <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1">Configuration</div>
-          <h2 className="text-3xl font-bold text-foreground">System Setup</h2>
+          <h2 className="text-3xl font-bold text-foreground tracking-tight">System Setup</h2>
+        </div>
+        <div className="flex bg-brand-bg/50 p-1 rounded-xl border border-border-subtle shadow-sm">
+           <button 
+             onClick={() => setActiveSubTab('profile')}
+             className={`px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'profile' ? 'bg-orange-500 text-white shadow-lg' : 'text-slate-400 hover:text-foreground'}`}
+           >
+             Shop Profile
+           </button>
+           <button 
+             onClick={() => setActiveSubTab('staff')}
+             className={`px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'staff' ? 'bg-orange-500 text-white shadow-lg' : 'text-slate-400 hover:text-foreground'}`}
+           >
+             Staff Management
+           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-10">
+      {activeSubTab === 'profile' ? (
+        <div className="grid grid-cols-2 gap-10">
          <div className="bg-surface p-10 rounded-xl border border-border-subtle space-y-8 shadow-sm">
             <div>
                <h3 className="text-xl font-bold text-foreground mb-1">Shop Profile</h3>
@@ -283,7 +362,91 @@ export default function SystemSetup() {
                </div>
             </div>
          </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-12 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+           <div className="col-span-4 bg-surface p-10 rounded-xl border border-border-subtle space-y-8 shadow-sm h-fit">
+              <div>
+                 <h3 className="text-xl font-bold text-foreground mb-1">Add New Staff</h3>
+                 <p className="text-xs text-slate-400 font-medium tracking-tight">Create a new secure access account.</p>
+              </div>
+              <form onSubmit={handleCreateUser} className="space-y-6">
+                 <div className="space-y-2">
+                    <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Username</label>
+                    <input 
+                      type="text" 
+                      value={newUser.username}
+                      onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                      required
+                      className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
+                      placeholder="e.g. kojo_sales"
+                    />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Initial Password</label>
+                    <input 
+                      type="password" 
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                      required
+                      className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
+                      placeholder="••••••••"
+                    />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Assigned Role</label>
+                    <select 
+                      value={newUser.role}
+                      onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                      className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground appearance-none"
+                    >
+                       <option value="STAFF">Sales Staff</option>
+                       <option value="ADMIN">System Admin</option>
+                    </select>
+                 </div>
+                 <button 
+                   disabled={isCreatingUser}
+                   className="w-full bg-orange-500 text-white font-black py-4 rounded-lg text-[10px] uppercase tracking-[0.2em] hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
+                 >
+                    {isCreatingUser ? 'Creating...' : 'Register Staff Member'}
+                 </button>
+              </form>
+           </div>
+
+           <div className="col-span-8 bg-surface p-10 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+              <div className="flex justify-between items-center mb-8">
+                 <div>
+                    <h3 className="text-xl font-bold text-foreground mb-1">Active Team</h3>
+                    <p className="text-xs text-slate-400 font-medium">Manage existing employee credentials.</p>
+                 </div>
+                 <span className="px-4 py-1.5 bg-brand-bg rounded-full text-[9px] font-black text-slate-500 border border-border-subtle uppercase">
+                    {users.length} Total Users
+                 </span>
+              </div>
+
+              <div className="space-y-3">
+                 {users.map((u) => (
+                    <div key={u.id} className="flex items-center justify-between p-6 bg-brand-bg/50 rounded-xl border border-border-subtle hover:border-orange-200 transition-all group">
+                       <div className="flex items-center gap-5">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xs ${u.role === 'ADMIN' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
+                             {u.username.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                             <p className="text-sm font-bold text-foreground uppercase tracking-tight">{u.username}</p>
+                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{u.role} • Member since {new Date(u.createdAt).toLocaleDateString()}</p>
+                          </div>
+                       </div>
+                       <button 
+                         onClick={() => handleDeleteUser(u.id)}
+                         className="p-3 rounded-lg bg-white/50 dark:bg-slate-800/50 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
+                       >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                       </button>
+                    </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 }
