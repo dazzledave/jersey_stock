@@ -33,6 +33,7 @@ export default function InventoryStock() {
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [currency, setCurrency] = useState('GH₵');
+  const [exchangeRate, setExchangeRate] = useState(1);
   const [editingPrice, setEditingPrice] = useState<{ id: string, price: string } | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
@@ -44,6 +45,7 @@ export default function InventoryStock() {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed.currency) setCurrency(parsed.currency);
+      if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
     }
     fetchProducts();
     fetchCategories();
@@ -244,7 +246,7 @@ export default function InventoryStock() {
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-4 bg-surface p-2 px-4 rounded-xl border border-border-subtle">
                       <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Retail Price:</div>
-                      <div className="text-lg font-black text-foreground">{currency}{product.basePrice.toFixed(2)}</div>
+                      <div className="text-lg font-black text-foreground">{currency}{(product.basePrice / (exchangeRate || 1)).toFixed(2)}</div>
                       <button 
                         onClick={() => setEditingProduct(product)}
                         className="p-2 rounded-lg bg-brand-bg text-slate-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all"

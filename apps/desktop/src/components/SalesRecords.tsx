@@ -33,6 +33,7 @@ export default function SalesRecords() {
   const [records, setRecords] = useState<Sale[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<Sale[]>([]);
   const [currency, setCurrency] = useState('GH₵');
+  const [exchangeRate, setExchangeRate] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState('');
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
@@ -42,6 +43,7 @@ export default function SalesRecords() {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed.currency) setCurrency(parsed.currency);
+      if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
     }
     fetchSales();
   }, []);
@@ -171,7 +173,7 @@ export default function SalesRecords() {
                   <td className="p-8 text-sm font-bold text-foreground uppercase tracking-tight">
                     {r.customer?.name || 'Walk-in'}
                   </td>
-                  <td className="p-8 font-black text-foreground">{currency}{r.totalAmount.toLocaleString()}</td>
+                  <td className="p-8 font-black text-foreground">{currency}{(r.totalAmount / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                   <td className="p-8">
                      <span className="px-3 py-1 bg-brand-bg rounded text-[10px] font-black text-slate-500 border border-border-subtle uppercase tracking-tighter">
                         {r.paymentMethod}
@@ -227,7 +229,7 @@ export default function SalesRecords() {
                                   <p className="text-xs font-black text-foreground uppercase tracking-tight">{item.variant.product.name}</p>
                                   <p className="text-[9px] text-slate-400 font-bold uppercase">{item.variant.size} • {item.variant.color} (x{item.quantity})</p>
                                </div>
-                               <p className="text-xs font-black text-foreground">{currency}{(item.price * item.quantity).toLocaleString()}</p>
+                               <p className="text-xs font-black text-foreground">{currency}{((item.price * item.quantity) / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                             </div>
                          ))}
                       </div>
@@ -236,7 +238,7 @@ export default function SalesRecords() {
                    <div className="pt-6 border-t border-dashed border-border-subtle space-y-2">
                       <div className="flex justify-between text-xl font-black text-foreground">
                          <span>TOTAL</span>
-                         <span>{currency}{selectedSale.totalAmount.toLocaleString()}</span>
+                         <span>{currency}{(selectedSale.totalAmount / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                       </div>
                       <p className="text-[9px] font-bold text-slate-400 text-right uppercase tracking-widest italic">Method: {selectedSale.paymentMethod}</p>
                    </div>
@@ -294,7 +296,7 @@ export default function SalesRecords() {
                             <p className="opacity-70 text-[9px] uppercase">{item.variant.size} • {item.variant.color}</p>
                             <p className="opacity-70">Qty: {item.quantity}</p>
                          </div>
-                         <p className="font-bold">{currency}{(item.price * item.quantity).toLocaleString()}</p>
+                         <p className="font-bold">{currency}{((item.price * item.quantity) / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                       </div>
                    ))}
                 </div>
@@ -302,7 +304,7 @@ export default function SalesRecords() {
 
                 <div className="flex justify-between font-bold text-sm mb-4">
                    <span>TOTAL</span>
-                   <span>{currency}{selectedSale.totalAmount.toLocaleString()}</span>
+                   <span>{currency}{(selectedSale.totalAmount / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                 </div>
 
                 <div className="text-[9px] text-center space-y-1">

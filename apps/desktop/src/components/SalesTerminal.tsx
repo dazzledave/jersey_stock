@@ -40,6 +40,7 @@ export default function SalesTerminal() {
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [isProcessing, setIsProcessing] = useState(false);
   const [currency, setCurrency] = useState('GH₵');
+  const [exchangeRate, setExchangeRate] = useState(1);
   
   const [variantSelector, setVariantSelector] = useState<Product | null>(null);
 
@@ -48,6 +49,7 @@ export default function SalesTerminal() {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed.currency) setCurrency(parsed.currency);
+      if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
     }
     fetchProducts();
   }, []);
@@ -224,7 +226,7 @@ export default function SalesTerminal() {
                   <div className="font-bold text-foreground text-[11px] mb-0.5 line-clamp-1 leading-tight">{p.name}</div>
                   <div className="text-[7px] uppercase font-black text-slate-400 tracking-widest mb-1">{p.brand}</div>
                   <div className="mt-auto pt-1.5 border-t border-border-subtle flex justify-between items-center">
-                    <div className="text-[11px] font-black text-foreground">{currency}{p.basePrice.toFixed(2)}</div>
+                    <div className="text-[11px] font-black text-foreground">{currency}{(p.basePrice / (exchangeRate || 1)).toFixed(2)}</div>
                     {!outOfStock && (
                       <div className="w-5 h-5 rounded bg-orange-500 text-white flex items-center justify-center">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
@@ -290,7 +292,7 @@ export default function SalesTerminal() {
                         <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
                       </button>
                     </div>
-                    <div className="text-xs font-black text-foreground">{currency}{(item.price * item.quantity).toLocaleString()}</div>
+                    <div className="text-xs font-black text-foreground">{currency}{((item.price * item.quantity) / (exchangeRate || 1)).toLocaleString()}</div>
                   </div>
                 </motion.div>
               ))
@@ -302,7 +304,7 @@ export default function SalesTerminal() {
         <div className="border-t border-border-subtle bg-brand-bg/5 p-3 space-y-3 shrink-0">
           <div className="flex justify-between items-center px-1">
             <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Total Amount</div>
-            <div className="text-xl font-black text-foreground">{currency}{total.toLocaleString()}</div>
+            <div className="text-xl font-black text-foreground">{currency}{(total / (exchangeRate || 1)).toLocaleString()}</div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -374,7 +376,7 @@ export default function SalesTerminal() {
                         <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Color: {v.color}</div>
                       </div>
                       <div className="flex flex-col items-end">
-                         <div className={`text-sm font-black ${variantOutOfStock ? 'text-slate-400' : 'text-orange-500'}`}>{currency}{variantSelector.basePrice.toLocaleString()}</div>
+                         <div className={`text-sm font-black ${variantOutOfStock ? 'text-slate-400' : 'text-orange-500'}`}>{currency}{(variantSelector.basePrice / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                          <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-0.5">{variantOutOfStock ? 'Unavailable' : 'Select'}</div>
                       </div>
                     </button>

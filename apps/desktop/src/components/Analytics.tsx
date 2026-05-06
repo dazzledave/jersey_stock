@@ -23,12 +23,14 @@ export default function Analytics() {
   const [data, setData] = useState<DetailedData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currency, setCurrency] = useState('GH₵');
+  const [exchangeRate, setExchangeRate] = useState(1);
 
   useEffect(() => {
     const saved = localStorage.getItem('ac_settings');
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed.currency) setCurrency(parsed.currency);
+      if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
     }
     fetchDetailed();
   }, []);
@@ -45,7 +47,7 @@ export default function Analytics() {
     }
   };
 
-  const totalAnnualRevenue = data?.trendData.reduce((acc, item) => acc + item.value, 0) || 0;
+  const totalAnnualRevenue = (data?.trendData.reduce((acc, item) => acc + item.value, 0) || 0) / (exchangeRate || 1);
 
   return (
     <div className="space-y-10 bg-brand-bg/50 h-full p-10 custom-scrollbar overflow-y-auto">
@@ -105,7 +107,7 @@ export default function Analytics() {
                          />
                          {item.value > 0 && (
                             <div className="absolute -top-10 bg-foreground text-brand-bg text-[9px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl z-20">
-                              {currency}{item.value.toLocaleString()}
+                              {currency}{(item.value / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                             </div>
                          )}
                       </div>
@@ -142,7 +144,7 @@ export default function Analytics() {
                       <div key={i} className="space-y-2">
                          <div className="flex justify-between items-end">
                             <span className="text-[10px] font-black text-foreground uppercase tracking-tight">{cat.name}</span>
-                            <span className="text-[10px] font-black text-orange-500">{currency}{cat.value.toLocaleString()}</span>
+                            <span className="text-[10px] font-black text-orange-500">{currency}{(cat.value / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                          </div>
                          <div className="h-1.5 w-full bg-brand-bg rounded-full overflow-hidden">
                             <motion.div 
