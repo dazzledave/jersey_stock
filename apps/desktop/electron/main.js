@@ -1,5 +1,11 @@
 const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
+const serve = require('electron-serve');
+
+const isDev = process.env.NODE_ENV === 'development';
+
+// Setup the static file server for production
+const loadURL = serve({ directory: path.join(__dirname, '../out') });
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -13,15 +19,13 @@ function createWindow() {
     icon: path.join(__dirname, '../public/logo.png')
   });
 
-  // In development, load from Next.js dev server
-  const isDev = process.env.NODE_ENV === 'development';
   if (isDev) {
     win.loadURL('http://localhost:3000');
   } else {
-    win.loadFile(path.join(__dirname, '../.next/server/app/index.html'));
+    // Use the custom app:// protocol to load the exported files
+    loadURL(win);
   }
 
-  // Custom Menu Template (Excludes "Window")
   const template = [
     {
       label: 'File',

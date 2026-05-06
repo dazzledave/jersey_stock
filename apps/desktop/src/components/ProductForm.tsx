@@ -248,16 +248,21 @@ export default function ProductForm() {
                             </button>
                           </div>
                         ) : (
+                        <div className="relative group">
                           <select 
                             name="categoryId"
                             value={formData.categoryId}
                             onChange={handleInputChange}
-                            className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-300 transition-all text-foreground appearance-none cursor-pointer"
+                            className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-300 transition-all text-foreground appearance-none cursor-pointer pr-10"
                           >
                             {categories.map(c => (
                               <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
                           </select>
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-orange-500 transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
+                          </div>
+                        </div>
                         )}
                     </div>
                     <div className="space-y-2">

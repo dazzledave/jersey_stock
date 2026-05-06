@@ -36,6 +36,7 @@ export default function InventoryStock() {
   const [editingPrice, setEditingPrice] = useState<{ id: string, price: string } | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -159,11 +160,15 @@ export default function InventoryStock() {
     }
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) || 
-    p.brand?.toLowerCase().includes(search.toLowerCase()) ||
-    p.category?.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
+                         p.brand?.toLowerCase().includes(search.toLowerCase()) ||
+                         p.category?.name.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesCategory = selectedCategory === 'all' || p.categoryId === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="space-y-10 pb-20">
@@ -174,6 +179,19 @@ export default function InventoryStock() {
           <p className="text-slate-400 text-sm font-medium">Track and adjust stock levels and pricing for your catalog.</p>
         </div>
         <div className="flex gap-3">
+          <div className="relative group">
+            <select 
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-surface px-6 py-3 rounded-xl border border-border-subtle text-xs font-bold outline-none focus:border-orange-300 transition-all text-foreground appearance-none pr-10 min-w-[160px] cursor-pointer"
+            >
+              <option value="all">All Categories</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-orange-500 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </div>
           <div className="relative">
             <input 
               type="text" 
@@ -317,9 +335,18 @@ export default function InventoryStock() {
                       </div>
                       <div className="space-y-1">
                          <label className="text-[9px] font-black text-slate-400 uppercase">Category</label>
-                         <select value={editingProduct.categoryId} onChange={(e) => setEditingProduct({...editingProduct, categoryId: e.target.value})} className="w-full bg-brand-bg p-3 rounded-lg border border-border-subtle text-sm font-bold text-foreground outline-none focus:border-orange-500">
-                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                         </select>
+                         <div className="relative group">
+                            <select 
+                              value={editingProduct.categoryId} 
+                              onChange={(e) => setEditingProduct({...editingProduct, categoryId: e.target.value})} 
+                              className="w-full bg-brand-bg p-3 rounded-lg border border-border-subtle text-sm font-bold text-foreground outline-none focus:border-orange-500 appearance-none pr-10 transition-all"
+                            >
+                               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-orange-500 transition-colors">
+                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
+                            </div>
+                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4 pt-2">
                          <div className="space-y-1">

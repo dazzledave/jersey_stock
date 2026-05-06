@@ -151,17 +151,22 @@ export default function SystemSetup() {
                </div>
                <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Currency Symbol</label>
-                  <select 
-                    value={settings.currency}
-                    onChange={(e) => setSettings({...settings, currency: e.target.value})}
-                    className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none cursor-pointer appearance-none text-foreground"
-                  >
-                    <option value="GH₵">GH₵ (Ghanian Cedi)</option>
-                    <option value="$">$ (US Dollar)</option>
-                    <option value="£">£ (British Pound)</option>
-                    <option value="€">€ (Euro)</option>
-                    <option value="₦">₦ (Nigerian Naira)</option>
-                  </select>
+                  <div className="relative group">
+                    <select 
+                      value={settings.currency}
+                      onChange={(e) => setSettings({...settings, currency: e.target.value})}
+                      className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none cursor-pointer appearance-none text-foreground pr-10 focus:border-orange-200 transition-all"
+                    >
+                      <option value="GH₵">GH₵ (Ghanaian Cedi)</option>
+                      <option value="$">$ (US Dollar)</option>
+                      <option value="£">£ (British Pound)</option>
+                      <option value="€">€ (Euro)</option>
+                      <option value="₦">₦ (Nigerian Naira)</option>
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-orange-500 transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                  </div>
                </div>
                <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Store Address</label>
