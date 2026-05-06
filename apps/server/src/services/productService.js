@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const cloudSyncService = require('./cloudSyncService');
 
 const productService = {
   async getAllProducts() {
@@ -36,7 +37,7 @@ const productService = {
   async createProduct(data) {
     const { name, brand, basePrice, imageUrl, categoryId, variants } = data;
     
-    return await prisma.product.create({
+    const product = await prisma.product.create({
       data: {
         name,
         brand,
@@ -66,11 +67,16 @@ const productService = {
         }
       }
     });
+
+    // Queue for Cloud Sync
+    cloudSyncService.queueSync('Product', product.id).catch(console.error);
+
+    return product;
   },
 
   async updateProduct(id, data) {
     const { name, brand, basePrice, costPrice, imageUrl, categoryId } = data;
-    return await prisma.product.update({
+    const product = await prisma.product.update({
       where: { id },
       data: {
         name,
@@ -81,6 +87,11 @@ const productService = {
         category: { connect: { id: categoryId } }
       }
     });
+
+    // Queue for Cloud Sync
+    cloudSyncService.queueSync('Product', product.id).catch(console.error);
+
+    return product;
   },
 
   async deleteProduct(id) {

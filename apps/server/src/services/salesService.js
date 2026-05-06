@@ -1,11 +1,15 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const cloudSyncService = require('./cloudSyncService');
 
 const salesService = {
   async createSale(data) {
-    const { totalAmount, paymentMethod, items, customerId } = data;
+    const { 
+      totalAmount, paymentMethod, items, customerId, 
+      userId, soldBy, debtorName, debtorPhone, authorizer 
+    } = data;
     
-    return await prisma.$transaction(async (tx) => {
+    const sale = await prisma.$transaction(async (tx) => {
       // 1. Verify all items have enough stock
       for (const item of items) {
         const inventory = await tx.inventory.findUnique({
@@ -18,16 +22,21 @@ const salesService = {
       }
 
       // 2. Create the sale
-      const sale = await tx.sale.create({
+      const newSale = await tx.sale.create({
         data: {
           totalAmount,
           paymentMethod: paymentMethod.toLowerCase(),
           customerId: customerId || null,
+          userId: userId || null,
+          soldBy: soldBy || null,
+          debtorName: debtorName || null,
+          debtorPhone: debtorPhone || null,
+          authorizer: authorizer || null,
           items: {
             create: items.map(item => ({
               variantId: item.variantId,
               quantity: item.quantity || 1,
-              price: item.price || (totalAmount / items.length) // Fallback
+              price: item.price || (totalAmount / items.length)
             }))
           }
         },
@@ -37,32 +46,31 @@ const salesService = {
         }
       });
 
-      // 2. Update Inventory and record movements for each item
+      // 3. Update Inventory
       for (const item of items) {
         const qty = item.quantity || 1;
-        if (item.variantId) {
-          await tx.inventory.update({
-            where: { variantId: item.variantId },
-            data: {
-              quantity: {
-                decrement: qty
-              }
-            }
-          });
+        await tx.inventory.update({
+          where: { variantId: item.variantId },
+          data: { quantity: { decrement: qty } }
+        });
 
-          await tx.stockMovement.create({
-            data: {
-              variantId: item.variantId,
-              quantity: -qty,
-              type: 'SALE',
-              reason: `Sale Ref: ${sale.id}`
-            }
-          });
-        }
+        await tx.stockMovement.create({
+          data: {
+            variantId: item.variantId,
+            quantity: -qty,
+            type: 'SALE',
+            reason: `Sale Ref: ${newSale.id}`
+          }
+        });
       }
 
-      return sale;
+      return newSale;
     });
+
+    // Queue for Cloud Sync
+    cloudSyncService.queueSync('Sale', sale.id).catch(console.error);
+    
+    return sale;
   },
 
   async getAllSales() {
