@@ -21,7 +21,22 @@ async function main() {
       create: { name }
     });
   }
-  console.log('Seed complete.');
+
+  const bcrypt = require('bcrypt');
+  const hashedPassword = await bcrypt.hash('admin123', 10);
+  
+  console.log('Seeding admin user...');
+  await prisma.user.upsert({
+    where: { username: 'admin' },
+    update: {},
+    create: {
+      username: 'admin',
+      password: hashedPassword,
+      role: 'ADMIN'
+    }
+  });
+
+  console.log('Seed complete. Use admin / admin123 to login.');
 }
 
 main()
