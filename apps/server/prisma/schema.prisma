@@ -12,6 +12,7 @@ enum PaymentMethod {
   momo
   card
   credit
+  free
 }
 
 model Category {
@@ -91,10 +92,47 @@ model Customer {
   @@map("customers")
 }
 
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  role      String   @default("STAFF") // "ADMIN" or "STAFF"
+  sales     Sale[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("users")
+}
+
+model SyncLog {
+  id        String   @id @default(cuid())
+  entity    String   // "Sale", "Product", etc.
+  entityId  String   @map("entity_id")
+  status    String   @default("PENDING") // "PENDING", "SYNCED", "FAILED"
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("sync_logs")
+}
+
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
+}
+
 model Sale {
   id            String        @id @default(cuid())
   totalAmount   Float         @map("total_amount")
   paymentMethod PaymentMethod @map("payment_method")
+  userId        String?       @map("user_id")
+  user          User?         @relation(fields: [userId], references: [id])
+  soldBy        String?       @map("sold_by") // For quick display or legacy
+  debtorName    String?       @map("debtor_name")
+  debtorPhone   String?       @map("debtor_phone")
+  authorizer    String?       @map("authorizer")
   customerId    String?       @map("customer_id")
   customer      Customer?     @relation(fields: [customerId], references: [id])
   items         SaleItem[]
