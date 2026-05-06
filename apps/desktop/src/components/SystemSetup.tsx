@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 export default function SystemSetup() {
+  const { user } = useAuth();
   const [settings, setSettings] = useState({
     shopName: 'Awards Centre',
     currency: 'GH₵',
@@ -68,7 +70,23 @@ export default function SystemSetup() {
   };
 
   const handleDeleteUser = async (id: string) => {
-    if (!window.confirm('Delete this user permanently?')) return;
+    // 1. Check if trying to delete self
+    if (id === user?.id) {
+      alert("Security Alert: You cannot delete your own account while logged in.");
+      return;
+    }
+
+    // 2. Check if this is the last admin
+    const targetUser = users.find(u => u.id === id);
+    const adminCount = users.filter(u => u.role === 'ADMIN').length;
+    
+    if (targetUser?.role === 'ADMIN' && adminCount <= 1) {
+      alert("Security Alert: This is the only Administrator account. You must create another Admin before deleting this one to avoid system lockout.");
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete ${targetUser?.username} permanently?`)) return;
+    
     try {
       const res = await fetch(`http://localhost:4000/api/users/${id}`, {
         method: 'DELETE'
@@ -441,12 +459,14 @@ export default function SystemSetup() {
                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{u.role} • Member since {new Date(u.createdAt).toLocaleDateString()}</p>
                           </div>
                        </div>
-                       <button 
-                         onClick={() => handleDeleteUser(u.id)}
-                         className="p-3 rounded-lg bg-white/50 dark:bg-slate-800/50 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
-                       >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                       </button>
+                       {u.id !== user?.id && (
+                         <button 
+                           onClick={() => handleDeleteUser(u.id)}
+                           className="p-3 rounded-lg bg-white/50 dark:bg-slate-800/50 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
+                         >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                         </button>
+                       )}
                     </div>
                  ))}
               </div>

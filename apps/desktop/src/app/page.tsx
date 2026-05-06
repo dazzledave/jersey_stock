@@ -15,10 +15,16 @@ import SetupWizard from "@/components/SetupWizard";
 import { useAuth } from "@/components/AuthContext";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTab] = useState('Sales Terminal');
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated && isAdmin !== undefined) {
+      setActiveTab(isAdmin ? 'Dashboard' : 'Sales Terminal');
+    }
+  }, [isAuthenticated, isAdmin]);
 
   useEffect(() => {
     checkSetupStatus();
@@ -115,30 +121,38 @@ export default function Home() {
           </button>
         </div>
 
-        <button 
-          onClick={() => setActiveTab('Product List')}
-          className={`bg-[#ffb443] hover:bg-[#fca42d] text-[#1a1f2b] font-bold py-3 rounded-lg flex items-center transition-all group overflow-hidden ${sidebarExpanded ? 'px-4 justify-between mb-6' : 'w-12 h-12 justify-center mx-auto mb-4'}`}
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-lg font-bold">+</span>
-            <AnimatePresence>
-              {sidebarExpanded && (
-                <motion.span 
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
-                  className="whitespace-nowrap overflow-hidden"
-                >
-                  Create new
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </div>
-          {sidebarExpanded && <span className="opacity-50 group-hover:translate-x-1 transition-transform">›</span>}
-        </button>
+        {isAdmin && (
+          <button 
+            onClick={() => setActiveTab('Product List')}
+            className={`bg-[#ffb443] hover:bg-[#fca42d] text-[#1a1f2b] font-bold py-3 rounded-lg flex items-center transition-all group overflow-hidden ${sidebarExpanded ? 'px-4 justify-between mb-6' : 'w-12 h-12 justify-center mx-auto mb-4'}`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-bold">+</span>
+              <AnimatePresence>
+                {sidebarExpanded && (
+                  <motion.span 
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    className="whitespace-nowrap overflow-hidden"
+                  >
+                    Create new
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </div>
+            {sidebarExpanded && <span className="opacity-50 group-hover:translate-x-1 transition-transform">›</span>}
+          </button>
+        )}
         
         <nav className={`flex-1 space-y-1 pr-2 ${sidebarExpanded ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'}`}>
-          {menuItems.map((item) => (
+          {menuItems
+            .filter(item => {
+              const adminOnly = ['Dashboard', 'Sales Records', 'Product List', 'Analytics', 'System Setup'];
+              if (!isAdmin && adminOnly.includes(item.name)) return false;
+              return true;
+            })
+            .map((item) => (
             <button 
               key={item.name}
               onClick={() => setActiveTab(item.name)}
@@ -219,14 +233,33 @@ export default function Home() {
         {/* Dynamic Content - Full Height for POS */}
         <div className={`flex-1 overflow-y-auto custom-scrollbar ${activeTab === 'Sales Terminal' ? 'p-0' : 'p-10 pb-24'}`}>
           <div className={`${activeTab === 'Sales Terminal' ? 'max-w-none h-full' : 'max-w-[1400px]'} w-full mx-auto animate-in fade-in duration-500`}>
-          {activeTab === 'Dashboard' && <InventoryDashboard />}
+          {activeTab === 'Dashboard' && user?.role === 'ADMIN' && <InventoryDashboard />}
           {activeTab === 'Sales Terminal' && <SalesTerminal />}
-          {activeTab === 'Sales Records' && <SalesRecords />}
+          {activeTab === 'Sales Records' && user?.role === 'ADMIN' && <SalesRecords />}
           {activeTab === 'Customer List' && <CustomerList />}
-          {activeTab === 'Product List' && <ProductForm />}
+          {activeTab === 'Product List' && user?.role === 'ADMIN' && <ProductForm />}
           {activeTab === 'Inventory Stock' && <InventoryStock />}
-          {activeTab === 'Analytics' && <Analytics />}
-          {activeTab === 'System Setup' && <SystemSetup />}
+          {activeTab === 'Analytics' && user?.role === 'ADMIN' && <Analytics />}
+          {activeTab === 'System Setup' && user?.role === 'ADMIN' && <SystemSetup />}
+          
+          {/* Fallback for unauthorized access */}
+          {(['Dashboard', 'Sales Records', 'Product List', 'Analytics', 'System Setup'].includes(activeTab) && user?.role !== 'ADMIN') && (
+            <div className="h-[60vh] flex flex-col items-center justify-center text-center space-y-6">
+               <div className="w-20 h-20 rounded-3xl bg-rose-500/10 text-rose-500 flex items-center justify-center shadow-xl">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m0 0v2m0-2h2m-2 0H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+               </div>
+               <div>
+                  <h2 className="text-2xl font-bold text-foreground uppercase tracking-tight">Access Restricted</h2>
+                  <p className="text-slate-400 font-medium max-w-xs mx-auto mt-2 text-sm">This module requires Administrator privileges. Please contact your manager if you believe this is an error.</p>
+               </div>
+               <button 
+                 onClick={() => setActiveTab('Sales Terminal')}
+                 className="px-8 py-3 bg-foreground text-brand-bg rounded-xl font-bold text-xs uppercase tracking-widest hover:opacity-90 transition-all"
+               >
+                 Return to Terminal
+               </button>
+            </div>
+          )}
         </div>
         </div>
       </main>
