@@ -309,7 +309,7 @@ export default function SalesTerminal() {
                         <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
                       </button>
                     </div>
-                    <div className="text-xs font-black text-foreground">{currency}{((item.price * item.quantity) / (exchangeRate || 1)).toLocaleString()}</div>
+                    <div className="text-xs font-black text-foreground">{currency}{((item.price * item.quantity) / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                   </div>
                 </motion.div>
               ))
@@ -321,7 +321,7 @@ export default function SalesTerminal() {
         <div className="border-t border-border-subtle bg-brand-bg/5 p-3 space-y-3 shrink-0">
           <div className="flex justify-between items-center px-1">
             <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Total Amount</div>
-            <div className="text-xl font-black text-foreground">{currency}{(saleType === 'Free' ? 0 : (total / (exchangeRate || 1))).toLocaleString()}</div>
+            <div className="text-xl font-black text-foreground">{currency}{(saleType === 'Free' ? 0 : (total / (currency === 'GH₵' ? 1 : (exchangeRate || 1)))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
           </div>
 
           <div className="space-y-3">
@@ -350,14 +350,14 @@ export default function SalesTerminal() {
                         placeholder="Debtor Name"
                         value={debtorName}
                         onChange={(e) => setDebtorName(e.target.value)}
-                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500"
+                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
                       />
                       <input 
                         type="text" 
                         placeholder="Phone Number"
                         value={debtorPhone}
                         onChange={(e) => setDebtorPhone(e.target.value)}
-                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500"
+                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
                       />
                    </motion.div>
                 )}
@@ -373,7 +373,7 @@ export default function SalesTerminal() {
                         placeholder="Authorized By (Admin Name)"
                         value={authorizer}
                         onChange={(e) => setAuthorizer(e.target.value)}
-                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500"
+                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
                       />
                    </motion.div>
                 )}
