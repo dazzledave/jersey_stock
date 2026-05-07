@@ -4,17 +4,17 @@ const prisma = new PrismaClient();
 
 const mapToSnakeCase = (obj) => {
   const mapping = {
-    'basePrice': 'base_price',
-    'costPrice': 'cost_price',
-    'categoryId': 'category_id',
-    'imageUrl': 'image_url',
-    'productId': 'product_id',
-    'reorderLevel': 'reorder_level',
-    'variantId': 'variant_id',
-    'totalAmount': 'total_amount',
-    'paymentMethod': 'payment_method',
-    'customerId': 'customer_id',
-    'saleId': 'sale_id'
+    'basePrice': 'basePrice',
+    'costPrice': 'costPrice',
+    'categoryId': 'categoryId',
+    'imageUrl': 'imageUrl',
+    'productId': 'productId',
+    'reorderLevel': 'reorderLevel',
+    'variantId': 'variantId',
+    'totalAmount': 'totalAmount',
+    'paymentMethod': 'paymentMethod',
+    'customerId': 'customerId',
+    'saleId': 'saleId'
   };
 
   const newObj = {};
@@ -31,7 +31,7 @@ const mapToSnakeCase = (obj) => {
 
 const syncToCloud = async (supabaseUrl, supabaseKey) => {
   const sanitizedUrl = supabaseUrl.trim()
-    .replace(/\/rest\/v1\/?$/, '') 
+    .replace(/\/rest\/v1\/?$/, '')
     .replace(/\/+$/, '');
   const sanitizedKey = supabaseKey.trim();
 
@@ -50,7 +50,7 @@ const syncToCloud = async (supabaseUrl, supabaseKey) => {
 
   try {
     const { error: healthError } = await supabase.from('categories').select('id', { count: 'exact', head: true });
-    
+
     if (healthError) {
       if (healthError.message.includes('Invalid path')) {
         throw new Error(`Connection Error: The URL provided (${sanitizedUrl}) appears to be incorrect.`);
