@@ -303,10 +303,15 @@ export default function InventoryStock() {
                           </td>
                           <td className="px-8 py-4 text-right">
                              {isAdmin ? (
-                              <div className="flex items-center justify-end gap-2">
-                                 <button onClick={() => updateStock(v.id, (v.inventory?.quantity || 0) - 1)} className="w-8 h-8 rounded bg-brand-bg text-slate-500 flex items-center justify-center font-bold border border-border-subtle">-</button>
-                                 <span className="w-8 text-center text-xs font-bold text-foreground">{v.inventory?.quantity || 0}</span>
-                                 <button onClick={() => updateStock(v.id, (v.inventory?.quantity || 0) + 1)} className="w-8 h-8 rounded bg-foreground text-brand-bg flex items-center justify-center font-bold border border-border-subtle">+</button>
+                               <div className="flex items-center justify-end gap-2">
+                                 <button onClick={() => updateStock(v.id, (v.inventory?.quantity || 0) - 1)} className="w-8 h-8 rounded bg-brand-bg text-slate-500 flex items-center justify-center font-bold border border-border-subtle hover:bg-slate-200 transition-colors">-</button>
+                                 <input 
+                                   type="number" 
+                                   value={v.inventory?.quantity || 0} 
+                                   onChange={(e) => updateStock(v.id, parseInt(e.target.value) || 0)}
+                                   className="w-14 text-center text-xs font-bold text-foreground bg-brand-bg rounded py-1.5 border border-border-subtle outline-none focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                 />
+                                 <button onClick={() => updateStock(v.id, (v.inventory?.quantity || 0) + 1)} className="w-8 h-8 rounded bg-foreground text-brand-bg flex items-center justify-center font-bold border border-border-subtle hover:bg-orange-500 transition-colors">+</button>
                               </div>
                              ) : (
                                <span className="text-xs font-bold text-foreground">{v.inventory?.quantity || 0}</span>
