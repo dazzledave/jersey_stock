@@ -122,6 +122,26 @@ const cloudSyncService = {
 
         await prisma.syncLog.update({ where: { id: log.id }, data: { status: 'SYNCED', error: null } });
       } catch (error) {
+        // Auto-fix for missing foreign keys
+        if (error.message.includes('violates foreign key constraint')) {
+          console.log(`[SYNC AUTO-FIX] Detected missing dependency for ${log.entity}. Attempting to resolve...`);
+          
+          if (error.message.includes('sales_user_id_fkey') && log.entity === 'Sale') {
+            const sale = await prisma.sale.findUnique({ where: { id: log.entityId } });
+            if (sale?.userId) {
+               console.log(`[SYNC AUTO-FIX] Queuing missing User: ${sale.userId}`);
+               await cloudSyncService.queueSync('User', sale.userId);
+            }
+          } 
+          else if (error.message.includes('sale_items_sale_id_fkey') && log.entity === 'SaleItem') {
+            const item = await prisma.saleItem.findUnique({ where: { id: log.entityId } });
+            if (item?.saleId) {
+               console.log(`[SYNC AUTO-FIX] Queuing missing Sale: ${item.saleId}`);
+               await cloudSyncService.queueSync('Sale', item.saleId);
+            }
+          }
+        }
+
         if (!error.message.includes('Schema Mismatch')) {
           console.error(`Sync failed for ${log.entity} ${log.entityId}:`, error);
         }
