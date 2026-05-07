@@ -41,20 +41,22 @@ const authService = {
       try {
         // Map username to email for Supabase Auth
         const email = `${username.toLowerCase()}@jersey-stock.com`;
-        const { data, error } = await supabase.auth.admin.getUserByEmail(email);
         
-        if (!error && data.user) {
-          // If user exists in Supabase, try to verify password
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-          
-          if (!signInError) {
-            supabaseUser = data.user;
-            console.log(`[AUTH] Cloud login successful for: ${username}`);
-          } else {
-            authError = signInError.message;
+        // Try to verify password directly via Supabase Auth
+        // This checks the auth.users table
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (!signInError && data.user) {
+          supabaseUser = data.user;
+          console.log(`[AUTH] Cloud login successful for: ${username}`);
+        } else {
+          authError = signInError?.message;
+          // Only log warnings for non-credential errors (like connection issues)
+          if (signInError && !signInError.message.includes('Invalid login credentials')) {
+            console.warn(`[AUTH] Supabase signIn error: ${signInError.message}`);
           }
         }
       } catch (err) {

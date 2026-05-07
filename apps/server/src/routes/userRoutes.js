@@ -83,10 +83,13 @@ router.put('/profile', async (req, res) => {
       const updateData = { user_metadata: { role: user.role } };
       if (password) updateData.password = password;
       
-      // Get user by email to get their ID
-      const { data: userData } = await supabase.auth.admin.getUserByEmail(email);
-      if (userData.user) {
-        await supabase.auth.admin.updateUserById(userData.user.id, updateData);
+      // Get user list to find the ID (getUserByEmail is deprecated in some v2 versions)
+      const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+      if (!listError) {
+        const targetUser = users.find(u => u.email === email);
+        if (targetUser) {
+          await supabase.auth.admin.updateUserById(targetUser.id, updateData);
+        }
       }
     }
 

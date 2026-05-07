@@ -21,14 +21,6 @@ async function migrate() {
     console.log(`Checking user: ${user.username} (${email})...`);
 
     try {
-      // Check if user already exists in Supabase
-      const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email);
-      
-      if (existingUser?.user) {
-        console.log(`User ${user.username} already exists in Supabase Auth. Skipping.`);
-        continue;
-      }
-
       // If we don't have a visible password, we can't migrate them (they'd need to reset)
       if (!user.visiblePassword) {
         console.warn(`User ${user.username} has no visible password. Skipping creation (needs manual reset).`);
@@ -36,7 +28,7 @@ async function migrate() {
       }
 
       // Create user in Supabase Auth
-      const { error } = await supabase.auth.admin.createUser({
+      const { data: newUser, error } = await supabase.auth.admin.createUser({
         email,
         password: user.visiblePassword,
         email_confirm: true,
@@ -44,7 +36,11 @@ async function migrate() {
       });
 
       if (error) {
-        console.error(`Failed to create ${user.username} in Supabase: ${error.message}`);
+        if (error.message.includes('already registered') || error.status === 422) {
+          console.log(`User ${user.username} is already in Supabase Auth. Skipping.`);
+        } else {
+          console.error(`Failed to create ${user.username} in Supabase: ${error.message}`);
+        }
       } else {
         console.log(`Successfully migrated ${user.username} to Supabase Auth.`);
       }
