@@ -39,6 +39,16 @@ export default function ProductForm() {
     fetchCategories();
   }, []);
 
+  // Auto-clear status message after 5 seconds
+  useEffect(() => {
+    if (statusMessage.text) {
+      const timer = setTimeout(() => {
+        setStatusMessage({ text: '', type: '' });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [statusMessage.text]);
+
   if (!isAdmin) {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center space-y-6 text-center">
@@ -80,6 +90,7 @@ export default function ProductForm() {
       }
     } catch (err) {
       console.error('Failed to create category:', err);
+      setStatusMessage({ text: 'FAILED: Could not create category. Check your connection.', type: 'error' });
     }
   };
 

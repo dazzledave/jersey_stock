@@ -29,10 +29,10 @@ model Product {
   id         String           @id @default(cuid())
   name       String
   brand      String?
-  basePrice  Float            @map("base_price")
-  costPrice  Float            @default(0) @map("cost_price")
-  categoryId String           @map("category_id")
-  imageUrl   String?          @map("image_url")
+  basePrice  Float
+  costPrice  Float            @default(0)
+  categoryId String
+  imageUrl   String?
   category   Category         @relation(fields: [categoryId], references: [id])
   variants   ProductVariant[]
   createdAt  DateTime         @default(now())
@@ -43,7 +43,7 @@ model Product {
 
 model ProductVariant {
   id        String          @id @default(cuid())
-  productId String          @map("product_id")
+  productId String
   product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   size      String?
   color     String?
@@ -58,10 +58,10 @@ model ProductVariant {
 }
 
 model Inventory {
-  variantId    String         @id @map("variant_id")
+  variantId    String         @id
   variant      ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   quantity     Int            @default(0)
-  reorderLevel Int            @default(5) @map("reorder_level")
+  reorderLevel Int            @default(5)
   updatedAt    DateTime       @default(now()) @updatedAt
 
   @@map("inventory")
@@ -69,7 +69,7 @@ model Inventory {
 
 model StockMovement {
   id        String         @id @default(cuid())
-  variantId String         @map("variant_id")
+  variantId String
   variant   ProductVariant @relation(fields: [variantId], references: [id])
   quantity  Int // positive for additions, negative for reductions
   type      String // e.g., "SALE", "ADJUSTMENT", "RESTOCK"
@@ -96,7 +96,7 @@ model User {
   id              String   @id @default(cuid())
   username        String   @unique
   password        String
-  visiblePassword String?  @map("visible_password")
+  visiblePassword String?
   role            String   @default("STAFF") // "ADMIN" or "STAFF"
   sales           Sale[]
   createdAt       DateTime @default(now())
@@ -108,7 +108,7 @@ model User {
 model SyncLog {
   id        String   @id @default(cuid())
   entity    String?  // "Sale", "Product", etc.
-  entityId  String?  @map("entity_id")
+  entityId  String?
   status    String   @default("PENDING") // "PENDING", "SYNCED", "FAILED"
   message   String?  // For manual sync logs
   error     String?
@@ -127,15 +127,15 @@ model Setting {
 
 model Sale {
   id            String        @id @default(cuid())
-  totalAmount   Float         @map("total_amount")
-  paymentMethod PaymentMethod @map("payment_method")
-  userId        String?       @map("user_id")
+  totalAmount   Float
+  paymentMethod PaymentMethod
+  userId        String?
   user          User?         @relation(fields: [userId], references: [id])
-  soldBy        String?       @map("sold_by") // For quick display or legacy
-  debtorName    String?       @map("debtor_name")
-  debtorPhone   String?       @map("debtor_phone")
-  authorizer    String?       @map("authorizer")
-  customerId    String?       @map("customer_id")
+  soldBy        String?       // For quick display or legacy
+  debtorName    String?
+  debtorPhone   String?
+  authorizer    String?
+  customerId    String?
   customer      Customer?     @relation(fields: [customerId], references: [id])
   items         SaleItem[]
   payments      Json?         // Stores multi-payment details: [{ method, amount }]
@@ -147,9 +147,9 @@ model Sale {
 
 model SaleItem {
   id        String         @id @default(cuid())
-  saleId    String         @map("sale_id")
+  saleId    String
   sale      Sale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  variantId String         @map("variant_id")
+  variantId String
   variant   ProductVariant @relation(fields: [variantId], references: [id])
   quantity  Int            @default(1)
   price     Float // price at time of sale

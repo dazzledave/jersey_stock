@@ -61,10 +61,12 @@ export default function CustomerList() {
     }
   };
 
-  const filtered = customers.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
-    c.phone?.includes(search)
-  );
+  const filtered = Array.isArray(customers) 
+    ? customers.filter(c => 
+        c.name.toLowerCase().includes(search.toLowerCase()) || 
+        c.phone?.includes(search)
+      )
+    : [];
 
   return (
     <div className="space-y-10">

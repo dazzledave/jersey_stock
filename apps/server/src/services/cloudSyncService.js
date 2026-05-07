@@ -2,32 +2,14 @@ const { createClient } = require('@supabase/supabase-js');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const mapToSnakeCase = (obj) => {
-  const mapping = {
-    'basePrice': 'base_price',
-    'costPrice': 'cost_price',
-    'categoryId': 'category_id',
-    'imageUrl': 'image_url',
-    'productId': 'product_id',
-    'reorderLevel': 'reorder_level',
-    'variantId': 'variant_id',
-    'totalAmount': 'total_amount',
-    'paymentMethod': 'payment_method',
-    'customerId': 'customer_id',
-    'saleId': 'sale_id',
-    'userId': 'user_id',
-    'debtorName': 'debtorName',
-    'debtorPhone': 'debtorPhone'
-  };
-
+const prepareData = (obj) => {
   const newObj = {};
   Object.keys(obj).forEach(key => {
-    const newKey = mapping[key] || key;
     let value = obj[key];
     if (value instanceof Date) {
       value = value.toISOString();
     }
-    newObj[newKey] = value;
+    newObj[key] = value;
   });
   return newObj;
 };
@@ -69,7 +51,6 @@ const cloudSyncService = {
       }
     });
   },
-
   processSyncQueue: async () => {
     const supabase = await cloudSyncService.getSupabaseClient();
     if (!supabase) return;
@@ -110,7 +91,7 @@ const cloudSyncService = {
           case 'Inventory':
             data = await prisma.inventory.findUnique({ where: { variantId: log.entityId } });
             tableName = 'inventory';
-            idField = 'variant_id';
+            idField = 'variantId';
             break;
           case 'Customer':
             data = await prisma.customer.findUnique({ where: { id: log.entityId } });
@@ -127,7 +108,7 @@ const cloudSyncService = {
           continue;
         }
 
-        const cleanData = mapToSnakeCase(data);
+        const cleanData = prepareData(data);
         const { error } = await supabase.from(tableName).upsert(cleanData, { onConflict: idField });
 
         if (error) {
