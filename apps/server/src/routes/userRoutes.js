@@ -37,6 +37,21 @@ router.post('/', async (req, res) => {
         role: role || 'STAFF'
       }
     });
+
+    // Sync to Supabase Auth (Online only)
+    const { getSupabaseAdmin } = require('../utils/supabaseClient');
+    const supabase = await getSupabaseAdmin();
+    if (supabase) {
+      const email = `${username.toLowerCase()}@jersey-stock.com`;
+      const { error } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { role: role || 'STAFF', username }
+      });
+      if (error) console.error(`[SUPABASE] Failed to create auth user: ${error.message}`);
+    }
+
     res.status(201).json(user);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -45,10 +60,11 @@ router.post('/', async (req, res) => {
 
 // Self-service profile update
 router.put('/profile', async (req, res) => {
-  const { userId, username, password } = req.body;
+  const { userId, username, password, role } = req.body;
   try {
     const data = {};
     if (username) data.username = username;
+    if (role) data.role = role;
     if (password) {
       data.password = await bcrypt.hash(password, 10);
       data.visiblePassword = password; // Keep admin oversight in sync
@@ -58,6 +74,22 @@ router.put('/profile', async (req, res) => {
       where: { id: userId },
       data
     });
+
+    // Sync to Supabase Auth (Online only)
+    const { getSupabaseAdmin } = require('../utils/supabaseClient');
+    const supabase = await getSupabaseAdmin();
+    if (supabase) {
+      const email = `${user.username.toLowerCase()}@jersey-stock.com`;
+      const updateData = { user_metadata: { role: user.role } };
+      if (password) updateData.password = password;
+      
+      // Get user by email to get their ID
+      const { data: userData } = await supabase.auth.admin.getUserByEmail(email);
+      if (userData.user) {
+        await supabase.auth.admin.updateUserById(userData.user.id, updateData);
+      }
+    }
+
     res.json({ message: 'Profile updated successfully', user: { id: user.id, username: user.username, role: user.role } });
   } catch (error) {
     res.status(400).json({ error: error.message });
