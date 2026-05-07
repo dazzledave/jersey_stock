@@ -39,10 +39,11 @@ const syncToCloud = async (supabaseUrl, supabaseKey) => {
   const logs = [];
 
   const tables = [
+    { name: 'users', model: prisma.user, idField: 'id' },
     { name: 'categories', model: prisma.category, idField: 'id' },
     { name: 'products', model: prisma.product, idField: 'id' },
     { name: 'product_variants', model: prisma.productVariant, idField: 'id' },
-    { name: 'inventory', model: prisma.inventory, idField: 'variant_id' },
+    { name: 'inventory', model: prisma.inventory, idField: 'variantId' },
     { name: 'customers', model: prisma.customer, idField: 'id' },
     { name: 'sales', model: prisma.sale, idField: 'id' },
     { name: 'sale_items', model: prisma.saleItem, idField: 'id' }
