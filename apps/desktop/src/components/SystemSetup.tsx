@@ -41,7 +41,7 @@ export default function SystemSetup() {
         if (Object.keys(data).length > 0) {
           const merged = { ...settings, ...data };
           // Convert string booleans from DB if necessary
-          if (data.darkMode !== undefined) merged.darkMode = data.darkMode === 'true';
+          if (data.darkMode !== undefined) merged.darkMode = String(data.darkMode) === 'true';
           if (data.exchangeRate !== undefined) merged.exchangeRate = parseFloat(data.exchangeRate);
           
           setSettings(merged);
@@ -145,13 +145,28 @@ export default function SystemSetup() {
     }
   };
 
-  const handleToggleDarkMode = () => {
+  const handleToggleDarkMode = async () => {
     const newMode = !settings.darkMode;
+    
+    // Update local UI
     setSettings(prev => ({ ...prev, darkMode: newMode }));
     applyTheme(newMode);
+    
+    // Update localStorage
     const saved = localStorage.getItem('ac_settings');
     const base = saved ? JSON.parse(saved) : settings;
     localStorage.setItem('ac_settings', JSON.stringify({ ...base, darkMode: newMode }));
+
+    // Persist to server immediately
+    try {
+      await fetch('http://localhost:4000/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...base, darkMode: newMode })
+      });
+    } catch (err) {
+      console.error('Failed to sync dark mode to server:', err);
+    }
   };
 
   const handleSave = async () => {
