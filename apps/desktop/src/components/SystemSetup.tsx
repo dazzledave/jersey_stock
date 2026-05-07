@@ -46,6 +46,11 @@ export default function SystemSetup() {
           
           setSettings(merged);
           applyTheme(merged.darkMode);
+          
+          if (data.lastSync) {
+            setLastSync(new Date(data.lastSync).toLocaleString());
+          }
+          
           localStorage.setItem('ac_settings', JSON.stringify(merged));
         } else {
           // Fallback to local if server is empty

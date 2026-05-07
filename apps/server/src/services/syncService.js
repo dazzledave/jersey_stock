@@ -81,6 +81,13 @@ const syncToCloud = async (supabaseUrl, supabaseKey) => {
       data: { status: 'SUCCESS', message: logs.join('; ') }
     });
 
+    // Save last sync timestamp to settings
+    await prisma.setting.upsert({
+      where: { key: 'lastSync' },
+      update: { value: new Date().toISOString() },
+      create: { key: 'lastSync', value: new Date().toISOString() }
+    });
+
     return { success: true, logs };
   } catch (error) {
     console.error('Sync failed:', error);
