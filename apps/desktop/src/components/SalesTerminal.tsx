@@ -174,7 +174,7 @@ export default function SalesTerminal() {
           items: cart.map(item => ({ 
             variantId: item.variantId,
             quantity: item.quantity,
-            price: saleType === 'Free' ? 0 : item.price
+            price: item.price
           }))
         })
       });
@@ -187,7 +187,7 @@ export default function SalesTerminal() {
           date: timestamp.toLocaleDateString(),
           time: timestamp.toLocaleTimeString(),
           items: [...cart],
-          total: saleType === 'Free' ? 0 : total,
+          total: total,
           paymentMethod: finalPaymentMethod,
           debtorName,
           authorizer,
@@ -357,7 +357,7 @@ export default function SalesTerminal() {
         <div className="border-t border-border-subtle bg-brand-bg/5 p-3 space-y-3 shrink-0">
           <div className="flex justify-between items-center px-1">
             <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Total Amount</div>
-            <div className="text-xl font-black text-foreground">{currency}{(saleType === 'Free' ? 0 : (total / (currency === 'GH₵' ? 1 : (exchangeRate || 1)))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            <div className="text-xl font-black text-foreground">{currency}{(total / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
           </div>
 
           <div className="space-y-3">
