@@ -42,3 +42,12 @@ Thumbs.db
 # Prisma
 /apps/server/prisma/dev.db
 /apps/server/prisma/dev.db-journal
+
+# POS Distribution & Diagnostics
+server_dist/
+.server_dist/
+scratch/
+node-win.exe
+POS_Server_Diagnostic.txt
+ServerCrashLog.txt
+*.log
