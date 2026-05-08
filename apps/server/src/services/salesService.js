@@ -10,6 +10,13 @@ const salesService = {
     } = data;
 
     const sale = await prisma.$transaction(async (tx) => {
+      // 0. Verify User exists (Safety for stale tokens)
+      let validUserId = null;
+      if (userId) {
+        const userExists = await tx.user.findUnique({ where: { id: userId } });
+        if (userExists) validUserId = userId;
+      }
+
       // 1. Verify all items have enough stock
       for (const item of items) {
         const inventory = await tx.inventory.findUnique({
@@ -27,7 +34,7 @@ const salesService = {
           totalAmount,
           paymentMethod: paymentMethod.toLowerCase(),
           customerId: customerId || null,
-          userId: userId || null,
+          userId: validUserId,
           soldBy: soldBy || null,
           debtorName: debtorName || null,
           debtorPhone: debtorPhone || null,
