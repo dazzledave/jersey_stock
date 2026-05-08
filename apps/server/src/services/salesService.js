@@ -32,7 +32,7 @@ const salesService = {
           debtorName: debtorName || null,
           debtorPhone: debtorPhone || null,
           authorizer: authorizer || null,
-          payments: payments || null,
+          payments: payments ? JSON.stringify(payments) : null,
           items: {
             create: items.map(item => ({
               variantId: item.variantId,
@@ -79,7 +79,7 @@ const salesService = {
   },
 
   async getAllSales() {
-    return await prisma.sale.findMany({
+    const sales = await prisma.sale.findMany({
       include: {
         items: {
           include: {
@@ -94,6 +94,11 @@ const salesService = {
       },
       orderBy: { createdAt: 'desc' }
     });
+
+    return sales.map(sale => ({
+      ...sale,
+      payments: sale.payments ? JSON.parse(sale.payments) : []
+    }));
   }
 };
 
