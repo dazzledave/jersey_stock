@@ -8,8 +8,24 @@ const { spawn } = require('child_process');
 let serverProcess;
 
 function startServer() {
-  const logStream = fs.createWriteStream(path.join(app.getPath('userData'), 'server.log'));
+  const userDataPath = app.getPath('userData');
+  const logStream = fs.createWriteStream(path.join(userDataPath, 'server.log'));
   
+  // Database persistence logic
+  const dbName = 'jersey_stock.db';
+  const targetDbPath = path.join(userDataPath, dbName);
+  const templateDbPath = path.join(process.resourcesPath, 'app.asar.unpacked/server_dist/dev.db');
+
+  // Copy database template to AppData on first run
+  if (!fs.existsSync(targetDbPath) && fs.existsSync(templateDbPath)) {
+    try {
+      fs.copyFileSync(templateDbPath, targetDbPath);
+      logStream.write(`Initial database created at: ${targetDbPath}\n`);
+    } catch (err) {
+      logStream.write(`Failed to create initial database: ${err.message}\n`);
+    }
+  }
+
   // Try to find the server in multiple possible locations
   let serverPath = path.join(process.resourcesPath, 'app.asar.unpacked/server_dist/src/index.js');
   
@@ -18,32 +34,49 @@ function startServer() {
   }
 
   logStream.write(`Attempting to start server at: ${serverPath}\n`);
-  logStream.write(`Working Directory: ${process.cwd()}\n`);
-  logStream.write(`Resources Path: ${process.resourcesPath}\n`);
-
-  const dbPath = path.join(process.resourcesPath, 'app.asar.unpacked/server_dist/dev.db');
-  const internalNodePath = path.join(process.resourcesPath, 'app.asar.unpacked/server_dist/node.exe');
   
-  // Use bundled node.exe in production if available, fallback to system node in dev
+  const internalNodePath = path.join(process.resourcesPath, 'app.asar.unpacked/server_dist/node.exe');
   const nodeExe = (isDev || !fs.existsSync(internalNodePath)) ? 'node' : internalNodePath;
 
-  logStream.write(`Using node engine: ${nodeExe}\n`);
-
   serverProcess = spawn(nodeExe, [serverPath], {
+    cwd: path.dirname(serverPath),
     env: { 
       ...process.env, 
       PORT: 4000, 
       NODE_ENV: 'production',
-      DATABASE_URL: `file:${dbPath}`
+      NODE_PATH: path.join(path.dirname(serverPath), '../server_lib'),
+      DATABASE_URL: isDev ? process.env.DATABASE_URL : `file:///${targetDbPath.replace(/\\/g, '/')}`
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
 
-  serverProcess.stdout.pipe(logStream);
-  serverProcess.stderr.pipe(logStream);
+  const desktopLogPath = path.join(app.getPath('home'), 'Desktop', 'POS_Server_Diagnostic.txt');
+  fs.appendFileSync(desktopLogPath, `\n--- NEW LAUNCH ---\nTarget DB: ${targetDbPath}\n`);
+
+  serverProcess.stdout.on('data', (data) => {
+    logStream.write(data);
+    fs.appendFileSync(desktopLogPath, data.toString());
+  });
+  
+  serverProcess.stderr.on('data', (data) => {
+    logStream.write(data);
+    fs.appendFileSync(desktopLogPath, `[STDERR] ${data.toString()}`);
+  });
 
   serverProcess.on('error', (err) => {
     logStream.write(`Failed to start server process: ${err.message}\n`);
+    fs.appendFileSync(desktopLogPath, `[SPAWN ERROR] ${err.message}\n`);
+    const { dialog } = require('electron');
+    dialog.showErrorBox('Critical Server Failure', `The background server failed to start: ${err.message}\n\nPlease ensure your Antivirus is not blocking the application.`);
+  });
+
+  serverProcess.on('exit', (code, signal) => {
+    logStream.write(`Server exited with code ${code} and signal ${signal}\n`);
+    fs.appendFileSync(desktopLogPath, `[EXIT] Code: ${code}, Signal: ${signal}\n`);
+    if (code !== 0 && code !== null) {
+      const { dialog } = require('electron');
+      dialog.showErrorBox('Server Crashed', `The backend server crashed unexpectedly with exit code ${code}.\n\nA diagnostic log has been saved to your Desktop as POS_Server_Diagnostic.txt. Please send this file to the developer.`);
+    }
   });
 }
 

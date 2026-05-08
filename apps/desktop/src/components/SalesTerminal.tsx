@@ -68,7 +68,7 @@ export default function SalesTerminal() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/products');
+      const res = await fetch('http://127.0.0.1:4000/api/products');
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -159,7 +159,7 @@ export default function SalesTerminal() {
     const timestamp = new Date();
 
     try {
-      const response = await fetch('http://localhost:4000/api/sales', {
+      const response = await fetch('http://127.0.0.1:4000/api/sales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

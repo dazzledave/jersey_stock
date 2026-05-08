@@ -1,18 +1,11 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "binary"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-enum PaymentMethod {
-  cash
-  momo
-  card
-  credit
-  free
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model Category {
@@ -126,21 +119,21 @@ model Setting {
 }
 
 model Sale {
-  id            String        @id @default(cuid())
+  id            String     @id @default(cuid())
   totalAmount   Float
-  paymentMethod PaymentMethod
+  paymentMethod String     // SQLite doesn't support Enums, changed to String
   userId        String?
-  user          User?         @relation(fields: [userId], references: [id])
-  soldBy        String?       // For quick display or legacy
+  user          User?      @relation(fields: [userId], references: [id])
+  soldBy        String?    // For quick display or legacy
   debtorName    String?
   debtorPhone   String?
   authorizer    String?
   customerId    String?
-  customer      Customer?     @relation(fields: [customerId], references: [id])
+  customer      Customer?  @relation(fields: [customerId], references: [id])
   items         SaleItem[]
-  payments      Json?         // Stores multi-payment details: [{ method, amount }]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @default(now()) @updatedAt
+  payments      String?    // SQLite doesn't support Json, changed to String (will store stringified JSON)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now()) @updatedAt
 
   @@map("sales")
 }

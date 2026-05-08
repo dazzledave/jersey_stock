@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const WebSocket = require('ws');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -32,6 +33,9 @@ const getSupabaseAdmin = async () => {
     auth: {
       autoRefreshToken: false,
       persistSession: false
+    },
+    realtime: {
+      transport: WebSocket
     }
   });
 

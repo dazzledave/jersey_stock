@@ -2,7 +2,19 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 require('dotenv').config();
+
+const logFile = path.join(os.homedir(), 'Desktop', 'ServerCrashLog.txt');
+process.on('uncaughtException', (err) => {
+  try { fs.appendFileSync(logFile, `\n[FATAL ERROR] ${new Date().toISOString()}\n${err.message}\n${err.stack}\n`); } catch(e){}
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  try { fs.appendFileSync(logFile, `\n[UNHANDLED REJECTION] ${new Date().toISOString()}\n${reason}\n`); } catch(e){}
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -58,7 +70,7 @@ app.get('/api/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-server.listen(PORT, () => {
+server.listen(PORT, '127.0.0.1', () => {
   console.log(`Server running on port ${PORT}`);
   const cloudSyncService = require('./services/cloudSyncService');
   cloudSyncService.startWorker();

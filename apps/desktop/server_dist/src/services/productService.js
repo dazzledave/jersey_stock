@@ -20,6 +20,18 @@ const productService = {
     return await prisma.category.findMany();
   },
 
+  async createCategory(data) {
+    const { name } = data;
+    const category = await prisma.category.create({
+      data: { name }
+    });
+
+    // Queue for Cloud Sync
+    cloudSyncService.queueSync('Category', category.id).catch(console.error);
+
+    return category;
+  },
+
   async getProductById(id) {
     return await prisma.product.findUnique({
       where: { id },

@@ -20,6 +20,15 @@ router.get('/categories', async (req, res) => {
   }
 });
 
+router.post('/categories', async (req, res) => {
+  try {
+    const category = await productService.createCategory(req.body);
+    res.status(201).json(category);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/', async (req, res) => {
   try {
     const product = await productService.createProduct(req.body);

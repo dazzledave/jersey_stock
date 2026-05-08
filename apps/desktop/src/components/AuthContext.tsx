@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     // Global Settings Sync
-    fetch('http://localhost:4000/api/settings')
+    fetch('http://127.0.0.1:4000/api/settings')
       .then(res => res.json())
       .then(data => {
         if (Object.keys(data).length > 0) {
