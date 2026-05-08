@@ -55,3 +55,16 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
 }
+
+/* FIX: Input Focus Reinforcement */
+input, textarea, [contenteditable="true"] {
+  pointer-events: auto !important;
+  cursor: text !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+/* Prevent ghost overlays from blocking interactions */
+main, section, div {
+  pointer-events: auto;
+}

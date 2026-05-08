@@ -1,7 +1,10 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const serve = require('electron-serve');
+
+// FIX: Disable hardware acceleration to prevent 'ghosting' input locks on Windows
+app.disableHardwareAcceleration();
 
 const isDev = process.env.NODE_ENV === 'development';
 const { spawn } = require('child_process');
@@ -60,6 +63,11 @@ function createWindow() {
     },
     title: "Awards Centre Inventory system",
     icon: path.join(__dirname, '../public/logo.png')
+  });
+
+  // FIX: Force focus restoration whenever the window is activated
+  win.on('focus', () => {
+    win.webContents.focus();
   });
 
   if (isDev) {

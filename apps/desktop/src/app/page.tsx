@@ -42,16 +42,23 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // Focus Fixer: Ensures that clicks always register correctly and text boxes don't get 'stuck'
+    // FIXED: Smart Focus Restorer
+    // This ensures that clicks always register correctly without 'locking' the UI.
     const handleGlobalFocus = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      // If clicking on a non-input/non-button area, ensure we don't have a focus trap
-      if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && target.tagName !== 'BUTTON') {
-        // Force a small blur/focus cycle to reset Electron's focus manager if it hangs
-        (document.activeElement as HTMLElement)?.blur();
+      
+      // If clicking an input, ensure it gets immediate focus
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        target.focus();
+      }
+      
+      // Prevent focus traps by ensuring the body can always receive focus
+      if (document.activeElement === null) {
+        document.body.focus();
       }
     };
-    window.addEventListener('mousedown', handleGlobalFocus);
+    
+    window.addEventListener('mousedown', handleGlobalFocus, { capture: true });
     return () => window.removeEventListener('mousedown', handleGlobalFocus);
   }, []);
 
