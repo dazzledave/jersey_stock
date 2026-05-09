@@ -259,7 +259,7 @@ export default function InventoryStock() {
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-4 bg-surface p-2 px-4 rounded-xl border border-border-subtle">
                         <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Retail Price:</div>
-                        <div className="text-lg font-black text-foreground">{currency}{(product.basePrice / (exchangeRate || 1)).toFixed(2)}</div>
+                        <div className="text-lg font-black text-foreground">{currency}{(product.basePrice / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toFixed(2)}</div>
                         <button 
                           onClick={() => setEditingProduct(product)}
                           className="p-2 rounded-lg bg-brand-bg text-slate-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all"

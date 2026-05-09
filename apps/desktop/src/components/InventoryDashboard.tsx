@@ -66,7 +66,7 @@ export default function InventoryDashboard() {
   const stats = [
     { 
       label: 'Total Revenue', 
-      value: `${currency}${((summary?.totalRevenue || 0) / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 
+      value: `${currency}${((summary?.totalRevenue || 0) / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 
       sub: `Across ${summary?.totalOrders || 0} transactions`, 
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -74,7 +74,7 @@ export default function InventoryDashboard() {
     },
     { 
       label: 'Marginal Profit', 
-      value: `${currency}${((summary?.totalProfit || 0) / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 
+      value: `${currency}${((summary?.totalProfit || 0) / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 
       sub: 'Net business earnings', 
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
@@ -157,7 +157,7 @@ export default function InventoryDashboard() {
             </div>
             <div className="text-right">
               <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">7-Day Period</div>
-              <div className="text-xl font-bold text-foreground">{currency}{((summary?.chartData.reduce((acc, d) => acc + d.value, 0) || 0) / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div className="text-xl font-bold text-foreground">{currency}{((summary?.chartData.reduce((acc, d) => acc + d.value, 0) || 0) / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
             </div>
           </div>
           <div className="h-[200px] flex items-end gap-8 px-4">
@@ -173,7 +173,7 @@ export default function InventoryDashboard() {
                           className={`w-full rounded-t-lg bg-orange-500/20 group-hover:bg-orange-500/40 transition-all cursor-pointer`} 
                         />
                         <div className="absolute -top-8 bg-foreground text-brand-bg text-[9px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                          {currency}{(day.value / (exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                          {currency}{(day.value / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                         </div>
                      </div>
                      <div className="text-[10px] font-bold text-slate-300 uppercase">{day.name}</div>

@@ -137,7 +137,8 @@ export default function ProductForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          basePrice: parseFloat(formData.basePrice),
+          // FIX: Ensure price is rounded to exactly 2 decimal places to prevent 'ghost subtractions'
+          basePrice: Math.round(parseFloat(formData.basePrice) * 100) / 100,
           variants: variants.map(v => {
             const namePrefix = formData.name.substring(0, 3).toUpperCase();
             const brandPrefix = formData.brand.substring(0, 2).toUpperCase() || 'NA';
