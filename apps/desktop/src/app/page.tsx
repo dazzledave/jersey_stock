@@ -91,7 +91,7 @@ export default function Home() {
     { name: 'Customer List', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
     )},
-    { name: 'Product List', icon: (
+    { name: 'Product Manager', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 11h.01M7 15h.01M11 7h.01M11 11h.01M11 15h.01M15 7h.01M15 11h.01M15 15h.01M19 7h.01M19 11h.01M19 15h.01M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
     )},
     { name: 'Inventory Stock', icon: (
@@ -144,7 +144,7 @@ export default function Home() {
 
         {isAdmin && (
           <button 
-            onClick={() => setActiveTab('Product List')}
+            onClick={() => setActiveTab('Product Manager')}
             className={`bg-[#ffb443] hover:bg-[#fca42d] text-[#1a1f2b] font-bold py-3 rounded-lg flex items-center transition-all group overflow-hidden ${sidebarExpanded ? 'px-4 justify-between mb-6' : 'w-12 h-12 justify-center mx-auto mb-4'}`}
           >
             <div className="flex items-center gap-3">
@@ -169,7 +169,7 @@ export default function Home() {
         <nav className={`flex-1 space-y-1 pr-2 ${sidebarExpanded ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'}`}>
           {menuItems
             .filter(item => {
-              const adminOnly = ['Dashboard', 'Sales Records', 'Product List', 'Analytics', 'System Setup'];
+              const adminOnly = ['Dashboard', 'Sales Records', 'Product Manager', 'Analytics', 'System Setup'];
               if (!isAdmin && adminOnly.includes(item.name)) return false;
               return true;
             })
@@ -258,13 +258,13 @@ export default function Home() {
           {activeTab === 'Sales Terminal' && <SalesTerminal />}
           {activeTab === 'Sales Records' && user?.role === 'ADMIN' && <SalesRecords />}
           {activeTab === 'Customer List' && <CustomerList />}
-          {activeTab === 'Product List' && user?.role === 'ADMIN' && <ProductForm />}
+          {activeTab === 'Product Manager' && user?.role === 'ADMIN' && <ProductForm />}
           {activeTab === 'Inventory Stock' && <InventoryStock />}
           {activeTab === 'Analytics' && user?.role === 'ADMIN' && <Analytics />}
           {activeTab === 'System Setup' && user?.role === 'ADMIN' && <SystemSetup />}
           
           {/* Fallback for unauthorized access */}
-          {(['Dashboard', 'Sales Records', 'Product List', 'Analytics', 'System Setup'].includes(activeTab) && user?.role !== 'ADMIN') && (
+          {(['Dashboard', 'Sales Records', 'Product Manager', 'Analytics', 'System Setup'].includes(activeTab) && user?.role !== 'ADMIN') && (
             <div className="h-[60vh] flex flex-col items-center justify-center text-center space-y-6">
                <div className="w-20 h-20 rounded-3xl bg-rose-500/10 text-rose-500 flex items-center justify-center shadow-xl">
                   <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m0 0v2m0-2h2m-2 0H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
