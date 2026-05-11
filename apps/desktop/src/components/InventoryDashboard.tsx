@@ -125,7 +125,7 @@ export default function InventoryDashboard() {
         </div>
       </section>
 
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
           <motion.div 
             key={i}
@@ -146,7 +146,7 @@ export default function InventoryDashboard() {
 
       <div className="grid grid-cols-12 gap-8">
         {/* Sales Performance Chart */}
-        <div className="col-span-8 bg-surface p-10 rounded-xl border border-border-subtle shadow-sm">
+        <div className="col-span-12 xl:col-span-8 bg-surface p-10 rounded-xl border border-border-subtle shadow-sm">
           <div className="flex justify-between items-end mb-10">
             <div className="flex items-center gap-3">
               <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
@@ -184,7 +184,7 @@ export default function InventoryDashboard() {
         </div>
 
         {/* Inventory Watch */}
-        <div className="col-span-4 bg-surface p-10 rounded-xl border border-border-subtle shadow-sm">
+        <div className="col-span-12 xl:col-span-4 bg-surface p-10 rounded-xl border border-border-subtle shadow-sm">
           <div className="flex justify-between items-start mb-8">
             <div className="flex items-center gap-3">
               <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>

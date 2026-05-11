@@ -454,7 +454,7 @@ export default function SalesTerminal() {
           </button>
           
           <button onClick={() => setCart([])} className="w-full text-[8px] font-black text-slate-400 uppercase hover:text-rose-500 text-center transition-colors">
-            Void Order
+            Cancel Order
           </button>
         </div>
       </div>

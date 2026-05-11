@@ -19,6 +19,18 @@ export default function Home() {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && isAdmin !== undefined) {
@@ -231,8 +243,8 @@ export default function Home() {
         <header className="h-20 flex items-center justify-between px-10 flex-shrink-0 bg-brand-bg/80 backdrop-blur-md sticky top-0 z-50 border-b border-border-subtle/50">
           <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-400">
              <div className="flex items-center gap-2">
-               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-               <span className="text-emerald-500">Online</span>
+               <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+               <span className={isOnline ? 'text-emerald-500' : 'text-rose-500'}>{isOnline ? 'Online' : 'Offline'}</span>
              </div>
              <span>🔔</span>
              <span>❓</span>
