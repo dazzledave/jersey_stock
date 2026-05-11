@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useAuth } from './AuthContext';
 
 interface ChartItem {
   name: string;
@@ -28,20 +29,14 @@ interface Alert {
 }
 
 export default function InventoryDashboard() {
+  const { isOnline } = useAuth();
   const [currency, setCurrency] = useState('GH₵');
   const [exchangeRate, setExchangeRate] = useState(1);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
-
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
     const saved = localStorage.getItem('ac_settings');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -49,11 +44,6 @@ export default function InventoryDashboard() {
       if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
     }
     fetchData();
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
   }, []);
 
   const fetchData = async () => {

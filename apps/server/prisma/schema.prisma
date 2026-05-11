@@ -91,6 +91,7 @@ model User {
   password        String
   visiblePassword String?
   role            String   @default("STAFF") // "ADMIN" or "STAFF"
+  recoveryKey     String?  // Hashed recovery key for password reset
   sales           Sale[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @default(now()) @updatedAt

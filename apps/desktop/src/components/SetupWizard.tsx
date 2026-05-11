@@ -14,6 +14,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [recoveryKey, setRecoveryKey] = useState('');
 
   const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +34,10 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Setup failed');
+
+      if (data.user?.rawRecoveryKey) {
+        setRecoveryKey(data.user.rawRecoveryKey);
+      }
 
       setStep(3); // Success step
     } catch (err: any) {
@@ -185,23 +190,45 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 key="step3"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-center space-y-8 py-10"
+                className="text-center space-y-8 py-5"
               >
-                <div className="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-[0_0_50px_rgba(16,185,129,0.3)]">
-                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/></svg>
+                <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-500 mb-6">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                 </div>
-                <div className="space-y-4">
-                  <h2 className="text-4xl font-black text-white uppercase tracking-tight">System Initialized!</h2>
-                  <p className="text-slate-400 font-medium max-w-sm mx-auto">
-                    The Master Admin account has been securely created. You are now ready to manage the Awards Centre.
-                  </p>
+                
+                <div className="space-y-2">
+                  <h2 className="text-3xl font-black text-white uppercase tracking-tight">Setup Complete!</h2>
+                  <p className="text-slate-400 font-medium">Your Master Admin account is ready. </p>
                 </div>
-                <button 
-                  onClick={onComplete}
-                  className="bg-white text-[#0f172a] font-black px-12 py-5 rounded-2xl text-sm uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all shadow-2xl"
-                >
-                  Launch Dashboard
-                </button>
+
+                {recoveryKey && (
+                  <div className="bg-orange-500/10 border border-orange-500/20 p-8 rounded-[32px] space-y-6 relative overflow-hidden group">
+                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                     </div>
+                     <div className="relative z-10 text-left space-y-4">
+                        <div className="flex items-center gap-3">
+                           <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Master Recovery Key</span>
+                           <span className="h-[1px] flex-1 bg-orange-500/20" />
+                        </div>
+                        <div className="text-3xl font-mono font-black text-white tracking-[0.2em] bg-black/20 p-6 rounded-2xl text-center border border-white/5">
+                           {recoveryKey}
+                        </div>
+                        <p className="text-[11px] text-slate-400 font-bold leading-relaxed">
+                           <span className="text-orange-500">IMPORTANT:</span> This is your ONLY way to reset your password if you forget it. Write this down, print it, or save it in a password manager. It will never be shown again.
+                        </p>
+                     </div>
+                  </div>
+                )}
+
+                <div className="pt-4">
+                   <button 
+                     onClick={onComplete}
+                     className="w-full bg-white text-[#0f172a] font-black py-5 rounded-2xl text-sm uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all shadow-2xl"
+                   >
+                     Launch Dashboard
+                   </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

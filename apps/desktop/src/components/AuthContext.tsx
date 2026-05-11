@@ -15,6 +15,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isOnline: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
     const savedToken = localStorage.getItem('ac_token');
@@ -64,6 +66,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  useEffect(() => {
+    const checkInternet = async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+      try {
+        await fetch('https://connectivitycheck.gstatic.com/generate_204', { 
+          mode: 'no-cors', 
+          cache: 'no-store',
+          signal: controller.signal 
+        });
+        setIsOnline(true);
+      } catch (error) {
+        setIsOnline(false);
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    };
+
+    checkInternet();
+    const interval = setInterval(checkInternet, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   const login = (newToken: string, newUser: User) => {
     setToken(newToken);
     setUser(newUser);
@@ -87,7 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login, 
       logout, 
       isAuthenticated: !!token,
-      isAdmin: user?.role === 'ADMIN'
+      isAdmin: user?.role === 'ADMIN',
+      isOnline
     }}>
       {children}
     </AuthContext.Provider>

@@ -18,19 +18,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('Sales Terminal');
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
-  const { isAuthenticated, user, logout, isAdmin } = useAuth();
-  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const { isAuthenticated, user, logout, isAdmin, isOnline } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated && isAdmin !== undefined) {
