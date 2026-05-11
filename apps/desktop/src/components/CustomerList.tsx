@@ -72,7 +72,7 @@ export default function CustomerList() {
     <div className="space-y-10">
       <div className="flex justify-between items-end">
         <div>
-          <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1">Customer CRM</div>
+          <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1">Customer Manager</div>
           <h2 className="text-3xl font-bold text-foreground tracking-tight">Patron Management</h2>
           <p className="text-slate-400 text-sm font-medium mt-1">Manage your relationships and track customer loyalty.</p>
         </div>

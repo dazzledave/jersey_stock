@@ -19,6 +19,18 @@ export default function Home() {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && isAdmin !== undefined) {
@@ -42,16 +54,23 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // Focus Fixer: Ensures that clicks always register correctly and text boxes don't get 'stuck'
+    // FIXED: Smart Focus Restorer
+    // This ensures that clicks always register correctly without 'locking' the UI.
     const handleGlobalFocus = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      // If clicking on a non-input/non-button area, ensure we don't have a focus trap
-      if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && target.tagName !== 'BUTTON') {
-        // Force a small blur/focus cycle to reset Electron's focus manager if it hangs
-        (document.activeElement as HTMLElement)?.blur();
+      
+      // If clicking an input, ensure it gets immediate focus
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        target.focus();
+      }
+      
+      // Prevent focus traps by ensuring the body can always receive focus
+      if (document.activeElement === null) {
+        document.body.focus();
       }
     };
-    window.addEventListener('mousedown', handleGlobalFocus);
+    
+    window.addEventListener('mousedown', handleGlobalFocus, { capture: true });
     return () => window.removeEventListener('mousedown', handleGlobalFocus);
   }, []);
 
@@ -81,10 +100,10 @@ export default function Home() {
     { name: 'Sales Records', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
     )},
-    { name: 'Customer List', icon: (
+    { name: 'Customer Manager', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
     )},
-    { name: 'Product List', icon: (
+    { name: 'Product Manager', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 11h.01M7 15h.01M11 7h.01M11 11h.01M11 15h.01M15 7h.01M15 11h.01M15 15h.01M19 7h.01M19 11h.01M19 15h.01M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
     )},
     { name: 'Inventory Stock', icon: (
@@ -137,7 +156,7 @@ export default function Home() {
 
         {isAdmin && (
           <button 
-            onClick={() => setActiveTab('Product List')}
+            onClick={() => setActiveTab('Product Manager')}
             className={`bg-[#ffb443] hover:bg-[#fca42d] text-[#1a1f2b] font-bold py-3 rounded-lg flex items-center transition-all group overflow-hidden ${sidebarExpanded ? 'px-4 justify-between mb-6' : 'w-12 h-12 justify-center mx-auto mb-4'}`}
           >
             <div className="flex items-center gap-3">
@@ -162,7 +181,7 @@ export default function Home() {
         <nav className={`flex-1 space-y-1 pr-2 ${sidebarExpanded ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'}`}>
           {menuItems
             .filter(item => {
-              const adminOnly = ['Dashboard', 'Sales Records', 'Product List', 'Analytics', 'System Setup'];
+              const adminOnly = ['Dashboard', 'Sales Records', 'Product Manager', 'Analytics', 'System Setup'];
               if (!isAdmin && adminOnly.includes(item.name)) return false;
               return true;
             })
@@ -224,8 +243,8 @@ export default function Home() {
         <header className="h-20 flex items-center justify-between px-10 flex-shrink-0 bg-brand-bg/80 backdrop-blur-md sticky top-0 z-50 border-b border-border-subtle/50">
           <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-400">
              <div className="flex items-center gap-2">
-               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-               <span className="text-emerald-500">Online</span>
+               <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+               <span className={isOnline ? 'text-emerald-500' : 'text-rose-500'}>{isOnline ? 'Online' : 'Offline'}</span>
              </div>
              <span>🔔</span>
              <span>❓</span>
@@ -250,14 +269,14 @@ export default function Home() {
           {activeTab === 'Dashboard' && user?.role === 'ADMIN' && <InventoryDashboard />}
           {activeTab === 'Sales Terminal' && <SalesTerminal />}
           {activeTab === 'Sales Records' && user?.role === 'ADMIN' && <SalesRecords />}
-          {activeTab === 'Customer List' && <CustomerList />}
-          {activeTab === 'Product List' && user?.role === 'ADMIN' && <ProductForm />}
+          {activeTab === 'Customer Manager' && <CustomerList />}
+          {activeTab === 'Product Manager' && user?.role === 'ADMIN' && <ProductForm />}
           {activeTab === 'Inventory Stock' && <InventoryStock />}
           {activeTab === 'Analytics' && user?.role === 'ADMIN' && <Analytics />}
           {activeTab === 'System Setup' && user?.role === 'ADMIN' && <SystemSetup />}
           
           {/* Fallback for unauthorized access */}
-          {(['Dashboard', 'Sales Records', 'Product List', 'Analytics', 'System Setup'].includes(activeTab) && user?.role !== 'ADMIN') && (
+          {(['Dashboard', 'Sales Records', 'Product Manager', 'Analytics', 'System Setup'].includes(activeTab) && user?.role !== 'ADMIN') && (
             <div className="h-[60vh] flex flex-col items-center justify-center text-center space-y-6">
                <div className="w-20 h-20 rounded-3xl bg-rose-500/10 text-rose-500 flex items-center justify-center shadow-xl">
                   <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m0 0v2m0-2h2m-2 0H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

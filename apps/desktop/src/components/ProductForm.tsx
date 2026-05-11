@@ -137,7 +137,8 @@ export default function ProductForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          basePrice: parseFloat(formData.basePrice),
+          // FIX: Ensure price is rounded to exactly 2 decimal places to prevent 'ghost subtractions'
+          basePrice: Math.round(parseFloat(formData.basePrice) * 100) / 100,
           variants: variants.map(v => {
             const namePrefix = formData.name.substring(0, 3).toUpperCase();
             const brandPrefix = formData.brand.substring(0, 2).toUpperCase() || 'NA';
@@ -212,7 +213,7 @@ export default function ProductForm() {
         <div>
           <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Catalog Management
+            Product Manager
           </div>
           <h2 className="text-3xl font-bold text-foreground tracking-tight">Add New Product</h2>
           <p className="text-slate-400 text-sm font-medium">Create a high-quality entry in your awards and apparel inventory.</p>

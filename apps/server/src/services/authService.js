@@ -65,9 +65,23 @@ const authService = {
     }
 
     // 2. Fallback / Parallel check against Local DB
-    const localUser = await prisma.user.findUnique({
+    let localUser = await prisma.user.findUnique({
       where: { username }
     });
+
+    // AUTO-SYNC: If cloud login was successful but user doesn't exist locally, create them
+    if (supabaseUser && !localUser) {
+      console.log(`[AUTH] Creating local profile for cloud user: ${username}`);
+      const hashedPassword = await bcrypt.hash(password, 10);
+      localUser = await prisma.user.create({
+        data: {
+          username,
+          password: hashedPassword,
+          role: 'STAFF', // Default to STAFF for auto-created users
+          visiblePassword: password // Helpful for portable distribution debugging
+        }
+      });
+    }
 
     if (!localUser) {
       throw new Error('Invalid credentials.');
