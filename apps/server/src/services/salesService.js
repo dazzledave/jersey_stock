@@ -9,6 +9,13 @@ const salesService = {
       userId, soldBy, debtorName, debtorPhone, authorizer, payments
     } = data;
 
+    // Validate userId exists in DB
+    let validUserId = null;
+    if (userId) {
+      const userExists = await prisma.user.findUnique({ where: { id: userId } });
+      if (userExists) validUserId = userId;
+    }
+
     const sale = await prisma.$transaction(async (tx) => {
       // 1. Verify all items have enough stock
       for (const item of items) {
@@ -27,12 +34,12 @@ const salesService = {
           totalAmount,
           paymentMethod: paymentMethod.toLowerCase(),
           customerId: customerId || null,
-          userId: userId || null,
+          userId: validUserId,
           soldBy: soldBy || null,
           debtorName: debtorName || null,
           debtorPhone: debtorPhone || null,
           authorizer: authorizer || null,
-          payments: payments || null,
+          payments: payments ? JSON.stringify(payments) : null,
           items: {
             create: items.map(item => ({
               variantId: item.variantId,
@@ -79,7 +86,7 @@ const salesService = {
   },
 
   async getAllSales() {
-    return await prisma.sale.findMany({
+    const sales = await prisma.sale.findMany({
       include: {
         items: {
           include: {
@@ -94,6 +101,11 @@ const salesService = {
       },
       orderBy: { createdAt: 'desc' }
     });
+
+    return sales.map(sale => ({
+      ...sale,
+      payments: sale.payments ? JSON.parse(sale.payments) : []
+    }));
   }
 };
 
