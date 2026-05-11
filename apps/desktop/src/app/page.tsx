@@ -22,24 +22,29 @@ export default function Home() {
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    // Polling backup to ensure accuracy
-    const interval = setInterval(() => {
-      if (window.navigator.onLine !== isOnline) {
-        setIsOnline(window.navigator.onLine);
-      }
-    }, 5000);
+    const checkInternet = async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
 
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      clearInterval(interval);
+      try {
+        await fetch('https://connectivitycheck.gstatic.com/generate_204', { 
+          mode: 'no-cors',
+          cache: 'no-store',
+          signal: controller.signal
+        });
+        setIsOnline(true);
+      } catch (error) {
+        setIsOnline(false);
+      } finally {
+        clearTimeout(timeoutId);
+      }
     };
-  }, [isOnline]);
+
+    checkInternet();
+    const interval = setInterval(checkInternet, 3000); // Faster 3s interval
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && isAdmin !== undefined) {

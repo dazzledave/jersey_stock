@@ -37,17 +37,26 @@ export default function InventoryDashboard() {
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    // Polling backup to ensure accuracy
-    const interval = setInterval(() => {
-      if (window.navigator.onLine !== isOnline) {
-        setIsOnline(window.navigator.onLine);
+    const checkInternet = async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+      try {
+        await fetch('https://connectivitycheck.gstatic.com/generate_204', { 
+          mode: 'no-cors', 
+          cache: 'no-store',
+          signal: controller.signal 
+        });
+        setIsOnline(true);
+      } catch (error) {
+        setIsOnline(false);
+      } finally {
+        clearTimeout(timeoutId);
       }
-    }, 5000);
+    };
+
+    checkInternet();
+    const interval = setInterval(checkInternet, 3000);
 
     const saved = localStorage.getItem('ac_settings');
     if (saved) {
@@ -57,12 +66,8 @@ export default function InventoryDashboard() {
     }
     fetchData();
 
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      clearInterval(interval);
-    };
-  }, [isOnline]);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchData = async () => {
     try {
