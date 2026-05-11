@@ -34,7 +34,14 @@ export default function InventoryDashboard() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
+
   useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
     const saved = localStorage.getItem('ac_settings');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -42,6 +49,11 @@ export default function InventoryDashboard() {
       if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
     }
     fetchData();
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const fetchData = async () => {
@@ -118,8 +130,8 @@ export default function InventoryDashboard() {
           <div className="bg-brand-bg/50 p-6 rounded-lg border border-border-subtle backdrop-blur-md">
             <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">Today</div>
             <div className="text-sm font-bold text-foreground">{today}</div>
-            <div className="text-[10px] text-emerald-500 font-bold flex items-center justify-end gap-1.5 mt-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Feed Active
+            <div className={`text-[10px] font-bold flex items-center justify-end gap-1.5 mt-1 ${isOnline ? 'text-emerald-500' : 'text-rose-500'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} /> {isOnline ? 'Live Feed Active' : 'Feed Interrupted'}
             </div>
           </div>
         </div>
