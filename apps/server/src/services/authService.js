@@ -63,6 +63,20 @@ const authService = {
     return { success: true };
   },
 
+  verifyRecoveryKey: async (username, recoveryKey) => {
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user || !user.recoveryKey) {
+      throw new Error('User not found or recovery not enabled.');
+    }
+
+    const isMatch = await bcrypt.compare(recoveryKey.toUpperCase(), user.recoveryKey);
+    if (!isMatch) {
+      throw new Error('Invalid recovery key.');
+    }
+
+    return { success: true };
+  },
+
   login: async (username, password) => {
     // 1. Attempt Supabase Auth (Cloud Source of Truth)
     const { getSupabaseAdmin } = require('../utils/supabaseClient');

@@ -12,6 +12,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [isRecovering, setIsRecovering] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState(1); // 1: Verify, 2: Reset
   const [recoveryKey, setRecoveryKey] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -33,6 +34,52 @@ export default function Login() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('http://127.0.0.1:4000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Login failed');
+
+      login(data.token, data.user);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('http://127.0.0.1:4000/api/auth/verify-recovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, recoveryKey }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Verification failed');
+
+      setRecoveryStep(2);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmNewPassword) return setError('Passwords do not match');
@@ -52,8 +99,11 @@ export default function Login() {
 
       alert('Password reset successful! You can now log in.');
       setIsRecovering(false);
+      setRecoveryStep(1);
       setPassword('');
       setRecoveryKey('');
+      setNewPassword('');
+      setConfirmNewPassword('');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -166,10 +216,12 @@ export default function Login() {
               </div>
             </form>
           ) : (
-            <form onSubmit={handleRecovery} className="space-y-6">
+            <form onSubmit={recoveryStep === 1 ? handleVerifyKey : handleRecovery} className="space-y-6">
               <div className="space-y-2">
                 <h3 className="text-sm font-black text-white uppercase tracking-widest">Admin Recovery</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">Enter your recovery key to reset password.</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">
+                  {recoveryStep === 1 ? 'Step 1: Identity Verification' : 'Step 2: Password Reset'}
+                </p>
               </div>
 
               <div>
@@ -179,7 +231,8 @@ export default function Login() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  className="w-full bg-[#1a2234] border border-white/5 rounded-xl px-5 py-4 text-sm font-bold text-white placeholder:text-slate-600 outline-none focus:border-orange-500/50 transition-all"
+                  disabled={recoveryStep === 2}
+                  className="w-full bg-[#1a2234] border border-white/5 rounded-xl px-5 py-4 text-sm font-bold text-white placeholder:text-slate-600 outline-none focus:border-orange-500/50 transition-all disabled:opacity-50"
                   placeholder="Enter admin username"
                 />
               </div>
@@ -191,35 +244,43 @@ export default function Login() {
                   value={recoveryKey}
                   onChange={(e) => setRecoveryKey(e.target.value.toUpperCase())}
                   required
-                  className="w-full bg-[#1a2234] border border-white/5 rounded-xl px-5 py-4 text-sm font-bold text-white placeholder:text-slate-600 outline-none focus:border-orange-500/50 transition-all font-mono tracking-widest"
+                  disabled={recoveryStep === 2}
+                  className="w-full bg-[#1a2234] border border-white/5 rounded-xl px-5 py-4 text-sm font-bold text-white placeholder:text-slate-600 outline-none focus:border-orange-500/50 transition-all font-mono tracking-widest disabled:opacity-50"
                   placeholder="XXXX-XXXX-XXXX"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">New Pass</label>
-                  <input 
-                    type="password" 
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                    className="w-full bg-[#1a2234] border border-white/5 rounded-xl px-5 py-4 text-sm font-bold text-white outline-none focus:border-orange-500/50 transition-all"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Confirm</label>
-                  <input 
-                    type="password" 
-                    value={confirmNewPassword}
-                    onChange={(e) => setConfirmNewPassword(e.target.value)}
-                    required
-                    className="w-full bg-[#1a2234] border border-white/5 rounded-xl px-5 py-4 text-sm font-bold text-white outline-none focus:border-orange-500/50 transition-all"
-                    placeholder="••••••••"
-                  />
-                </div>
-              </div>
+              {recoveryStep === 2 && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">New Pass</label>
+                    <input 
+                      type="password" 
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      autoFocus
+                      className="w-full bg-[#1a2234] border border-white/5 rounded-xl px-5 py-4 text-sm font-bold text-white outline-none focus:border-orange-500/50 transition-all"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Confirm</label>
+                    <input 
+                      type="password" 
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      required
+                      className="w-full bg-[#1a2234] border border-white/5 rounded-xl px-5 py-4 text-sm font-bold text-white outline-none focus:border-orange-500/50 transition-all"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </motion.div>
+              )}
 
               {error && (
                 <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl text-xs font-bold text-rose-500">
@@ -230,7 +291,10 @@ export default function Login() {
               <div className="flex gap-4 pt-2">
                 <button 
                   type="button"
-                  onClick={() => setIsRecovering(false)}
+                  onClick={() => {
+                    setIsRecovering(false);
+                    setRecoveryStep(1);
+                  }}
                   className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-white transition-colors"
                 >
                   Cancel
@@ -238,9 +302,11 @@ export default function Login() {
                 <button 
                   disabled={isLoading}
                   type="submit"
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2"
+                  className={`flex-1 ${recoveryStep === 1 ? 'bg-orange-500 hover:bg-orange-600' : 'bg-emerald-500 hover:bg-emerald-600'} disabled:opacity-50 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2`}
                 >
-                  Reset Password
+                  {isLoading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : recoveryStep === 1 ? 'Verify Key' : 'Reset Password'}
                 </button>
               </div>
             </form>
