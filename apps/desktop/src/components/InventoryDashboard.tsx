@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useAuth } from './AuthContext';
 
 interface ChartItem {
   name: string;
@@ -28,36 +29,14 @@ interface Alert {
 }
 
 export default function InventoryDashboard() {
+  const { isOnline } = useAuth();
   const [currency, setCurrency] = useState('GH₵');
   const [exchangeRate, setExchangeRate] = useState(1);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
-
   useEffect(() => {
-    const checkInternet = async () => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-      try {
-        await fetch('https://connectivitycheck.gstatic.com/generate_204', { 
-          mode: 'no-cors', 
-          cache: 'no-store',
-          signal: controller.signal 
-        });
-        setIsOnline(true);
-      } catch (error) {
-        setIsOnline(false);
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    };
-
-    checkInternet();
-    const interval = setInterval(checkInternet, 3000);
-
     const saved = localStorage.getItem('ac_settings');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -65,8 +44,6 @@ export default function InventoryDashboard() {
       if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
     }
     fetchData();
-
-    return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {

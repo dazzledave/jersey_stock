@@ -18,33 +18,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('Sales Terminal');
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
-  const { isAuthenticated, user, logout, isAdmin } = useAuth();
-  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? window.navigator.onLine : true);
-
-  useEffect(() => {
-    const checkInternet = async () => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
-
-      try {
-        await fetch('https://connectivitycheck.gstatic.com/generate_204', { 
-          mode: 'no-cors',
-          cache: 'no-store',
-          signal: controller.signal
-        });
-        setIsOnline(true);
-      } catch (error) {
-        setIsOnline(false);
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    };
-
-    checkInternet();
-    const interval = setInterval(checkInternet, 3000); // Faster 3s interval
-
-    return () => clearInterval(interval);
-  }, []);
+  const { isAuthenticated, user, logout, isAdmin, isOnline } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated && isAdmin !== undefined) {
