@@ -59,8 +59,8 @@ export default function InventoryDashboard() {
   const fetchData = async () => {
     try {
       const [sumRes, alertRes] = await Promise.all([
-        fetch('http://localhost:4000/api/analytics/summary'),
-        fetch('http://localhost:4000/api/analytics/low-stock')
+        fetch('http://127.0.0.1:4000/api/analytics/summary'),
+        fetch('http://127.0.0.1:4000/api/analytics/low-stock')
       ]);
       
       const sumData = await sumRes.json();

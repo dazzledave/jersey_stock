@@ -11,7 +11,7 @@
     "lint": "next lint",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
     "electron:start": "electron .",
-    "prebuild": "npx shx mkdir -p server_dist && npx shx cp -r ../server/src server_dist/ && npx shx cp ../server/prisma/dev.db server_dist/ && npx shx cp -r ../server/node_modules server_dist/ && npx shx cp node-win.exe server_dist/node.exe",
+    "prebuild": "npx shx rm -rf server_dist && npx shx mkdir -p server_dist/src server_dist/prisma && npx shx cp -r ../server/src/* server_dist/src/ && npx shx cp ../server/prisma/dev.db server_dist/prisma/ && npx shx cp ../server/prisma/schema.prisma server_dist/prisma/ && npx shx cp ../server/.env server_dist/src/.env && npx shx cp ../server/package.json server_dist/ && npm install --prefix server_dist --omit=dev --no-workspaces && npx prisma generate --schema=server_dist/prisma/schema.prisma && npx shx mv server_dist/node_modules server_dist/server_lib && npx shx cp node-win.exe server_dist/node.exe",
     "dist": "npm run prebuild && npm run build && electron-builder"
   },
   "main": "electron/main.js",

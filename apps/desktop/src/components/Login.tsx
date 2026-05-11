@@ -10,7 +10,24 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const { login } = useAuth();
+
+  React.useEffect(() => {
+    const checkServer = async () => {
+      try {
+        const res = await fetch('http://127.0.0.1:4000/api/health');
+        if (res.ok) setServerStatus('online');
+        else setServerStatus('offline');
+      } catch (err) {
+        setServerStatus('offline');
+      }
+    };
+
+    checkServer();
+    const interval = setInterval(checkServer, 5000); // Check every 5s
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +35,7 @@ export default function Login() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:4000/api/auth/login', {
+      const response = await fetch('http://127.0.0.1:4000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -92,13 +109,24 @@ export default function Login() {
               </div>
             </div>
 
+            {serverStatus === 'offline' && (
+              <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl flex items-center gap-3">
+                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                  System Starting Up... Please wait
+                </span>
+              </div>
+            )}
+
             {error && (
               <motion.div 
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl text-xs font-bold text-rose-500"
               >
-                {error}
+                {error.includes('Failed to fetch') 
+                  ? 'Connection Error: Backend server is not responding. Please check server.log.' 
+                  : error}
               </motion.div>
             )}
 
@@ -116,6 +144,26 @@ export default function Login() {
                 </>
               )}
             </button>
+
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (confirm('Reset admin password to "admin123"?')) {
+                    try {
+                      const res = await fetch('http://127.0.0.1:4000/api/auth/emergency-reset', { method: 'POST' });
+                      const data = await res.json();
+                      alert(data.message || data.error);
+                    } catch (err) {
+                      alert('Failed to connect to server');
+                    }
+                  }
+                }}
+                className="text-[10px] text-amber-500/50 hover:text-amber-500 underline transition-colors uppercase tracking-widest font-black"
+              >
+                Trouble logging in? Reset Admin
+              </button>
+            </div>
           </form>
         </div>
 

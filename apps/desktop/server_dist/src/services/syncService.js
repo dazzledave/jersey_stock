@@ -4,17 +4,17 @@ const prisma = new PrismaClient();
 
 const mapToSnakeCase = (obj) => {
   const mapping = {
-    'basePrice': 'base_price',
-    'costPrice': 'cost_price',
-    'categoryId': 'category_id',
-    'imageUrl': 'image_url',
-    'productId': 'product_id',
-    'reorderLevel': 'reorder_level',
-    'variantId': 'variant_id',
-    'totalAmount': 'total_amount',
-    'paymentMethod': 'payment_method',
-    'customerId': 'customer_id',
-    'saleId': 'sale_id'
+    'basePrice': 'basePrice',
+    'costPrice': 'costPrice',
+    'categoryId': 'categoryId',
+    'imageUrl': 'imageUrl',
+    'productId': 'productId',
+    'reorderLevel': 'reorderLevel',
+    'variantId': 'variantId',
+    'totalAmount': 'totalAmount',
+    'paymentMethod': 'paymentMethod',
+    'customerId': 'customerId',
+    'saleId': 'saleId'
   };
 
   const newObj = {};
@@ -31,7 +31,7 @@ const mapToSnakeCase = (obj) => {
 
 const syncToCloud = async (supabaseUrl, supabaseKey) => {
   const sanitizedUrl = supabaseUrl.trim()
-    .replace(/\/rest\/v1\/?$/, '') 
+    .replace(/\/rest\/v1\/?$/, '')
     .replace(/\/+$/, '');
   const sanitizedKey = supabaseKey.trim();
 
@@ -39,10 +39,11 @@ const syncToCloud = async (supabaseUrl, supabaseKey) => {
   const logs = [];
 
   const tables = [
+    { name: 'users', model: prisma.user, idField: 'id' },
     { name: 'categories', model: prisma.category, idField: 'id' },
     { name: 'products', model: prisma.product, idField: 'id' },
     { name: 'product_variants', model: prisma.productVariant, idField: 'id' },
-    { name: 'inventory', model: prisma.inventory, idField: 'variant_id' },
+    { name: 'inventory', model: prisma.inventory, idField: 'variantId' },
     { name: 'customers', model: prisma.customer, idField: 'id' },
     { name: 'sales', model: prisma.sale, idField: 'id' },
     { name: 'sale_items', model: prisma.saleItem, idField: 'id' }
@@ -50,7 +51,7 @@ const syncToCloud = async (supabaseUrl, supabaseKey) => {
 
   try {
     const { error: healthError } = await supabase.from('categories').select('id', { count: 'exact', head: true });
-    
+
     if (healthError) {
       if (healthError.message.includes('Invalid path')) {
         throw new Error(`Connection Error: The URL provided (${sanitizedUrl}) appears to be incorrect.`);
@@ -78,6 +79,13 @@ const syncToCloud = async (supabaseUrl, supabaseKey) => {
 
     await prisma.syncLog.create({
       data: { status: 'SUCCESS', message: logs.join('; ') }
+    });
+
+    // Save last sync timestamp to settings
+    await prisma.setting.upsert({
+      where: { key: 'lastSync' },
+      update: { value: new Date().toISOString() },
+      create: { key: 'lastSync', value: new Date().toISOString() }
     });
 
     return { success: true, logs };

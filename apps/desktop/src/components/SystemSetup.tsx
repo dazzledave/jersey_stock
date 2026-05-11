@@ -35,7 +35,7 @@ export default function SystemSetup() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/settings');
+      const res = await fetch('http://127.0.0.1:4000/api/settings');
       if (res.ok) {
         const data = await res.json();
         if (Object.keys(data).length > 0) {
@@ -76,7 +76,7 @@ export default function SystemSetup() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/users');
+      const res = await fetch('http://127.0.0.1:4000/api/users');
       const data = await res.json();
       setUsers(data);
     } catch (err) {
@@ -88,7 +88,7 @@ export default function SystemSetup() {
     e.preventDefault();
     setIsCreatingUser(true);
     try {
-      const res = await fetch('http://localhost:4000/api/users', {
+      const res = await fetch('http://127.0.0.1:4000/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser)
@@ -127,7 +127,7 @@ export default function SystemSetup() {
     if (!window.confirm(`Are you sure you want to delete ${targetUser?.username} permanently?`)) return;
     
     try {
-      const res = await fetch(`http://localhost:4000/api/users/${id}`, {
+      const res = await fetch(`http://127.0.0.1:4000/api/users/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) fetchUsers();
@@ -159,7 +159,7 @@ export default function SystemSetup() {
 
     // Persist to server immediately
     try {
-      await fetch('http://localhost:4000/api/settings', {
+      await fetch('http://127.0.0.1:4000/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...base, darkMode: newMode })
@@ -177,7 +177,7 @@ export default function SystemSetup() {
     };
 
     try {
-      const res = await fetch('http://localhost:4000/api/settings', {
+      const res = await fetch('http://127.0.0.1:4000/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(finalSettings)
@@ -213,7 +213,7 @@ export default function SystemSetup() {
     setIsSyncing(true);
     try {
       // 1. Save credentials to server first
-      await fetch('http://localhost:4000/api/sync/credentials', {
+      await fetch('http://127.0.0.1:4000/api/sync/credentials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -223,7 +223,7 @@ export default function SystemSetup() {
       });
 
       // 2. Trigger a full manual sync test
-      const res = await fetch('http://localhost:4000/api/sync', {
+      const res = await fetch('http://127.0.0.1:4000/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -248,7 +248,7 @@ export default function SystemSetup() {
 
   const handleBackup = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/products');
+      const response = await fetch('http://127.0.0.1:4000/api/products');
       const products = await response.json();
       
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
@@ -273,7 +273,7 @@ export default function SystemSetup() {
     
     setIsResetting(true);
     try {
-      const res = await fetch('http://localhost:4000/api/sync/logs', {
+      const res = await fetch('http://127.0.0.1:4000/api/sync/logs', {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -291,7 +291,7 @@ export default function SystemSetup() {
     e.preventDefault();
     setIsUpdatingProfile(true);
     try {
-      const res = await fetch('http://localhost:4000/api/users/profile', {
+      const res = await fetch('http://127.0.0.1:4000/api/users/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user?.id, ...profileData })

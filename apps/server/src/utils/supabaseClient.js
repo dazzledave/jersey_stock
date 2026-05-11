@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const WebSocket = require('ws');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -25,13 +26,16 @@ const getSupabaseAdmin = async () => {
     return null;
   }
 
-  const sanitizedUrl = url.trim().replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
-  const sanitizedKey = serviceKey.trim();
+  const sanitizedUrl = url.trim().replace(/['"]/g, '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
+  const sanitizedKey = serviceKey.trim().replace(/['"]/g, '');
 
   supabaseAdmin = createClient(sanitizedUrl, sanitizedKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
+    },
+    realtime: {
+      transport: WebSocket
     }
   });
 

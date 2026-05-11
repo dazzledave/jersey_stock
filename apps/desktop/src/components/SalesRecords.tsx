@@ -64,7 +64,7 @@ export default function SalesRecords() {
 
   const fetchSales = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/sales');
+      const response = await fetch('http://127.0.0.1:4000/api/sales');
       const data = await response.json();
       setRecords(data);
       setFilteredRecords(data);
