@@ -42,6 +42,13 @@ export default function InventoryDashboard() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     
+    // Polling backup to ensure accuracy
+    const interval = setInterval(() => {
+      if (window.navigator.onLine !== isOnline) {
+        setIsOnline(window.navigator.onLine);
+      }
+    }, 5000);
+
     const saved = localStorage.getItem('ac_settings');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -53,8 +60,9 @@ export default function InventoryDashboard() {
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
     };
-  }, []);
+  }, [isOnline]);
 
   const fetchData = async () => {
     try {

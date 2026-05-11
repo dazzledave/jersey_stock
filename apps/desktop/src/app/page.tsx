@@ -26,11 +26,20 @@ export default function Home() {
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    
+    // Polling backup to ensure accuracy
+    const interval = setInterval(() => {
+      if (window.navigator.onLine !== isOnline) {
+        setIsOnline(window.navigator.onLine);
+      }
+    }, 5000);
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
     };
-  }, []);
+  }, [isOnline]);
 
   useEffect(() => {
     if (isAuthenticated && isAdmin !== undefined) {
