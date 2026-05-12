@@ -3,7 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const serve = require('electron-serve');
 
-// Removed disableHardwareAcceleration to fix input locks on Windows
+// FIX: Disable hardware acceleration to prevent 'ghosting' input locks on Windows
+app.disableHardwareAcceleration();
 
 const isDev = process.env.NODE_ENV === 'development';
 const { spawn } = require('child_process');

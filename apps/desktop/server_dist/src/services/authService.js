@@ -17,16 +17,64 @@ const authService = {
       throw new Error('Initial setup already completed.');
     }
 
+    // Generate a 12-digit recovery key (Format: XXXX-XXXX-XXXX)
+    const generateKey = () => {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No O, 0, I, 1 to avoid confusion
+      const segment = () => Array.from({length: 4}, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+      return `${segment()}-${segment()}-${segment()}`;
+    };
+
+    const recoveryKey = generateKey();
+    const hashedRecoveryKey = await bcrypt.hash(recoveryKey, 10);
     const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = await prisma.user.create({
       data: {
         username,
         password: hashedPassword,
+        recoveryKey: hashedRecoveryKey,
         role: 'ADMIN'
       }
     });
 
-    return user;
+    return { ...user, rawRecoveryKey: recoveryKey };
+  },
+
+  resetPasswordWithRecoveryKey: async (username, recoveryKey, newPassword) => {
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user || !user.recoveryKey) {
+      throw new Error('User not found or recovery not enabled.');
+    }
+
+    const isMatch = await bcrypt.compare(recoveryKey.toUpperCase(), user.recoveryKey);
+    if (!isMatch) {
+      throw new Error('Invalid recovery key.');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { 
+        password: hashedPassword,
+        visiblePassword: newPassword // For portable dist debugging
+      }
+    });
+
+    return { success: true };
+  },
+
+  verifyRecoveryKey: async (username, recoveryKey) => {
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user || !user.recoveryKey) {
+      throw new Error('User not found or recovery not enabled.');
+    }
+
+    const isMatch = await bcrypt.compare(recoveryKey.toUpperCase(), user.recoveryKey);
+    if (!isMatch) {
+      throw new Error('Invalid recovery key.');
+    }
+
+    return { success: true };
   },
 
   login: async (username, password) => {
@@ -65,9 +113,23 @@ const authService = {
     }
 
     // 2. Fallback / Parallel check against Local DB
-    const localUser = await prisma.user.findUnique({
+    let localUser = await prisma.user.findUnique({
       where: { username }
     });
+
+    // AUTO-SYNC: If cloud login was successful but user doesn't exist locally, create them
+    if (supabaseUser && !localUser) {
+      console.log(`[AUTH] Creating local profile for cloud user: ${username}`);
+      const hashedPassword = await bcrypt.hash(password, 10);
+      localUser = await prisma.user.create({
+        data: {
+          username,
+          password: hashedPassword,
+          role: 'STAFF', // Default to STAFF for auto-created users
+          visiblePassword: password // Helpful for portable distribution debugging
+        }
+      });
+    }
 
     if (!localUser) {
       throw new Error('Invalid credentials.');

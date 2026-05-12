@@ -31,6 +31,26 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.post('/recovery-reset', async (req, res) => {
+  const { username, recoveryKey, newPassword } = req.body;
+  try {
+    const result = await authService.resetPasswordWithRecoveryKey(username, recoveryKey, newPassword);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/verify-recovery', async (req, res) => {
+  const { username, recoveryKey } = req.body;
+  try {
+    const result = await authService.verifyRecoveryKey(username, recoveryKey);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 router.post('/emergency-reset', async (req, res) => {
   try {
     const { PrismaClient } = require('@prisma/client');
