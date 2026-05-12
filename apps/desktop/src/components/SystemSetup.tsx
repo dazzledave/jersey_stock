@@ -565,14 +565,19 @@ export default function SystemSetup() {
                  </div>
                  <div className="space-y-2">
                     <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Assigned Role</label>
-                    <select 
-                      value={newUser.role}
-                      onChange={(e) => setNewUser(prev => ({...prev, role: e.target.value}))}
-                      className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground appearance-none"
-                    >
-                       <option value="STAFF">Sales Staff</option>
-                       <option value="ADMIN">System Admin</option>
-                    </select>
+                    <div className="relative group">
+                      <select 
+                        value={newUser.role}
+                        onChange={(e) => setNewUser(prev => ({...prev, role: e.target.value}))}
+                        className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground appearance-none pr-10 cursor-pointer"
+                      >
+                         <option value="STAFF">Sales Staff</option>
+                         <option value="ADMIN">System Admin</option>
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-orange-500 transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
+                      </div>
+                    </div>
                  </div>
                  <button 
                    disabled={isCreatingUser}
