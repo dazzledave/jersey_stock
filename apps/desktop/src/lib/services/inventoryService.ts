@@ -1,9 +1,10 @@
 import { prisma } from '../prisma';
+import { cloudSyncService } from './cloudSyncService';
 
 export const inventoryService = {
   async updateStock(variantId: string, quantityChange: number, type: string, reason?: string) {
-    return await prisma.$transaction(async (tx) => {
-      const inventory = await tx.inventory.update({
+    const inventory = await prisma.$transaction(async (tx) => {
+      const updatedInventory = await tx.inventory.update({
         where: { variantId },
         data: {
           quantity: {
@@ -21,16 +22,19 @@ export const inventoryService = {
         }
       });
 
-      return inventory;
+      return updatedInventory;
     });
+
+    cloudSyncService.queueSync('Inventory', variantId).catch(console.error);
+    return inventory;
   },
 
   async setStock(variantId: string, quantity: number) {
-    return await prisma.$transaction(async (tx) => {
+    const inventory = await prisma.$transaction(async (tx) => {
       const current = await tx.inventory.findUnique({ where: { variantId } });
       const diff = quantity - (current?.quantity || 0);
 
-      const inventory = await tx.inventory.update({
+      const updatedInventory = await tx.inventory.update({
         where: { variantId },
         data: { quantity }
       });
@@ -44,8 +48,11 @@ export const inventoryService = {
         }
       });
 
-      return inventory;
+      return updatedInventory;
     });
+
+    cloudSyncService.queueSync('Inventory', variantId).catch(console.error);
+    return inventory;
   },
 
   async getLowStockItems() {

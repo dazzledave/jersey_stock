@@ -12,6 +12,7 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
     "electron-serve": "1.1.0"
   }
 }

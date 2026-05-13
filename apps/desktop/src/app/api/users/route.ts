@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import { getSupabaseAdmin } from '@/lib/utils/supabaseClient';
+import { cloudSyncService } from '@/lib/services/cloudSyncService';
 
 export async function GET() {
   try {
@@ -32,6 +33,8 @@ export async function POST(request: Request) {
         role: role || 'STAFF'
       }
     });
+
+    cloudSyncService.queueSync('User', user.id).catch(console.error);
 
     // Supabase Sync
     try {

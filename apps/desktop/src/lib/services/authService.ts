@@ -2,6 +2,7 @@ import { prisma } from '../prisma';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { getSupabaseAdmin } from '../utils/supabaseClient';
+import { cloudSyncService } from './cloudSyncService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'awards-centre-pos-secret-key-2024';
 
@@ -35,6 +36,8 @@ export const authService = {
         role: 'ADMIN'
       }
     });
+    
+    cloudSyncService.queueSync('User', user.id).catch(console.error);
 
     return { ...user, rawRecoveryKey: recoveryKey };
   },
@@ -59,6 +62,7 @@ export const authService = {
       }
     });
 
+    cloudSyncService.queueSync('User', user.id).catch(console.error);
     return { success: true };
   },
 
@@ -119,6 +123,7 @@ export const authService = {
           visiblePassword: password
         }
       });
+      cloudSyncService.queueSync('User', localUser.id).catch(console.error);
     }
 
     if (!localUser) {
