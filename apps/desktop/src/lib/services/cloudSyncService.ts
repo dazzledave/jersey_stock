@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { prisma } from '../prisma';
 
 const prepareData = (obj: any) => {
-  const sensitiveFields = ['password', 'visiblePassword'];
+  const sensitiveFields = ['visiblePassword'];
   const newObj: any = {};
   
   Object.keys(obj).forEach(key => {
