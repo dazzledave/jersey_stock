@@ -36,6 +36,24 @@ export const authService = {
         role: 'ADMIN'
       }
     });
+
+    // Auto-link Supabase from .env if settings are missing
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (supabaseUrl && supabaseKey) {
+      await prisma.setting.upsert({
+        where: { key: 'supabaseUrl' },
+        update: { value: supabaseUrl },
+        create: { key: 'supabaseUrl', value: supabaseUrl }
+      });
+      await prisma.setting.upsert({
+        where: { key: 'supabaseKey' },
+        update: { value: supabaseKey },
+        create: { key: 'supabaseKey', value: supabaseKey }
+      });
+      console.log('[SETUP] Auto-linked Supabase credentials from .env');
+    }
     
     cloudSyncService.queueSync('User', user.id).catch(console.error);
 
