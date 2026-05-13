@@ -13,6 +13,7 @@ interface AuthContextType {
   token: string | null;
   login: (token: string, user: User) => void;
   logout: () => void;
+  updateUser: (newUser: Partial<User>) => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isOnline: boolean;
@@ -104,6 +105,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('ac_user');
   };
 
+  const updateUser = (updatedFields: Partial<User>) => {
+    if (user) {
+      const newUser = { ...user, ...updatedFields };
+      setUser(newUser);
+      localStorage.setItem('ac_user', JSON.stringify(newUser));
+    }
+  };
+
   if (isLoading) return null;
 
   return (
@@ -112,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token, 
       login, 
       logout, 
+      updateUser,
       isAuthenticated: !!token,
       isAdmin: user?.role === 'ADMIN',
       isOnline

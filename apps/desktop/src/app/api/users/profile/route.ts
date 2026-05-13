@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import { getSupabaseAdmin } from '@/lib/utils/supabaseClient';
+import { cloudSyncService } from '@/lib/services/cloudSyncService';
 
 export async function PUT(request: Request) {
   try {

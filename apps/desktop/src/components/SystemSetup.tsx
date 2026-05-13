@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 
 export default function SystemSetup() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, updateUser } = useAuth();
   const [settings, setSettings] = useState({
     shopName: 'Awards Centre',
     currency: 'GH₵',
@@ -297,6 +297,14 @@ export default function SystemSetup() {
         body: JSON.stringify({ userId: user?.id, ...profileData })
       });
       if (res.ok) {
+        const data = await res.json();
+        // Update the global Auth context in real-time
+        if (data.user) {
+          updateUser({ 
+            username: data.user.username,
+            role: data.user.role 
+          });
+        }
         alert('Profile updated successfully!');
         setProfileData(prev => ({ ...prev, password: '' }));
       } else {
