@@ -41,15 +41,17 @@ export async function PUT(request: Request) {
         if (!listError) {
           const authUser = users.find((u: any) => u.email === oldEmail);
           if (authUser) {
-            const { error: updateError } = await supabase.auth.admin.updateUserById(authUser.id, updateData);
-            if (updateError) console.error(`[SUPABASE] Auth update failed: ${updateError.message}`);
-            else console.log(`[SUPABASE] Successfully updated auth for ${updatedUser.username}`);
+            await supabase.auth.admin.updateUserById(authUser.id, updateData);
+            console.log(`[SUPABASE] Updated auth for ${updatedUser.username}`);
           }
         }
       }
     } catch (err) {
-      console.warn('Supabase sync failed during profile update');
+      console.warn('Supabase auth sync failed, relying on background queue');
     }
+
+    // 3. Queue background sync for the "users" table data
+    cloudSyncService.queueSync('User', updatedUser.id).catch(console.error);
 
     return NextResponse.json({ 
       message: 'Profile updated successfully', 

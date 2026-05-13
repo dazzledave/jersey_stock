@@ -79,6 +79,24 @@ export const authService = {
       }
     });
 
+    // Sync to Supabase Auth
+    try {
+      const supabase = await getSupabaseAdmin();
+      if (supabase) {
+        const email = `${user.username.toLowerCase()}@jersey-stock.com`;
+        const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+        if (!listError) {
+          const authUser = users.find(u => u.email === email);
+          if (authUser) {
+            await supabase.auth.admin.updateUserById(authUser.id, { password: newPassword });
+            console.log(`[AUTH] Synced new password to Cloud Auth for: ${user.username}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[AUTH] Could not sync reset password to cloud, will rely on next login');
+    }
+
     cloudSyncService.queueSync('User', user.id).catch(console.error);
     return { success: true };
   },
