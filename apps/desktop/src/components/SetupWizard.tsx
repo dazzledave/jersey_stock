@@ -32,6 +32,11 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         body: JSON.stringify({ username, password }),
       });
 
+      // Clear any stale session data from before the wipe
+      localStorage.removeItem('ac_token');
+      localStorage.removeItem('ac_user');
+      localStorage.removeItem('ac_settings');
+
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Setup failed');
 
