@@ -20,8 +20,8 @@ export const getSupabaseAdmin = async () => {
     return null;
   }
 
-  const sanitizedUrl = url.trim().replace(/['"]/g, '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
-  const sanitizedKey = serviceKey.trim().replace(/['"]/g, '');
+  const sanitizedUrl = (url || '').trim().replace(/['"]/g, '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
+  const sanitizedKey = (serviceKey || '').trim().replace(/['"]/g, '');
 
   supabaseAdmin = createClient(sanitizedUrl, sanitizedKey, {
     auth: {
