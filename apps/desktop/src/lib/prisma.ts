@@ -17,7 +17,12 @@ if (!dbUrl) {
 
 console.log(`[PRISMA] Initializing with URL: ${dbUrl}`);
 
-const adapter = new PrismaBetterSqlite3({ url: dbUrl });
+// Hybrid check for ESM/CJS differences in Prisma 7
+const AdapterClass = (typeof PrismaBetterSqlite3 === 'function' && !PrismaBetterSqlite3.prototype)
+  ? (PrismaBetterSqlite3 as any)()
+  : PrismaBetterSqlite3;
+
+const adapter = new AdapterClass({ url: dbUrl });
 
 export const prisma =
   globalForPrisma.prisma ||
