@@ -56,7 +56,7 @@ export default function InventoryStock() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:4000/api/products');
+      const res = await fetch('/api/products');
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -68,7 +68,7 @@ export default function InventoryStock() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:4000/api/products/categories');
+      const res = await fetch('/api/products/categories');
       const data = await res.json();
       setCategories(data);
     } catch (err) {
@@ -79,7 +79,7 @@ export default function InventoryStock() {
   const updateStock = async (variantId: string, newQuantity: number) => {
     if (!isAdmin) return;
     try {
-      const res = await fetch(`http://127.0.0.1:4000/api/inventory/${variantId}`, {
+      const res = await fetch(`/api/inventory/${variantId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity: newQuantity })
@@ -102,7 +102,7 @@ export default function InventoryStock() {
     if (isNaN(newPrice)) return;
 
     try {
-      const res = await fetch(`http://127.0.0.1:4000/api/products/${productId}`, {
+      const res = await fetch(`/api/products/${productId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ basePrice: newPrice })
@@ -119,7 +119,7 @@ export default function InventoryStock() {
   const handleFullUpdate = async () => {
     if (!isAdmin || !editingProduct) return;
     try {
-      const res = await fetch(`http://127.0.0.1:4000/api/products/${editingProduct.id}`, {
+      const res = await fetch(`/api/products/${editingProduct.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -156,7 +156,7 @@ export default function InventoryStock() {
     if (!window.confirm(`Are you sure you want to permanently delete "${productName}"?`)) return;
 
     try {
-      const res = await fetch(`http://127.0.0.1:4000/api/products/${productId}`, {
+      const res = await fetch(`/api/products/${productId}`, {
         method: 'DELETE'
       });
       if (res.ok) {

@@ -64,7 +64,7 @@ export default function ProductForm() {
   }
 
   const fetchCategories = () => {
-    fetch('http://127.0.0.1:4000/api/products/categories')
+    fetch('/api/products/categories')
       .then(res => res.json())
       .then(data => {
         setCategories(data);
@@ -76,7 +76,7 @@ export default function ProductForm() {
   const handleCreateCategory = async () => {
     if (!newCategoryName) return;
     try {
-      const res = await fetch('http://127.0.0.1:4000/api/products/categories', {
+      const res = await fetch('/api/products/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newCategoryName })
@@ -132,7 +132,7 @@ export default function ProductForm() {
     setStatusMessage({ text: 'Publishing to catalog...', type: 'info' });
 
     try {
-      const response = await fetch('http://127.0.0.1:4000/api/products', {
+      const response = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

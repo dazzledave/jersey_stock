@@ -21,7 +21,7 @@ export default function Login() {
   React.useEffect(() => {
     const checkServer = async () => {
       try {
-        const res = await fetch('http://127.0.0.1:4000/api/health');
+        const res = await fetch('/api/health');
         if (res.ok) setServerStatus('online');
         else setServerStatus('offline');
       } catch (err) {
@@ -40,7 +40,7 @@ export default function Login() {
     setError('');
 
     try {
-      const response = await fetch('http://127.0.0.1:4000/api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -63,7 +63,7 @@ export default function Login() {
     setError('');
 
     try {
-      const response = await fetch('http://127.0.0.1:4000/api/auth/verify-recovery', {
+      const response = await fetch('/api/auth/verify-recovery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, recoveryKey }),
@@ -88,7 +88,7 @@ export default function Login() {
     setError('');
 
     try {
-      const response = await fetch('http://127.0.0.1:4000/api/auth/recovery-reset', {
+      const response = await fetch('/api/auth/recovery-reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, recoveryKey, newPassword }),

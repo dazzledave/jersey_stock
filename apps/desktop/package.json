@@ -5,14 +5,16 @@
   "author": "Awards Centre",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "npx tsx server.js",
     "build": "next build",
-    "start": "next start",
+    "start": "npx tsx server.js",
     "lint": "next lint",
-    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
+    "electron:dev": "concurrently \"npx tsx server.js\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
     "electron:start": "electron .",
-    "prebuild": "npx shx rm -rf server_dist && npx shx mkdir -p server_dist/src server_dist/prisma && npx shx cp -r ../server/src/* server_dist/src/ && npx shx cp ../server/prisma/dev.db server_dist/ && npx shx cp ../server/prisma/schema.prisma server_dist/prisma/ && npx shx cp ../server/.env server_dist/src/.env && npx shx cp ../server/package.json server_dist/ && npm install --prefix server_dist --omit=dev --no-workspaces && npx prisma generate --schema=server_dist/prisma/schema.prisma && npx shx mv server_dist/node_modules server_dist/server_lib && npx shx cp node-win.exe server_dist/node.exe",
-    "dist": "npm run prebuild && npm run build && electron-builder"
+    "prebuild": "prisma generate",
+    "dist": "npm run prebuild && npm run build && electron-builder",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
   },
   "main": "electron/main.js",
   "build": {
@@ -23,14 +25,16 @@
       "output": "dist"
     },
     "files": [
-      "out/**/*",
+      ".next/**/*",
+      "public/**/*",
       "electron/**/*",
+      "server.js",
       "package.json"
     ],
     "extraResources": [
       {
-        "from": "server_dist",
-        "to": "server_dist",
+        "from": "prisma",
+        "to": "prisma",
         "filter": [
           "**/*"
         ]
@@ -47,16 +51,27 @@
     "asar": false
   },
   "dependencies": {
+    "@prisma/client": "^7.8.0",
+    "@supabase/supabase-js": "^2.105.4",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
     "cross-env": "^10.1.0",
+    "dotenv": "^17.4.2",
     "electron-serve": "^3.0.1",
     "framer-motion": "^11.2.6",
+    "jsonwebtoken": "^9.0.3",
     "next": "^14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "socket.io-client": "^4.7.5"
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.7.5",
+    "ws": "^8.20.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
@@ -66,7 +81,9 @@
     "electron-builder": "^26.8.1",
     "electron-packager": "^17.1.2",
     "postcss": "^8.5.14",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4.2.4",
+    "tsx": "^4.21.0",
     "typescript": "^5.4.5",
     "wait-on": "^7.2.0"
   }

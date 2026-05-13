@@ -37,7 +37,7 @@ export default function Analytics() {
 
   const fetchDetailed = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:4000/api/analytics/detailed');
+      const res = await fetch('/api/analytics/detailed');
       const json = await res.json();
       setData(json);
     } catch (err) {

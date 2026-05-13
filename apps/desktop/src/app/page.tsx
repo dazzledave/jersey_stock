@@ -32,7 +32,7 @@ export default function Home() {
 
   const checkSetupStatus = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/auth/setup-status');
+      const response = await fetch('/api/auth/setup-status');
       const data = await response.json();
       setSetupRequired(!data.initialized);
     } catch (error) {

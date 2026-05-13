@@ -1,7 +1,6 @@
 const { app, BrowserWindow, Menu, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const serve = require('electron-serve');
 
 // Removed disableHardwareAcceleration to fix input locks on Windows
 
@@ -16,9 +15,8 @@ function startServer() {
   // Database persistence logic
   const dbName = 'jersey_stock.db';
   const targetDbPath = path.join(userDataPath, dbName);
-  const templateDbPath = path.join(process.resourcesPath, 'server_dist/dev.db');
+  const templateDbPath = path.join(process.resourcesPath, 'prisma/dev.db');
 
-  // Copy database template to AppData on first run
   if (!fs.existsSync(targetDbPath) && fs.existsSync(templateDbPath)) {
     try {
       fs.copyFileSync(templateDbPath, targetDbPath);
@@ -28,26 +26,23 @@ function startServer() {
     }
   }
 
-  // Try to find the server in multiple possible locations
-  let serverPath = path.join(process.resourcesPath, 'server_dist/src/index.js');
+  let serverPath = path.join(process.resourcesPath, 'app/server.js');
   
   if (isDev) {
-    serverPath = path.join(__dirname, '../../server/src/index.js');
+    serverPath = path.join(__dirname, '../server.js');
   }
 
-  logStream.write(`Attempting to start server at: ${serverPath}\n`);
+  logStream.write(`Attempting to start Next.js server at: ${serverPath}\n`);
   
-  const internalNodePath = path.join(process.resourcesPath, 'server_dist/node.exe');
-  const nodeExe = (isDev || !fs.existsSync(internalNodePath)) ? 'node' : internalNodePath;
+  const nodeExe = 'npx';
 
-  serverProcess = spawn(nodeExe, [serverPath], {
-    cwd: path.dirname(serverPath),
+  serverProcess = spawn(nodeExe, ['tsx', serverPath], {
+    cwd: isDev ? path.dirname(serverPath) : path.join(process.resourcesPath, 'app'),
     env: { 
       ...process.env, 
-      PORT: 4000, 
-      NODE_ENV: 'production',
-      NODE_PATH: path.join(path.dirname(serverPath), '../server_lib'),
-      DATABASE_URL: isDev ? process.env.DATABASE_URL : `file:///${targetDbPath.replace(/\\/g, '/')}`
+      PORT: 3000, 
+      NODE_ENV: isDev ? 'development' : 'production',
+      DATABASE_URL: `file:///${targetDbPath.replace(/\\/g, '/')}`
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -68,22 +63,12 @@ function startServer() {
   serverProcess.on('error', (err) => {
     logStream.write(`Failed to start server process: ${err.message}\n`);
     fs.appendFileSync(desktopLogPath, `[SPAWN ERROR] ${err.message}\n`);
-    const { dialog } = require('electron');
-    dialog.showErrorBox('Critical Server Failure', `The background server failed to start: ${err.message}\n\nPlease ensure your Antivirus is not blocking the application.`);
   });
 
   serverProcess.on('exit', (code, signal) => {
     logStream.write(`Server exited with code ${code} and signal ${signal}\n`);
-    fs.appendFileSync(desktopLogPath, `[EXIT] Code: ${code}, Signal: ${signal}\n`);
-    if (code !== 0 && code !== null) {
-      const { dialog } = require('electron');
-      dialog.showErrorBox('Server Crashed', `The backend server crashed unexpectedly with exit code ${code}.\n\nA diagnostic log has been saved to your Desktop as POS_Server_Diagnostic.txt. Please send this file to the developer.`);
-    }
   });
 }
-
-// Setup the static file server for production
-const loadURL = serve({ directory: path.join(__dirname, '../out') });
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -97,17 +82,12 @@ function createWindow() {
     icon: path.join(__dirname, '../public/logo.png')
   });
 
-  // FIX: Force focus restoration whenever the window is activated
   win.on('focus', () => {
     win.webContents.focus();
   });
 
-  if (isDev) {
-    win.loadURL('http://localhost:3000');
-  } else {
-    // Use the custom app:// protocol to load the exported files
-    loadURL(win);
-  }
+  // Always load from localhost:3000 as we are running a dynamic Next.js server
+  win.loadURL('http://localhost:3000');
 
   const template = [
     {

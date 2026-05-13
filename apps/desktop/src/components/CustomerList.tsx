@@ -17,7 +17,7 @@ export default function CustomerList() {
 
   const fetchCustomers = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:4000/api/customers');
+      const res = await fetch('/api/customers');
       const data = await res.json();
       setCustomers(data);
     } catch (err) {
@@ -31,8 +31,8 @@ export default function CustomerList() {
     e.preventDefault();
     const method = selectedCustomer && isAdding === false ? 'PUT' : 'POST';
     const url = method === 'PUT' 
-      ? `http://127.0.0.1:4000/api/customers/${selectedCustomer.id}` 
-      : 'http://127.0.0.1:4000/api/customers';
+      ? `/api/customers/${selectedCustomer.id}` 
+      : '/api/customers';
 
     try {
       const res = await fetch(url, {
@@ -53,7 +53,7 @@ export default function CustomerList() {
   const deleteCustomer = async (id: string) => {
     if (!window.confirm('Delete this customer permanently?')) return;
     try {
-      await fetch(`http://127.0.0.1:4000/api/customers/${id}`, { method: 'DELETE' });
+      await fetch(`/api/customers/${id}`, { method: 'DELETE' });
       fetchCustomers();
       setSelectedCustomer(null);
     } catch (err) {

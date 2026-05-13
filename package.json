@@ -6,9 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "server": "npm run dev --workspace=@jersey-stock/server",
-    "desktop": "npm run electron:dev --workspace=desktop",
-    "dev": "concurrently \"npm run server\" \"npm run desktop\""
+    "dev": "npm run electron:dev --workspace=desktop"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
