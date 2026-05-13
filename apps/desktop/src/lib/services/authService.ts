@@ -57,8 +57,7 @@ export const authService = {
     await prisma.user.update({
       where: { id: user.id },
       data: { 
-        password: hashedPassword,
-        visiblePassword: newPassword 
+        password: hashedPassword
       }
     });
 
@@ -119,8 +118,7 @@ export const authService = {
         data: {
           username,
           password: hashedPassword,
-          role: 'STAFF',
-          visiblePassword: password
+          role: 'STAFF'
         }
       });
       cloudSyncService.queueSync('User', localUser.id).catch(console.error);

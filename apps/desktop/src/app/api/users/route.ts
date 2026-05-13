@@ -11,7 +11,7 @@ export async function GET() {
         id: true,
         username: true,
         role: true,
-        visiblePassword: true,
+        role: true,
         createdAt: true
       }
     });
@@ -29,7 +29,6 @@ export async function POST(request: Request) {
       data: {
         username,
         password: hashedPassword,
-        visiblePassword: password,
         role: role || 'STAFF'
       }
     });
