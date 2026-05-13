@@ -22,7 +22,7 @@ async function main() {
     });
   }
 
-  const bcrypt = require('bcrypt');
+  const bcrypt = require('bcryptjs');
   const hashedPassword = await bcrypt.hash('admin123', 10);
   
   console.log('Seeding admin user...');

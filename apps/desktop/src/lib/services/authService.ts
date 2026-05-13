@@ -1,5 +1,5 @@
 import { prisma } from '../prisma';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getSupabaseAdmin } from '../utils/supabaseClient';
 import { cloudSyncService } from './cloudSyncService';

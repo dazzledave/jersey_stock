@@ -15,8 +15,12 @@ export const getSupabaseAdmin = async () => {
     url = urlSetting?.value;
   }
   
+  if (!serviceKey) {
+    const keySetting = await prisma.setting.findUnique({ where: { key: 'supabaseKey' } });
+    serviceKey = keySetting?.value;
+  }
+  
   if (!url || !serviceKey) {
-    console.warn('[SUPABASE] Supabase URL or Service Role Key missing. Cloud auth features will be disabled.');
     return null;
   }
 
@@ -28,8 +32,8 @@ export const getSupabaseAdmin = async () => {
       autoRefreshToken: false,
       persistSession: false
     },
-    // @ts-ignore
     realtime: {
+      // @ts-ignore
       transport: WebSocket
     }
   });

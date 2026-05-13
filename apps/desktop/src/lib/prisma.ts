@@ -10,8 +10,19 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 // Ensure we have a valid file: URL with an absolute path
 let dbUrl = process.env.DATABASE_URL;
+
 if (!dbUrl) {
-  const absoluteDbPath = path.join(process.cwd(), 'prisma', 'dev.db');
+  let absoluteDbPath: string;
+  
+  if (process.env.NODE_ENV === 'production' || (process as any).packaged) {
+    // In production, use the appData/userData directory
+    const appData = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME || '', 'Library', 'Application Support') : path.join(process.env.HOME || '', '.config'));
+    absoluteDbPath = path.join(appData, 'jersey-stock-pos', 'dev.db');
+  } else {
+    // In development, use the local prisma directory
+    absoluteDbPath = path.join(process.cwd(), 'prisma', 'dev.db');
+  }
+  
   dbUrl = `file:${absoluteDbPath}`;
 }
 
