@@ -44,6 +44,7 @@ Thumbs.db
 /apps/server/prisma/dev.db-journal
 
 # POS Distribution & Diagnostics
+dist-server/
 server_dist/
 .server_dist/
 scratch/
@@ -51,3 +52,9 @@ node-win.exe
 POS_Server_Diagnostic.txt
 ServerCrashLog.txt
 *.log
+*.db
+*.db-journal
+
+# Prisma Generated Client
+src/generated/
+**/src/generated/

@@ -1,45 +1,44 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import path from 'path';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
 // Force load env from the desktop app directory
-dotenv.config({ path: path.join(process.cwd(), '.env') });
+if (process.env.NODE_ENV !== 'production' && !(process as any).packaged) {
+  dotenv.config({ path: path.join(process.cwd(), '.env') });
+}
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-// Ensure we have a valid file: URL with an absolute path
-let dbUrl = process.env.DATABASE_URL;
+// Determine database path - UNIFIED LOGIC
+let dbPath = process.env.DATABASE_PATH;
 
-if (!dbUrl) {
-  let absoluteDbPath: string;
-  
-  if (process.env.NODE_ENV === 'production' || (process as any).packaged) {
-    // In production, use the appData/userData directory
-    const appData = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME || '', 'Library', 'Application Support') : path.join(process.env.HOME || '', '.config'));
-    absoluteDbPath = path.join(appData, 'jersey-stock-pos', 'dev.db');
-  } else {
-    // In development, use the local prisma directory
-    absoluteDbPath = path.join(process.cwd(), 'prisma', 'dev.db');
-  }
-  
-  dbUrl = `file:${absoluteDbPath}`;
+if (!dbPath) {
+  const appData = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME || '', 'Library', 'Application Support') : path.join(process.env.HOME || '', '.config'));
+  const folderName = 'awards-centre-pos';
+  dbPath = path.join(appData, folderName, 'jersey_stock.db');
 }
 
-console.log(`[PRISMA] Initializing with URL: ${dbUrl}`);
+// Final safety check
+const dbDir = path.dirname(dbPath);
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
 
-// Hybrid check for ESM/CJS differences in Prisma 7
+console.log(`[PRISMA] Opening database at: ${dbPath}`);
+
 const AdapterClass = (typeof PrismaBetterSqlite3 === 'function' && !PrismaBetterSqlite3.prototype)
   ? (PrismaBetterSqlite3 as any)()
   : PrismaBetterSqlite3;
 
-const adapter = new AdapterClass({ url: dbUrl });
+const adapter = new AdapterClass({ url: dbPath });
 
 export const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
     adapter,
-    log: ['query', 'error', 'warn'],
+    log: ['error', 'warn'],
   });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;

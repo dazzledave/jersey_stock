@@ -112,7 +112,12 @@ export const cloudSyncService = {
         }
 
         const cleanData = prepareData(data);
-        const { error } = await supabase.from(tableName).upsert(cleanData, { onConflict: idField });
+        let conflictField = idField;
+        if (tableName === 'users') conflictField = 'username';
+        if (tableName === 'categories') conflictField = 'name';
+        if (tableName === 'settings') conflictField = 'key';
+        
+        const { error } = await supabase.from(tableName).upsert(cleanData, { onConflict: conflictField });
 
         if (error) {
           if (error.code === 'PGRST204') {

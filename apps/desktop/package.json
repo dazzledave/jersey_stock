@@ -1,5 +1,5 @@
 {
-  "name": "desktop",
+  "name": "awards-centre-pos",
   "version": "1.0.0",
   "description": "Awards Centre Point of Sale System",
   "author": "Awards Centre",
@@ -12,7 +12,8 @@
     "electron:dev": "concurrently \"npx tsx server.js\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
     "electron:start": "electron .",
     "prebuild": "prisma generate",
-    "dist": "npm run prebuild && npm run build && electron-builder",
+    "dist": "npm run prebuild && npm run build && npm run build:server && electron-builder",
+    "build:server": "ncc build server.js -o dist-server --minify --no-cache --external next --external better-sqlite3 --external @prisma/client",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev"
   },
@@ -28,7 +29,9 @@
       ".next/**/*",
       "public/**/*",
       "electron/**/*",
-      "src/**/*",
+      "dist-server/**/*",
+      "src/generated/**/*",
+      "prisma/**/*",
       "server.js",
       "package.json"
     ],
@@ -80,6 +83,7 @@
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
+    "@vercel/ncc": "^0.38.4",
     "autoprefixer": "^10.5.0",
     "concurrently": "^8.2.2",
     "electron": "30.0.0",
