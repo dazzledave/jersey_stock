@@ -32,16 +32,18 @@ function startServer() {
     serverPath = path.join(__dirname, '../server.js');
   }
 
-  logStream.write(`Attempting to start Next.js server at: ${serverPath}\n`);
+  logStream.write(`Attempting to start standalone server at: ${serverPath}\n`);
   
-  const nodeExe = 'npx';
+  // Use Electron's own executable as the Node runner
+  const nodeExe = process.execPath;
 
-  serverProcess = spawn(nodeExe, ['tsx', serverPath], {
+  serverProcess = spawn(nodeExe, [serverPath], {
     cwd: isDev ? path.dirname(serverPath) : path.join(process.resourcesPath, 'app'),
     env: { 
       ...process.env, 
       PORT: 3000, 
       NODE_ENV: isDev ? 'development' : 'production',
+      ELECTRON_RUN_AS_NODE: '1', // This is the magic key!
       DATABASE_URL: `file:///${targetDbPath.replace(/\\/g, '/')}`
     },
     stdio: ['ignore', 'pipe', 'pipe']

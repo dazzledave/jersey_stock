@@ -4,6 +4,16 @@ const { parse } = require('url');
 const next = require('next');
 const { Server } = require('socket.io');
 
+// Enable TypeScript loading in production for background services
+if (process.env.NODE_ENV === 'production' || process.env.ELECTRON_RUN_AS_NODE) {
+  try {
+    require('tsx/register');
+    console.log('[SERVER] TypeScript registration successful.');
+  } catch (err) {
+    console.error('[SERVER] Failed to register TS loader:', err.message);
+  }
+}
+
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = parseInt(process.env.PORT || '3000', 10);
@@ -51,12 +61,19 @@ app.prepare().then(() => {
     
     // Start background sync worker
     try {
-      const { cloudSyncService } = require('./src/lib/services/cloudSyncService');
+      const isDev = process.env.NODE_ENV !== 'production';
+      // In production, we need to handle the fact that we might not have a TS loader
+      const workerPath = isDev 
+        ? './src/lib/services/cloudSyncService' 
+        : './src/lib/services/cloudSyncService'; // We'll ensure this is accessible
+        
+      const { cloudSyncService } = require(workerPath);
       if (cloudSyncService && cloudSyncService.startWorker) {
         cloudSyncService.startWorker();
+        console.log('[SERVER] Background sync worker started.');
       }
     } catch (err) {
-      console.error('Failed to start sync worker:', err);
+      console.error('Failed to start sync worker:', err.message);
     }
   });
 });
