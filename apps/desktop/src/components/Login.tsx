@@ -17,6 +17,13 @@ export default function Login() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const { login } = useAuth();
+  const usernameRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    // Focus the username input immediately
+    const timer = setTimeout(() => usernameRef.current?.focus(), 100);
+    return () => clearTimeout(timer);
+  }, [isRecovering]);
 
   React.useEffect(() => {
     const checkServer = async () => {
@@ -136,6 +143,7 @@ export default function Login() {
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Username</label>
                 <input 
+                  ref={usernameRef}
                   type="text" 
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}

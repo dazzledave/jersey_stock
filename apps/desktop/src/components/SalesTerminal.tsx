@@ -44,6 +44,18 @@ export default function SalesTerminal() {
   const [exchangeRate, setExchangeRate] = useState(1);
   
   const [variantSelector, setVariantSelector] = useState<Product | null>(null);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Focus Magnet: Ensures the cursor is always ready
+  const focusSearch = () => {
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 100);
+  };
+
+  useEffect(() => {
+    focusSearch();
+  }, [variantSelector, showReceipt, showMultiPayment]); // Re-focus when any modal closes
   
   // Accountability States
   const [saleType, setSaleType] = useState('Standard'); // 'Standard', 'Credit', 'Free'
@@ -236,6 +248,7 @@ export default function SalesTerminal() {
 
         <div className="relative">
           <input 
+            ref={searchInputRef}
             type="text" 
             placeholder="Search jerseys..."
             value={search}

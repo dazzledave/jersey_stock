@@ -42,25 +42,16 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // FIXED: Smart Focus Restorer
-    // This ensures that clicks always register correctly without 'locking' the UI.
-    const handleGlobalFocus = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-
-      // If clicking an input, ensure it gets immediate focus
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        target.focus();
+    // THE PAGE SCOUT: Automatically focus the first input on the new page
+    const timer = setTimeout(() => {
+      const firstInput = document.querySelector('input:not([type="hidden"]), textarea, select') as HTMLElement;
+      if (firstInput) {
+        firstInput.focus();
       }
+    }, 300); // Wait for page transition to finish
 
-      // Prevent focus traps by ensuring the body can always receive focus
-      if (document.activeElement === null) {
-        document.body.focus();
-      }
-    };
-
-    window.addEventListener('mousedown', handleGlobalFocus, { capture: true });
-    return () => window.removeEventListener('mousedown', handleGlobalFocus);
-  }, []);
+    return () => clearTimeout(timer);
+  }, [activeTab, isAuthenticated]);
 
   if (setupRequired === null) {
     return (
