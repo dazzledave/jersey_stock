@@ -6,7 +6,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run electron:dev --workspace=desktop"
+    "dev": "npm run electron:dev --workspace=awards-centre-pos",
+    "dist": "npm run dist --workspace=awards-centre-pos"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
