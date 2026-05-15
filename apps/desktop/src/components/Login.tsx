@@ -323,7 +323,7 @@ export default function Login() {
 
         <div className="mt-10 text-center">
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-            Awards Centre POS v2.0 • Secured by Cloud-Sync
+            AWARDS CENTRE POS V1.00.00 • SECURED BY CLOUD-SYNC
           </p>
         </div>
       </motion.div>

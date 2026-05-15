@@ -163,8 +163,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   </div>
 
                   {error && (
-                    <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl text-sm font-bold text-rose-500">
-                      {error}
+                    <div className="space-y-4">
+                      <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl text-sm font-bold text-rose-500">
+                        {error}
+                      </div>
+                      {error.includes('already completed') && (
+                        <button 
+                          type="button"
+                          onClick={onComplete}
+                          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg transition-all"
+                        >
+                          Proceed to Login
+                        </button>
+                      )}
                     </div>
                   )}
 

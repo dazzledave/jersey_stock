@@ -53,20 +53,20 @@ export default function SalesTerminal() {
     }, 100);
   };
 
-  useEffect(() => {
-    focusSearch();
-  }, [variantSelector, showReceipt, showMultiPayment]); // Re-focus when any modal closes
-  
   // Accountability States
   const [saleType, setSaleType] = useState('Standard'); // 'Standard', 'Credit', 'Free'
   const [debtorName, setDebtorName] = useState('');
   const [debtorPhone, setDebtorPhone] = useState('');
   const [authorizer, setAuthorizer] = useState('');
-  // Multi-Payment States
+
   const [showMultiPayment, setShowMultiPayment] = useState(false);
   const [splitPayments, setSplitPayments] = useState<{method: string, amount: number}[]>([]);
   const [showReceipt, setShowReceipt] = useState<any>(null);
   const { user } = useAuth();
+
+  useEffect(() => {
+    focusSearch();
+  }, [variantSelector, showReceipt, showMultiPayment]); // Re-focus when any modal closes
 
   useEffect(() => {
     const saved = localStorage.getItem('ac_settings');
