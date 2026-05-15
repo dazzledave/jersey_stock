@@ -35,8 +35,21 @@ export default function ProductForm() {
   const [statusMessage, setStatusMessage] = useState({ text: '', type: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     fetchCategories();
+    
+    // INSTANT CLOUD SYNC: Pull latest data from other admins on mount
+    fetch('/api/sync?direction=down')
+      .then(() => fetchCategories())
+      .catch(err => console.error('Background downsync failed:', err));
+
+    // FOCUS GRAB: Ensure the cursor is active in the first box
+    const timer = setTimeout(() => {
+      nameInputRef.current?.focus();
+    }, 300);
+    return () => clearTimeout(timer);
   }, []);
 
   // Auto-clear status message after 5 seconds
@@ -269,6 +282,7 @@ export default function ProductForm() {
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-foreground ml-1 uppercase tracking-tight">Product Name</label>
                         <input 
+                          ref={nameInputRef}
                           type="text" 
                           name="name"
                           value={formData.name}

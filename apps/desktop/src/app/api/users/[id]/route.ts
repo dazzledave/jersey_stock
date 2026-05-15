@@ -16,24 +16,31 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // 2. Cleanup Supabase Auth
+    // 2. Cleanup Supabase (Auth AND Database Table)
     try {
       const supabase = await getSupabaseAdmin();
       if (supabase) {
-        const email = `${user.username.toLowerCase()}@jersey-stock.com`;
+        // A. Delete from Cloud Database Table (Essential for stopping 'cloning')
+        const { error: dbError } = await supabase
+          .from('users')
+          .delete()
+          .eq('username', user.username);
         
-        // Find user by email first to get Auth ID
+        if (!dbError) console.log(`[SUPABASE] Deleted database record for: ${user.username}`);
+
+        // B. Delete from Auth Center
+        const email = `${user.username.toLowerCase()}@jersey-stock.com`;
         const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
         if (!listError) {
           const authUser = users.find(u => u.email === email);
           if (authUser) {
             await supabase.auth.admin.deleteUser(authUser.id);
-            console.log(`[SUPABASE] Deleted auth user for: ${user.username}`);
+            console.log(`[SUPABASE] Deleted auth account for: ${user.username}`);
           }
         }
       }
     } catch (err) {
-      console.warn('[SUPABASE] Auth cleanup failed, continuing local deletion');
+      console.warn('[SUPABASE] Cloud cleanup incomplete, continuing local deletion');
     }
 
     // 3. Delete locally

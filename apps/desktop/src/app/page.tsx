@@ -27,6 +27,13 @@ export default function Home() {
   }, [isAuthenticated, isAdmin]);
 
   useEffect(() => {
+    // GLOBAL FOCUS FORCE: Ensures the window is 'Awake' for input events
+    if (typeof window !== 'undefined') {
+       window.focus();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
     checkSetupStatus();
   }, []);
 
