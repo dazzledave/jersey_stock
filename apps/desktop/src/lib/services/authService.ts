@@ -8,8 +8,27 @@ const JWT_SECRET = process.env.JWT_SECRET || 'awards-centre-pos-secret-key-2024'
 
 export const authService = {
   checkSetupStatus: async () => {
-    const userCount = await prisma.user.count();
-    return { initialized: userCount > 0 };
+    const localUserCount = await prisma.user.count();
+    if (localUserCount > 0) return { initialized: true };
+
+    // If no local users, check if cloud is already configured in settings
+    try {
+      const supabase = await cloudSyncService.getSupabaseClient();
+      if (supabase) {
+        const { count, error } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true });
+        
+        if (!error && count && count > 0) {
+          console.log(`[SETUP] Found ${count} users in cloud. Skipping setup wizard.`);
+          return { initialized: true };
+        }
+      }
+    } catch (err) {
+      console.warn('[SETUP] Cloud check failed during setup status check');
+    }
+
+    return { initialized: false };
   },
 
   registerFirstAdmin: async (username: string, password: string) => {
@@ -116,60 +135,48 @@ export const authService = {
   },
 
   login: async (username: string, password: string) => {
-    const supabase = await getSupabaseAdmin();
-    
-    let supabaseUser = null;
-    let authError = null;
-
-    if (supabase) {
-      try {
-        const email = `${username.toLowerCase()}@jersey-stock.com`;
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        
-        if (!signInError && data.user) {
-          supabaseUser = data.user;
-          console.log(`[AUTH] Cloud login successful for: ${username}`);
-        } else {
-          authError = signInError?.message;
-          if (signInError && !signInError.message.includes('Invalid login credentials')) {
-            console.warn(`[AUTH] Supabase signIn error: ${signInError.message}`);
-          }
-        }
-      } catch (err: any) {
-        console.warn(`[AUTH] Supabase check failed (offline?): ${err.message}`);
-      }
-    }
-
     let localUser = await prisma.user.findUnique({
       where: { username }
     });
 
-    if (supabaseUser && !localUser) {
-      console.log(`[AUTH] Creating local profile for cloud user: ${username}`);
-      const hashedPassword = await bcrypt.hash(password, 10);
-      localUser = await prisma.user.create({
-        data: {
-          username,
-          password: hashedPassword,
-          role: 'STAFF'
+    // CLOUD FALLBACK: If not found locally, check the Supabase database
+    if (!localUser) {
+      try {
+        const supabase = await cloudSyncService.getSupabaseClient();
+        if (supabase) {
+          const { data: cloudUsers, error: cloudError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('username', username)
+            .single();
+
+          if (!cloudError && cloudUsers) {
+            console.log(`[AUTH] Found cloud user: ${username}. Cloning to local...`);
+            // Create local copy with the same ID and role
+            localUser = await prisma.user.create({
+              data: {
+                id: cloudUsers.id,
+                username: cloudUsers.username,
+                password: cloudUsers.password, // Cloud password is already hashed
+                role: cloudUsers.role,
+                recoveryKey: cloudUsers.recoveryKey
+              }
+            });
+          }
         }
-      });
-      cloudSyncService.queueSync('User', localUser.id).catch(console.error);
+      } catch (err: any) {
+        console.warn(`[AUTH] Cloud check failed: ${err.message}`);
+      }
     }
 
     if (!localUser) {
       throw new Error('Invalid credentials.');
     }
 
-    if (!supabaseUser) {
-      const isMatch = await bcrypt.compare(password, localUser.password);
-      if (!isMatch) {
-        throw new Error(authError || 'Invalid credentials.');
-      }
-      console.log(`[AUTH] Local login successful for: ${username}`);
+    // Verify password (works for both local and cloned users)
+    const isMatch = await bcrypt.compare(password, localUser.password);
+    if (!isMatch) {
+      throw new Error('Invalid credentials.');
     }
 
     const token = jwt.sign(

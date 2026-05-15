@@ -151,10 +151,92 @@ export const cloudSyncService = {
     }
   },
 
+  performDownsync: async () => {
+    console.log('[SYNC] Starting full downsync from cloud...');
+    const supabase = await cloudSyncService.getSupabaseClient();
+    if (!supabase) return;
+
+    try {
+      // 1. Sync Categories
+      const { data: categories } = await supabase.from('categories').select('*');
+      if (categories) {
+        for (const cat of categories) {
+          await prisma.category.upsert({
+            where: { id: cat.id },
+            update: { name: cat.name },
+            create: cat
+          });
+        }
+      }
+
+      // 2. Sync Products
+      const { data: products } = await supabase.from('products').select('*');
+      if (products) {
+        for (const prod of products) {
+          await prisma.product.upsert({
+            where: { id: prod.id },
+            update: { 
+              name: prod.name, 
+              brand: prod.brand, 
+              basePrice: prod.basePrice, 
+              costPrice: prod.costPrice,
+              imageUrl: prod.imageUrl,
+              categoryId: prod.categoryId
+            },
+            create: prod
+          });
+        }
+      }
+
+      // 3. Sync Variants
+      const { data: variants } = await supabase.from('product_variants').select('*');
+      if (variants) {
+        for (const v of variants) {
+          await prisma.productVariant.upsert({
+            where: { id: v.id },
+            update: { 
+              size: v.size, 
+              color: v.color, 
+              sku: v.sku, 
+              barcode: v.barcode 
+            },
+            create: v
+          });
+        }
+      }
+
+      // 4. Sync Inventory
+      const { data: inventory } = await supabase.from('inventory').select('*');
+      if (inventory) {
+        for (const inv of inventory) {
+          await prisma.inventory.upsert({
+            where: { variantId: inv.variantId },
+            update: { quantity: inv.quantity, reorderLevel: inv.reorderLevel },
+            create: inv
+          });
+        }
+      }
+
+      console.log('[SYNC] Downsync complete. All records synchronized.');
+    } catch (err: any) {
+      console.error('[SYNC] Downsync failed:', err.message);
+    }
+  },
+
   startWorker: () => {
     console.log('Starting Cloud Sync Worker...');
+    
+    // Initial Downsync on startup
+    cloudSyncService.performDownsync().catch(err => console.error('Initial downsync error:', err));
+
+    // Periodic tasks
     setInterval(() => {
       cloudSyncService.processSyncQueue().catch(err => console.error('Sync worker error:', err));
     }, 60000); 
+
+    // Periodic Downsync every 10 minutes
+    setInterval(() => {
+      cloudSyncService.performDownsync().catch(err => console.error('Periodic downsync error:', err));
+    }, 600000);
   }
 };

@@ -7,7 +7,7 @@ const Database = require('better-sqlite3');
 
 let mainWindow;
 let serverProcess;
-const SERVER_URL = 'http://localhost:3000';
+const SERVER_URL = 'http://127.0.0.1:3000'; // Using direct IP to avoid IPv6 confusion
 
 // THE FULL METAL JACKET: 100% Mirror of schema.prisma
 const SCHEMA_SQL = `
@@ -133,13 +133,10 @@ CREATE TABLE IF NOT EXISTS "sync_logs" (
 
 function initializeDatabase(dbPath, logStream) {
   try {
-    logStream.write(`[FOUNDATION] Initializing database at: ${dbPath}\n`);
+    console.log(`[FOUNDATION] Initializing/Verifying database at: ${dbPath}`);
     const db = new Database(dbPath);
-    
-    // 1. Create tables if they don't exist
     db.exec(SCHEMA_SQL);
     
-    // 2. THE AGGRESSIVE UPGRADE ENGINE: Mirrored from schema.prisma
     const updates = [
       { t: 'products', c: 'brand', d: 'TEXT' },
       { t: 'products', c: 'basePrice', d: 'REAL NOT NULL DEFAULT 0' },
@@ -162,18 +159,16 @@ function initializeDatabase(dbPath, logStream) {
       try {
         const info = db.prepare(`PRAGMA table_info(${t})`).all();
         if (!info.some(col => col.name === c)) {
-          logStream.write(`[UPGRADE] Adding missing column '${c}' to table '${t}'...\n`);
+          console.log(`[UPGRADE] Adding missing column '${c}' to table '${t}'...`);
           db.exec(`ALTER TABLE ${t} ADD COLUMN ${c} ${d}`);
         }
-      } catch (err) {
-        logStream.write(`[UPGRADE] Warning on ${t}.${c}: ${err.message}\n`);
-      }
+      } catch (err) {}
     });
 
     db.close();
-    logStream.write(`[FOUNDATION] Database verified and fully upgraded.\n`);
+    console.log(`[FOUNDATION] Database verified and fully upgraded.`);
   } catch (err) {
-    logStream.write(`[FOUNDATION] ERROR: ${err.message}\n`);
+    console.error(`[FOUNDATION] ERROR: ${err.message}`);
   }
 }
 
@@ -186,54 +181,65 @@ function startServer() {
     fs.mkdirSync(userDataPath, { recursive: true });
   }
 
-  const logStream = fs.createWriteStream(path.join(userDataPath, 'server.log'));
   const targetDbPath = path.join(userDataPath, 'jersey_stock.db');
-  
-  initializeDatabase(targetDbPath, logStream);
+  initializeDatabase(targetDbPath);
 
   const isDev = !app.isPackaged;
-  let serverPath = isDev 
-    ? path.join(__dirname, '../server.js')
-    : path.join(process.resourcesPath, 'app/dist-server/index.js');
+  if (isDev) {
+    console.log(`[LAUNCHER] Dev Mode. Assuming external server is running.`);
+    return;
+  }
+
+  console.log(`[LAUNCHER] Production Mode. Starting server...`);
+  let serverPath = path.join(process.resourcesPath, 'app/dist-server/index.js');
 
   serverProcess = spawn(process.execPath, [serverPath], {
-    cwd: isDev ? path.dirname(serverPath) : path.join(process.resourcesPath, 'app'),
+    cwd: path.join(process.resourcesPath, 'app'),
     env: { 
       ...process.env, 
       PORT: 3000, 
-      NODE_ENV: isDev ? 'development' : 'production',
+      NODE_ENV: 'production',
       ELECTRON_RUN_AS_NODE: '1', 
       DATABASE_PATH: targetDbPath 
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
-
-  serverProcess.stdout.on('data', (data) => logStream.write(`[STDOUT] ${data.toString()}`));
-  serverProcess.stderr.on('data', (data) => logStream.write(`[STDERR] ${data.toString()}`));
 }
 
 function pollServer(callback) {
+  console.log(`[POLLER] Waiting for server at ${SERVER_URL}...`);
   const request = http.get(SERVER_URL, (res) => {
-    if (res.statusCode === 200) callback();
-    else setTimeout(() => pollServer(callback), 500);
+    if (res.statusCode === 200) {
+      console.log(`[POLLER] Server detected! Opening window...`);
+      callback();
+    } else {
+      setTimeout(() => pollServer(callback), 500);
+    }
   });
-  request.on('error', () => setTimeout(() => pollServer(callback), 500));
+  request.on('error', () => {
+    setTimeout(() => pollServer(callback), 500);
+  });
 }
 
 function createWindow() {
+  const isDev = !app.isPackaged;
   mainWindow = new BrowserWindow({
     width: 1200, height: 800,
     webPreferences: { nodeIntegration: true, contextIsolation: false },
     title: "Awards Centre POS",
     autoHideMenuBar: true,
     show: false,
-    backgroundColor: '#0f172a'
+    backgroundColor: '#0f172a',
+    icon: isDev ? path.join(__dirname, '../public/logo.png') : path.join(process.resourcesPath, 'app/public/logo.png')
   });
+
   mainWindow.loadURL(SERVER_URL);
+  
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     mainWindow.focus();
   });
+  
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
