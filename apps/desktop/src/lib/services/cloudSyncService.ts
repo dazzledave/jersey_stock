@@ -22,7 +22,15 @@ export const cloudSyncService = {
     const urlSetting = await prisma.setting.findUnique({ where: { key: 'supabaseUrl' } });
     const keySetting = await prisma.setting.findUnique({ where: { key: 'supabaseKey' } });
 
-    if (!urlSetting?.value || !keySetting?.value) return null;
+    if (!urlSetting?.value || !keySetting?.value) {
+      // FALLBACK: Use .env variables if database settings are missing (for fresh machines)
+      const envUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const envKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      if (!envUrl || !envKey) return null;
+      
+      return createClient(envUrl.trim(), envKey.trim());
+    }
 
     const sanitizedUrl = urlSetting.value.trim()
       .replace(/\/rest\/v1\/?$/, '') 

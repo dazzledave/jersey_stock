@@ -78,8 +78,11 @@ app.prepare().then(async () => {
   server.listen(port, () => {
     console.log(`> Ready on http://${hostname}:${port}`);
     try {
+      console.log('[SYNC] Activating Cloud Sync Worker...');
       const { cloudSyncService } = require('./src/lib/services/cloudSyncService');
-      if (cloudSyncService?.startWorker) cloudSyncService.startWorker();
-    } catch (err) {}
+      cloudSyncService.startWorker();
+    } catch (err) {
+      console.error('[SYNC] Failed to start worker:', err.message);
+    }
   });
 });

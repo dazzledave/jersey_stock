@@ -68,28 +68,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const checkInternet = async () => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
+    // INITIAL CHECK
+    setIsOnline(navigator.onLine);
 
-      try {
-        await fetch('https://connectivitycheck.gstatic.com/generate_204', { 
-          mode: 'no-cors', 
-          cache: 'no-store',
-          signal: controller.signal 
-        });
-        setIsOnline(true);
-      } catch (error) {
-        setIsOnline(false);
-      } finally {
-        clearTimeout(timeoutId);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // PERIODIC PULSE (Redundancy for Electron)
+    const interval = setInterval(() => {
+      if (navigator.onLine !== isOnline) {
+        setIsOnline(navigator.onLine);
       }
-    };
+    }, 5000);
 
-    checkInternet();
-    const interval = setInterval(checkInternet, 3000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
+    };
+  }, [isOnline]);
 
   const login = (newToken: string, newUser: User) => {
     setToken(newToken);
