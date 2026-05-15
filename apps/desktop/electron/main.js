@@ -4,6 +4,19 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const http = require('http');
 const Database = require('better-sqlite3');
+const dotenv = require('dotenv');
+
+// PACKAGED ENV LOADING: Explicitly load .env from resources if packaged
+const isPackaged = app.isPackaged;
+if (isPackaged) {
+  const envPath = path.join(process.resourcesPath, '.env');
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    console.log('[LAUNCHER] Loaded bundled .env from resources.');
+  }
+} else {
+  dotenv.config();
+}
 
 let mainWindow;
 let serverProcess;
@@ -244,8 +257,14 @@ function createWindow() {
 }
 
 app.on('ready', () => {
+  const isDev = !app.isPackaged;
   startServer();
-  pollServer(() => createWindow());
+  
+  if (isDev) {
+    createWindow();
+  } else {
+    pollServer(() => createWindow());
+  }
 });
 
 app.on('window-all-closed', () => {

@@ -18,7 +18,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('Product Manager');
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
-  const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin, isOnline } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated && isAdmin !== undefined) {
@@ -215,16 +215,27 @@ export default function Home() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header - Sticky */}
-        <header className="h-20 flex items-center justify-between px-10 flex-shrink-0 bg-brand-bg/80 backdrop-blur-md sticky top-0 z-50 border-b border-border-subtle/50">
-          <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-400">
+    <header 
+          style={{ WebkitAppRegion: 'drag' } as any}
+          className="h-20 flex items-center justify-between px-10 flex-shrink-0 bg-brand-bg/80 backdrop-blur-md sticky top-0 z-50 border-b border-border-subtle/50"
+        >
+          <div 
+            style={{ WebkitAppRegion: 'no-drag' } as any}
+            className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-400"
+          >
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-emerald-500">Online</span>
+              <span className={`w-2 h-2 rounded-full animate-pulse ${isOnline ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+              <span className={isOnline ? 'text-emerald-500' : 'text-rose-500'}>
+                {isOnline ? 'Online' : 'Offline Mode'}
+              </span>
             </div>
             <span>🔔</span>
             <span>❓</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div 
+            style={{ WebkitAppRegion: 'no-drag' } as any}
+            className="flex items-center gap-4"
+          >
             <div className="text-right">
               <div className="text-sm font-bold text-foreground">{user?.username}</div>
               <div className="text-[10px] text-orange-500 font-bold uppercase tracking-widest">{user?.role === 'ADMIN' ? 'Administrator' : 'Staff Member'}</div>

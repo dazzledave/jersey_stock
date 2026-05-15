@@ -1,6 +1,20 @@
-// No-op for env in production to prevent conflicts
-if (process.env.NODE_ENV !== 'production') {
+// FORCE ENV LOADING: In portable mode, we must load the bundled .env
+const isPackaged = process.resourcesPath && !process.env.NEXT_RUNTIME;
+if (isPackaged) {
+  const path = require('path');
+  const fs = require('fs');
+  const envPath = path.join(process.resourcesPath, '.env');
+  if (fs.existsSync(envPath)) {
+    require('dotenv').config({ path: envPath });
+    console.log('[SERVER] Loaded bundled .env from resources.');
+  }
+} else {
+  // IDE MODE: Try root first, then try apps/desktop
   require('dotenv').config();
+  if (!process.env.SUPABASE_URL) {
+    const path = require('path');
+    require('dotenv').config({ path: path.join(process.cwd(), 'apps/desktop/.env') });
+  }
 }
 const { createServer } = require('http');
 const { parse } = require('url');
@@ -17,28 +31,30 @@ if (process.env.NODE_ENV !== 'production' && !process.env.ELECTRON_RUN_AS_NODE) 
 
 // THE MASTER CONSTRUCTOR: Forces the database to match the schema exactly
 async function ensureDatabaseHealth() {
-  const isProd = process.env.NODE_ENV === 'production' || process.env.ELECTRON_RUN_AS_NODE;
-  if (!isProd) return;
-
-  const dbPath = process.env.DATABASE_PATH;
-  console.log(`[HEALTH CHECK] Verifying database at: ${dbPath}`);
+  const isDev = process.env.NODE_ENV === 'development';
+  const dbPath = process.env.DATABASE_PATH || path.join(process.env.APPDATA || process.env.HOME, 'awards-centre-pos', 'jersey_stock.db');
+  
+  console.log(`[HEALTH CHECK] Mode: ${isDev ? 'DEV' : 'PROD'} | DB: ${dbPath}`);
   
   try {
     const { prisma } = require('./src/lib/prisma');
-    // Test the database
     await prisma.user.count();
     console.log('[HEALTH CHECK] Database is healthy.');
   } catch (err) {
     console.log('[HEALTH CHECK] Database incomplete. Running Master Constructor...');
     
     try {
-      // Find the Prisma CLI inside the packaged app
-      const prismaBinary = path.join(process.resourcesPath, 'app/node_modules/prisma/build/index.js');
-      const schemaPath = path.join(process.resourcesPath, 'app/prisma/schema.prisma');
+      // SMART PATH DETECTION:
+      const prismaBinary = isDev 
+        ? path.join(process.cwd(), 'node_modules/prisma/build/index.js')
+        : path.join(process.resourcesPath, 'app/node_modules/prisma/build/index.js');
+        
+      const schemaPath = isDev
+        ? path.join(process.cwd(), 'prisma/schema.prisma')
+        : path.join(process.resourcesPath, 'app/prisma/schema.prisma');
       
       console.log(`[CONSTRUCTOR] Using schema: ${schemaPath}`);
       
-      // Force the schema onto the database
       execSync(`node "${prismaBinary}" db push --schema="${schemaPath}" --accept-data-loss`, {
         env: { ...process.env, DATABASE_URL: `file:${dbPath}` },
         stdio: 'inherit'
@@ -79,7 +95,8 @@ app.prepare().then(async () => {
     console.log(`> Ready on http://${hostname}:${port}`);
     try {
       console.log('[SYNC] Activating Cloud Sync Worker...');
-      const { cloudSyncService } = require('./src/lib/services/cloudSyncService');
+      const servicePath = path.join(__dirname, 'src/lib/services/cloudSyncService');
+      const { cloudSyncService } = require(servicePath);
       cloudSyncService.startWorker();
     } catch (err) {
       console.error('[SYNC] Failed to start worker:', err.message);

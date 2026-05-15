@@ -68,28 +68,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // INITIAL CHECK
-    setIsOnline(navigator.onLine);
-
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    // PERIODIC PULSE (Redundancy for Electron)
-    const interval = setInterval(() => {
-      if (navigator.onLine !== isOnline) {
-        setIsOnline(navigator.onLine);
+    const checkCloudConnectivity = async () => {
+      try {
+        // We ping our own sync endpoint which internally checks Supabase
+        const res = await fetch('/api/sync/status', { cache: 'no-store' });
+        const data = await res.json();
+        setIsOnline(data.cloudConnected);
+      } catch (error) {
+        setIsOnline(false);
       }
-    }, 5000);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      clearInterval(interval);
     };
-  }, [isOnline]);
+
+    // Initial pulse
+    checkCloudConnectivity();
+
+    // Pulse every 10 seconds to keep it accurate without spamming
+    const interval = setInterval(checkCloudConnectivity, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const login = (newToken: string, newUser: User) => {
     setToken(newToken);
