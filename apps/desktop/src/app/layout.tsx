@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import "../../../../packages/ui/src/styles/variables.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -11,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "@/components/AuthContext";
+import { ErrorBoundaryProvider } from "@/components/ErrorBoundaryProvider";
 
 export default function RootLayout({
   children,
@@ -40,9 +40,11 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <ErrorBoundaryProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ErrorBoundaryProvider>
       </body>
     </html>
   );

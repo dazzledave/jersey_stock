@@ -238,31 +238,20 @@ function createWindow() {
   const isDev = !app.isPackaged;
   mainWindow = new BrowserWindow({
     width: 1200, height: 800,
-    webPreferences: { nodeIntegration: true, contextIsolation: false },
+    webPreferences: { nodeIntegration: false, contextIsolation: true },
     title: "Awards Centre POS",
     autoHideMenuBar: true,
-    show: false,
+    show: true,
     backgroundColor: '#0f172a',
     icon: isDev ? path.join(__dirname, '../public/logo.png') : path.join(process.resourcesPath, 'app/public/logo.png')
   });
 
   mainWindow.loadURL(SERVER_URL);
 
-  // RETRY LOGIC: If the server is still compiling, wait and try again
-  mainWindow.webContents.on('did-fail-load', () => {
-    if (isDev) {
-      console.log('[WINDOW] Load failed, retrying in 2s...');
-      setTimeout(() => {
-        if (mainWindow) mainWindow.loadURL(SERVER_URL);
-      }, 2000);
-    }
-  });
-  
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+  mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.focus();
     if (isDev) {
-      mainWindow.webContents.openDevTools();
+      mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
   });
   
@@ -281,8 +270,12 @@ app.on('ready', () => {
 });
 
 app.on('window-all-closed', () => {
+  const isDev = !app.isPackaged;
   if (process.platform !== 'darwin') {
-    if (serverProcess) serverProcess.kill();
-    app.quit();
+    if (!isDev) {
+      // Only quit in production - in dev, the server process manages its own lifecycle
+      if (serverProcess) serverProcess.kill();
+      app.quit();
+    }
   }
 });

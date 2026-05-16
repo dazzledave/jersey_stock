@@ -29,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
+      console.log('initAuth: STARTED');
       try {
         const savedToken = localStorage.getItem('ac_token');
         const savedUser = localStorage.getItem('ac_user');
@@ -38,9 +39,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(JSON.parse(savedUser));
         }
         
+        console.log('initAuth: Fetching /api/settings');
         // Global Settings Sync
         const res = await fetch('/api/settings');
+        console.log('initAuth: /api/settings response status:', res.status);
         const data = await res.json();
+        console.log('initAuth: /api/settings data parsed successfully');
         
         if (Object.keys(data).length > 0) {
           const local = localStorage.getItem('ac_settings');
@@ -61,8 +65,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } catch (err) {
-        console.error('Initialization failed:', err);
+        console.error('initAuth: Initialization failed:', err);
       } finally {
+        console.log('initAuth: FINISHED. Setting isLoading to false.');
         setIsLoading(false);
       }
     };

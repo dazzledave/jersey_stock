@@ -28,16 +28,15 @@ if (!fs.existsSync(dbDir)) {
 
 console.log(`[PRISMA] Opening database at: ${dbPath}`);
 
-const AdapterClass = (typeof PrismaBetterSqlite3 === 'function' && !PrismaBetterSqlite3.prototype)
-  ? (PrismaBetterSqlite3 as any)()
-  : PrismaBetterSqlite3;
+const adapterClassExists = typeof PrismaBetterSqlite3 === 'function';
 
-const adapter = new AdapterClass({ url: dbPath });
-
+// Actually, since we don't have driverAdapters preview feature enabled in schema.prisma,
+// we should just use the native Prisma SQLite engine which is much safer and won't hang.
+// Let's bypass the better-sqlite3 adapter entirely to prevent the silent hang.
 export const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
-    adapter,
+    datasourceUrl: `file:${dbPath}`,
     log: ['error', 'warn'],
   });
 

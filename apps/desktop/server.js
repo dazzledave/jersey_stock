@@ -116,10 +116,15 @@ app.prepare().then(async () => {
     console.log(`> Ready on http://${hostname}:${port}`);
     try {
       console.log('[SYNC] Activating Cloud Sync Worker...');
-      // Use absolute path and try multiple extensions for dev/prod flexibility
-      const servicePath = path.join(__dirname, 'src/lib/services/cloudSyncService');
-      const { cloudSyncService } = require(servicePath);
-      cloudSyncService.startWorker();
+      if (process.env.NODE_ENV === 'production') {
+        const servicePath = path.join(__dirname, 'src/lib/services/cloudSyncService.js');
+        if (fs.existsSync(servicePath)) {
+          const { cloudSyncService } = require(servicePath);
+          cloudSyncService.startWorker();
+        }
+      } else {
+        console.log('[SYNC] Dev mode: Cloud Sync Worker will be initialized by Next.js API routes.');
+      }
     } catch (err) {
       console.error('[SYNC] Failed to start worker:', err.message);
     }
