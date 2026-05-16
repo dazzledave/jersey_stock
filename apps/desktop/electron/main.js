@@ -247,10 +247,23 @@ function createWindow() {
   });
 
   mainWindow.loadURL(SERVER_URL);
+
+  // RETRY LOGIC: If the server is still compiling, wait and try again
+  mainWindow.webContents.on('did-fail-load', () => {
+    if (isDev) {
+      console.log('[WINDOW] Load failed, retrying in 2s...');
+      setTimeout(() => {
+        if (mainWindow) mainWindow.loadURL(SERVER_URL);
+      }, 2000);
+    }
+  });
   
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     mainWindow.focus();
+    if (isDev) {
+      mainWindow.webContents.openDevTools();
+    }
   });
   
   mainWindow.on('closed', () => { mainWindow = null; });

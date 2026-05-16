@@ -9,11 +9,26 @@ if (isPackaged) {
     console.log('[SERVER] Loaded bundled .env from resources.');
   }
 } else {
-  // IDE MODE: Try root first, then try apps/desktop
-  require('dotenv').config();
-  if (!process.env.SUPABASE_URL) {
-    const path = require('path');
-    require('dotenv').config({ path: path.join(process.cwd(), 'apps/desktop/.env') });
+  // IDE MODE: Smart Discovery
+  const path = require('path');
+  const fs = require('fs');
+  
+  // Try local .env, then apps/desktop/.env, then root .env
+  const possiblePaths = [
+    path.join(process.cwd(), '.env'),
+    path.join(process.cwd(), 'apps/desktop/.env'),
+    path.join(__dirname, '.env'),
+    path.join(__dirname, '../../.env')
+  ];
+
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      require('dotenv').config({ path: p });
+      if (process.env.SUPABASE_URL) {
+        console.log(`[SERVER] Found keys at: ${p}`);
+        break;
+      }
+    }
   }
 }
 const { createServer } = require('http');
@@ -101,10 +116,9 @@ app.prepare().then(async () => {
     console.log(`> Ready on http://${hostname}:${port}`);
     try {
       console.log('[SYNC] Activating Cloud Sync Worker...');
-      // Use absolute path relative to the server.js file
-      const servicePath = path.join(__dirname, 'src/lib/services/cloudSyncService.ts');
-      // In dev mode, we need to handle TS if not using tsx/register
-      const { cloudSyncService } = require('./src/lib/services/cloudSyncService');
+      // Use absolute path and try multiple extensions for dev/prod flexibility
+      const servicePath = path.join(__dirname, 'src/lib/services/cloudSyncService');
+      const { cloudSyncService } = require(servicePath);
       cloudSyncService.startWorker();
     } catch (err) {
       console.error('[SYNC] Failed to start worker:', err.message);

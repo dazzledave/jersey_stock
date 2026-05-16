@@ -28,31 +28,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('ac_token');
-    const savedUser = localStorage.getItem('ac_user');
-    
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-    }
-    
-    // Global Settings Sync
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
+    const initAuth = async () => {
+      try {
+        const savedToken = localStorage.getItem('ac_token');
+        const savedUser = localStorage.getItem('ac_user');
+        
+        if (savedToken && savedUser) {
+          setToken(savedToken);
+          setUser(JSON.parse(savedUser));
+        }
+        
+        // Global Settings Sync
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        
         if (Object.keys(data).length > 0) {
-          // Merge with current local settings to avoid losing UI-only keys if any
           const local = localStorage.getItem('ac_settings');
           const current = local ? JSON.parse(local) : {};
           const merged = { ...current, ...data };
           
-          // Handle types
           if (data.darkMode !== undefined) merged.darkMode = data.darkMode === 'true';
           if (data.exchangeRate !== undefined) merged.exchangeRate = parseFloat(data.exchangeRate);
           
           localStorage.setItem('ac_settings', JSON.stringify(merged));
           
-          // Apply theme if dark mode is set
           if (merged.darkMode) {
             document.documentElement.classList.add('dark');
             document.documentElement.setAttribute('data-theme', 'dark');
@@ -61,10 +60,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             document.documentElement.setAttribute('data-theme', 'light');
           }
         }
-      })
-      .catch(err => console.error('Settings sync failed:', err));
+      } catch (err) {
+        console.error('Initialization failed:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    setIsLoading(false);
+    initAuth();
   }, []);
 
   useEffect(() => {
