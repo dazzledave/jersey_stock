@@ -45,12 +45,18 @@ async function ensureDatabaseHealth() {
     
     try {
       // SMART PATH DETECTION:
-      const prismaBinary = isDev 
-        ? path.join(process.cwd(), 'node_modules/prisma/build/index.js')
-        : path.join(process.resourcesPath, 'app/node_modules/prisma/build/index.js');
+      let prismaBinary;
+      if (isDev) {
+        // Try local node_modules first, then parent node_modules (monorepo root)
+        const localPrisma = path.join(__dirname, 'node_modules/prisma/build/index.js');
+        const rootPrisma = path.join(__dirname, '../../node_modules/prisma/build/index.js');
+        prismaBinary = fs.existsSync(localPrisma) ? localPrisma : rootPrisma;
+      } else {
+        prismaBinary = path.join(process.resourcesPath, 'app/node_modules/prisma/build/index.js');
+      }
         
       const schemaPath = isDev
-        ? path.join(process.cwd(), 'prisma/schema.prisma')
+        ? path.join(__dirname, 'prisma/schema.prisma')
         : path.join(process.resourcesPath, 'app/prisma/schema.prisma');
       
       console.log(`[CONSTRUCTOR] Using schema: ${schemaPath}`);
@@ -68,7 +74,7 @@ async function ensureDatabaseHealth() {
 }
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = 'localhost';
+const hostname = '127.0.0.1';
 const port = parseInt(process.env.PORT || '3000', 10);
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -91,12 +97,14 @@ app.prepare().then(async () => {
     socket.on('new-sale', (data) => io.emit('sale-updated', data));
   });
 
-  server.listen(port, () => {
+  server.listen(port, hostname, () => {
     console.log(`> Ready on http://${hostname}:${port}`);
     try {
       console.log('[SYNC] Activating Cloud Sync Worker...');
-      const servicePath = path.join(__dirname, 'src/lib/services/cloudSyncService');
-      const { cloudSyncService } = require(servicePath);
+      // Use absolute path relative to the server.js file
+      const servicePath = path.join(__dirname, 'src/lib/services/cloudSyncService.ts');
+      // In dev mode, we need to handle TS if not using tsx/register
+      const { cloudSyncService } = require('./src/lib/services/cloudSyncService');
       cloudSyncService.startWorker();
     } catch (err) {
       console.error('[SYNC] Failed to start worker:', err.message);

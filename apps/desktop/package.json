@@ -9,7 +9,7 @@
     "build": "next build",
     "start": "cross-env ELECTRON_RUN_AS_NODE=1 electron server.js",
     "lint": "next lint",
-    "electron:dev": "concurrently \"cross-env ELECTRON_RUN_AS_NODE=1 electron server.js\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
+    "electron:dev": "concurrently \"cross-env ELECTRON_RUN_AS_NODE=1 electron server.js\" \"wait-on http://127.0.0.1:3000 && cross-env NODE_ENV=development electron .\"",
     "electron:start": "electron .",
     "prebuild": "prisma generate",
     "dist": "npm run prebuild && npm run build && npm run build:server && npm rebuild better-sqlite3 --runtime=electron --target=30.0.0 --disturl=https://electronjs.org/headers && electron-builder",
