@@ -1,7 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-// @ts-ignore
-import Database from 'better-sqlite3';
 import path from 'path';
 import dotenv from 'dotenv';
 import fs from 'fs';
@@ -42,10 +40,9 @@ const prismaProxy = new Proxy({} as PrismaClient, {
           fs.mkdirSync(dbDir, { recursive: true });
         }
         
-        console.log(`[PRISMA] Lazily opening database at: ${dbPath}`);
+        console.log(`[PRISMA] Lazily opening database via driver adapter at: ${dbPath}`);
         
-        const db = new Database(dbPath);
-        const adapter = new PrismaBetterSqlite3(db);
+        const adapter = new PrismaBetterSqlite3({ url: 'file:' + dbPath });
         
         prismaInstance = new PrismaClient({
           adapter,
