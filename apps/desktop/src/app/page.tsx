@@ -51,6 +51,11 @@ export default function Home() {
   useEffect(() => {
     // THE PAGE SCOUT: Automatically focus the first input on the new page
     const timer = setTimeout(() => {
+      // If the user has already focused another input element manually, do not hijack it
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+        return;
+      }
       const firstInput = document.querySelector('input:not([type="hidden"]), textarea, select') as HTMLElement;
       if (firstInput) {
         firstInput.focus();

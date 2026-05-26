@@ -29,6 +29,35 @@ export const productService = {
     return category;
   },
 
+  async deleteCategory(id: string) {
+    // Safety check: Prevent deletion if products exist in this category
+    const productCount = await prisma.product.count({
+      where: { categoryId: id }
+    });
+    if (productCount > 0) {
+      throw new Error('This category contains products and cannot be deleted. Please reclassify or delete its products first.');
+    }
+
+    const category = await prisma.category.delete({
+      where: { id }
+    });
+
+    try {
+      const supabase = await cloudSyncService.getSupabaseClient();
+      if (supabase) {
+        const { data, error } = await supabase.from('categories').delete().eq('id', id);
+        console.log(`[SYNC] Category delete response for ID ${id}:`, { data, error });
+        if (error) {
+          console.error('Supabase category deletion failed:', error);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync category deletion to cloud:', err);
+    }
+
+    return category;
+  },
+
   async getProductById(id: string) {
     return await prisma.product.findUnique({
       where: { id },

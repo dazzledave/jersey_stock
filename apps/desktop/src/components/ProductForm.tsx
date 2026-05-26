@@ -47,6 +47,11 @@ export default function ProductForm() {
 
     // FOCUS GRAB: Ensure the cursor is active in the first box
     const timer = setTimeout(() => {
+      // If the user has already focused another input element manually, do not hijack it
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+        return;
+      }
       nameInputRef.current?.focus();
     }, 300);
     return () => clearTimeout(timer);
@@ -105,6 +110,41 @@ export default function ProductForm() {
       console.error('Failed to create category:', err);
       setStatusMessage({ text: 'FAILED: Could not create category. Check your connection.', type: 'error' });
     }
+  };
+
+  const handleDeleteCategory = async () => {
+    const categoryId = formData.categoryId;
+    if (!categoryId) return;
+    
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) return;
+    
+    if (!window.confirm(`Are you sure you want to delete the category "${category.name}"?\nThis action will fail if the category contains active products.`)) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/api/products/categories/${categoryId}`, {
+        method: 'DELETE'
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        setStatusMessage({ text: `SUCCESS: Category "${category.name}" has been deleted.`, type: 'success' });
+        const updatedCats = categories.filter(c => c.id !== categoryId);
+        setCategories(updatedCats);
+        setFormData(prev => ({ 
+          ...prev, 
+          categoryId: updatedCats.length > 0 ? updatedCats[0].id : '' 
+        }));
+      } else {
+        setStatusMessage({ text: `DELETE FAILED: ${data.error || 'Could not delete category.'}`, type: 'error' });
+      }
+    } catch (err) {
+      console.error('Failed to delete category:', err);
+      setStatusMessage({ text: 'CONNECTION ERROR: Could not reach the server.', type: 'error' });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -314,13 +354,24 @@ export default function ProductForm() {
                     <div className="space-y-2">
                         <div className="flex justify-between items-center ml-1">
                           <label className="text-xs font-bold text-foreground uppercase tracking-tight">Category</label>
-                          <button 
-                            type="button"
-                            onClick={() => setIsAddingCategory(!isAddingCategory)}
-                            className="text-[9px] font-black uppercase text-orange-500 hover:underline"
-                          >
-                            {isAddingCategory ? 'Cancel' : '+ New Category'}
-                          </button>
+                          <div className="flex gap-3">
+                            {categories.length > 0 && !isAddingCategory && (
+                              <button 
+                                type="button"
+                                onClick={handleDeleteCategory}
+                                className="text-[9px] font-black uppercase text-rose-500 hover:underline"
+                              >
+                                Delete Selected
+                              </button>
+                            )}
+                            <button 
+                              type="button"
+                              onClick={() => setIsAddingCategory(!isAddingCategory)}
+                              className="text-[9px] font-black uppercase text-orange-500 hover:underline"
+                            >
+                              {isAddingCategory ? 'Cancel' : '+ New Category'}
+                            </button>
+                          </div>
                         </div>
                         {isAddingCategory ? (
                           <div className="flex gap-2 items-center">
