@@ -152,7 +152,7 @@ export default function ProductForm() {
           ...formData,
           // FIX: Ensure price is rounded to exactly 2 decimal places to prevent 'ghost subtractions'
           basePrice: Math.round(parseFloat(formData.basePrice) * 100) / 100,
-          variants: variants.map(v => {
+          variants: (variants.length > 0 ? variants : [{ size: 'Standard', color: 'Standard', sku: '', barcode: '', quantity: 0 }]).map(v => {
             const namePrefix = formData.name.substring(0, 3).toUpperCase();
             const brandPrefix = formData.brand.substring(0, 2).toUpperCase() || 'NA';
             const randomSuffix = Math.floor(1000 + Math.random() * 9000);
@@ -323,19 +323,19 @@ export default function ProductForm() {
                           </button>
                         </div>
                         {isAddingCategory ? (
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 items-center">
                             <input 
                               type="text"
                               value={newCategoryName}
                               onChange={(e) => setNewCategoryName(e.target.value)}
-                              placeholder="New Category Name"
-                              className="flex-1 bg-brand-bg p-4 rounded-lg border border-orange-300 text-sm font-bold outline-none text-foreground"
+                              placeholder="Category Name"
+                              className="flex-1 min-w-0 bg-brand-bg p-4 rounded-lg border border-orange-300 text-sm font-bold outline-none text-foreground"
                               autoFocus
                             />
                             <button 
                               type="button"
                               onClick={handleCreateCategory}
-                              className="bg-orange-500 text-white px-4 rounded-lg text-xs font-bold"
+                              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-4 rounded-lg text-xs font-bold transition-colors shrink-0"
                             >
                               Add
                             </button>
