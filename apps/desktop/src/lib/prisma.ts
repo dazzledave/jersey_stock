@@ -36,7 +36,11 @@ const adapterClassExists = typeof PrismaBetterSqlite3 === 'function';
 export const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
-    datasourceUrl: `file:${dbPath}`,
+    datasources: {
+      db: {
+        url: `file:${dbPath}`,
+      },
+    },
     log: ['error', 'warn'],
   });
 
