@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import { getSupabaseAdmin } from '@/lib/utils/supabaseClient';
 import { cloudSyncService } from '@/lib/services/cloudSyncService';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const users = await prisma.user.findMany({

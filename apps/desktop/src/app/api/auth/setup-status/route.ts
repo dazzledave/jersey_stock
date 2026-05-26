@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { authService } from '@/lib/services/authService';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const status = await authService.checkSetupStatus();

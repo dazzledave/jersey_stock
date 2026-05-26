@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { settingsService } from '@/lib/services/settingsService';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const settings = await settingsService.getAllSettings();

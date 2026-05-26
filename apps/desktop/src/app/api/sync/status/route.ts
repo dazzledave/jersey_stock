@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cloudSyncService } from '@/lib/services/cloudSyncService';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const supabase = await cloudSyncService.getSupabaseClient();
