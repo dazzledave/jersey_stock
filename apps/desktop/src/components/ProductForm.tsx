@@ -37,6 +37,13 @@ export default function ProductForm() {
 
   const nameInputRef = useRef<HTMLInputElement>(null);
 
+  const scrollToTop = () => {
+    const scrollContainer = document.querySelector('main .overflow-y-auto');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   useEffect(() => {
     fetchCategories();
     
@@ -144,7 +151,7 @@ export default function ProductForm() {
       console.error('Failed to delete category:', err);
       setStatusMessage({ text: 'CONNECTION ERROR: Could not reach the server.', type: 'error' });
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTop();
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -157,7 +164,7 @@ export default function ProductForm() {
     if (file) {
       if (file.size > 1.5 * 1024 * 1024) {
         setStatusMessage({ text: 'IMAGE TOO LARGE: 1.5MB limit reached. Please resize and try again.', type: 'error' });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTop();
         return;
       }
       const reader = new FileReader();
@@ -177,7 +184,7 @@ export default function ProductForm() {
   const handlePublish = async () => {
     if (!formData.name || !formData.basePrice || !formData.categoryId) {
       setStatusMessage({ text: 'MISSING FIELDS: Please provide a name, price, and category before publishing.', type: 'error' });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToTop();
       return;
     }
 
@@ -214,15 +221,15 @@ export default function ProductForm() {
         setFormData({ name: '', brand: '', basePrice: '', imageUrl: '', categoryId: categories[0]?.id || '' });
         setVariants([]);
         if (fileInputRef.current) fileInputRef.current.value = '';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTop();
       } else {
         const error = await response.json();
         setStatusMessage({ text: `PUBLISH FAILED: ${error.error}`, type: 'error' });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTop();
       }
     } catch (err) {
       setStatusMessage({ text: 'CONNECTION ERROR: Could not reach the server. Please check your connection.', type: 'error' });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToTop();
     } finally {
       setIsSubmitting(false);
     }
