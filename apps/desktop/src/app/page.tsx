@@ -65,6 +65,13 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [activeTab, isAuthenticated]);
 
+  useEffect(() => {
+    // QUICK SAFETY NET: ensure no ghost exit nodes linger blocking interaction on view change
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('[data-framer-exit]').forEach(el => el.remove());
+    }
+  }, [activeTab]);
+
   if (setupRequired === null) {
     return (
       <div className="h-screen bg-[#0f172a] flex items-center justify-center">
@@ -242,8 +249,8 @@ export default function Home() {
         </div>
       </motion.aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      {/* Main Content Area - Explicitly relative with z-index to sit above any residual sidebar transforms */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
         {/* Top Header - Sticky */}
     <header 
           style={{ WebkitAppRegion: 'drag' } as any}
@@ -279,35 +286,44 @@ export default function Home() {
 
         {/* Dynamic Content Area */}
         <div className={`flex-1 overflow-y-auto custom-scrollbar ${activeTab === 'Sales Terminal' ? 'p-0' : 'p-10 pb-24'}`}>
-          <div className={`${activeTab === 'Sales Terminal' ? 'max-w-none w-full h-full' : 'max-w-[1400px] w-full mx-auto'} animate-in fade-in duration-500`}>
-            {activeTab === 'Dashboard' && user?.role === 'ADMIN' && <InventoryDashboard />}
-            {activeTab === 'Sales Terminal' && <SalesTerminal />}
-            {activeTab === 'Sales Records' && user?.role === 'ADMIN' && <SalesRecords />}
-            {activeTab === 'Customer Manager' && <CustomerList />}
-            {activeTab === 'Product Manager' && user?.role === 'ADMIN' && <ProductForm />}
-            {activeTab === 'Inventory Stock' && <InventoryStock />}
-            {activeTab === 'Analytics' && user?.role === 'ADMIN' && <Analytics />}
-            {activeTab === 'System Setup' && user?.role === 'ADMIN' && <SystemSetup />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.15 }}
+              className={activeTab === 'Sales Terminal' ? 'max-w-none w-full h-full' : 'max-w-[1400px] w-full mx-auto'}
+            >
+              {activeTab === 'Dashboard' && user?.role === 'ADMIN' && <InventoryDashboard />}
+              {activeTab === 'Sales Terminal' && <SalesTerminal />}
+              {activeTab === 'Sales Records' && user?.role === 'ADMIN' && <SalesRecords />}
+              {activeTab === 'Customer Manager' && <CustomerList />}
+              {activeTab === 'Product Manager' && user?.role === 'ADMIN' && <ProductForm />}
+              {activeTab === 'Inventory Stock' && <InventoryStock />}
+              {activeTab === 'Analytics' && user?.role === 'ADMIN' && <Analytics />}
+              {activeTab === 'System Setup' && user?.role === 'ADMIN' && <SystemSetup />}
 
-            {/* Fallback for unauthorized access */}
-            {(['Dashboard', 'Sales Records', 'Analytics', 'Product Manager', 'System Setup'].includes(activeTab) && user?.role !== 'ADMIN') && (
-              <div className="h-[60vh] flex flex-col items-center justify-center text-center space-y-6">
-                <div className="w-20 h-20 rounded-3xl bg-rose-500/10 text-rose-500 flex items-center justify-center shadow-xl">
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m0 0v2m0-2h2m-2 0H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              {/* Fallback for unauthorized access */}
+              {(['Dashboard', 'Sales Records', 'Analytics', 'Product Manager', 'System Setup'].includes(activeTab) && user?.role !== 'ADMIN') && (
+                <div className="h-[60vh] flex flex-col items-center justify-center text-center space-y-6">
+                  <div className="w-20 h-20 rounded-3xl bg-rose-500/10 text-rose-500 flex items-center justify-center shadow-xl">
+                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m0 0v2m0-2h2m-2 0H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground uppercase tracking-tight">Access Restricted</h2>
+                    <p className="text-slate-400 font-medium max-w-xs mx-auto mt-2 text-sm">This module requires Administrator privileges. Please contact your manager if you believe this is an error.</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('Inventory Stock')}
+                    className="px-8 py-3 bg-foreground text-brand-bg rounded-xl font-bold text-xs uppercase tracking-widest hover:opacity-90 transition-all"
+                  >
+                    Return to Stock
+                  </button>
                 </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground uppercase tracking-tight">Access Restricted</h2>
-                  <p className="text-slate-400 font-medium max-w-xs mx-auto mt-2 text-sm">This module requires Administrator privileges. Please contact your manager if you believe this is an error.</p>
-                </div>
-                <button
-                  onClick={() => setActiveTab('Inventory Stock')}
-                  className="px-8 py-3 bg-foreground text-brand-bg rounded-xl font-bold text-xs uppercase tracking-widest hover:opacity-90 transition-all"
-                >
-                  Return to Stock
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>

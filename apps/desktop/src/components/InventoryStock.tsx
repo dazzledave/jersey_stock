@@ -330,10 +330,16 @@ export default function InventoryStock() {
       {/* Full Edit Modal */}
       <AnimatePresence>
         {editingProduct && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-6">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-6"
+          >
              <motion.div 
                initial={{ y: 20, opacity: 0 }}
                animate={{ y: 0, opacity: 1 }}
+               exit={{ y: 20, opacity: 0 }}
                className="bg-surface w-full max-w-2xl rounded-2xl border border-border-subtle shadow-2xl overflow-hidden"
              >
                 <div className="p-8 border-b border-border-subtle flex justify-between items-center bg-brand-bg/30">
@@ -390,7 +396,7 @@ export default function InventoryStock() {
                    <button onClick={handleFullUpdate} className="flex-1 bg-foreground text-brand-bg font-black py-4 rounded-xl text-[10px] uppercase tracking-widest hover:bg-orange-500 transition-colors shadow-lg">Save Changes</button>
                 </div>
              </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

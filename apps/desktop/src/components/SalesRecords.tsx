@@ -192,7 +192,12 @@ export default function SalesRecords() {
       {/* Receipt Modal */}
       <AnimatePresence>
         {selectedSale && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-6">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-6"
+          >
              <motion.div 
                initial={{ scale: 0.9, opacity: 0, y: 20 }}
                animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -340,7 +345,7 @@ export default function SalesRecords() {
                    <p>Visit us again at Awards Centre.</p>
                 </div>
              </div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

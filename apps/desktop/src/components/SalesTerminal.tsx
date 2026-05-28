@@ -324,10 +324,16 @@ export default function SalesTerminal() {
         <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
           <AnimatePresence>
             {cart.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-2 opacity-50">
+                <motion.div 
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="h-full flex flex-col items-center justify-center text-slate-300 gap-2 opacity-50"
+                >
                   <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                   <p className="text-[9px] font-black uppercase tracking-[0.3em]">Empty</p>
-                </div>
+                </motion.div>
             ) : (
               cart.map((item) => (
                 <motion.div 
@@ -519,7 +525,12 @@ export default function SalesTerminal() {
       {/* Multi-Payment Modal */}
       <AnimatePresence>
         {showMultiPayment && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/70 backdrop-blur-md">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/70 backdrop-blur-md"
+          >
              <motion.div 
                initial={{ opacity: 0, scale: 0.9 }}
                animate={{ opacity: 1, scale: 1 }}
@@ -602,14 +613,19 @@ export default function SalesTerminal() {
                    </button>
                 </div>
              </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* Variant Selector */}
       <AnimatePresence>
         {variantSelector && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+          >
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -654,14 +670,19 @@ export default function SalesTerminal() {
                 })}
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* Digital Receipt Modal */}
       <AnimatePresence>
         {showReceipt && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
+          >
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -742,7 +763,7 @@ export default function SalesTerminal() {
                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Awards Centre POS • Official Digital Record</p>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

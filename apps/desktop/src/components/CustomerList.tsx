@@ -186,13 +186,19 @@ export default function CustomerList() {
                     </div>
                  </motion.div>
               ) : (
-                 <div className="h-[700px] bg-surface/20 border-2 border-dashed border-border-subtle rounded-2xl flex flex-col items-center justify-center gap-4 text-slate-300 backdrop-blur-sm">
+                 <motion.div 
+                   key="fallback"
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   exit={{ opacity: 0 }}
+                   className="h-[700px] bg-surface/20 border-2 border-dashed border-border-subtle rounded-2xl flex flex-col items-center justify-center gap-4 text-slate-300 backdrop-blur-sm"
+                 >
                     <div className="w-20 h-20 rounded-full bg-surface border border-border-subtle flex items-center justify-center text-4xl shadow-sm">👥</div>
                     <div className="text-center">
                        <p className="font-black uppercase tracking-widest text-[10px] text-slate-500">Patron Directory</p>
                        <p className="text-xs font-medium text-slate-400 mt-1">Select a customer to view their complete dossier.</p>
                     </div>
-                 </div>
+                 </motion.div>
               )}
            </AnimatePresence>
         </div>

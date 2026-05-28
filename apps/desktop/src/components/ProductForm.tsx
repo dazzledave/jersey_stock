@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from './AuthContext';
 
 interface Variant {
+  id?: string;
   size: string;
   color: string;
   sku: string;
@@ -445,7 +446,7 @@ export default function ProductForm() {
             </div>
             <button 
               type="button" 
-              onClick={() => setVariants([...variants, { size: '', color: '', sku: '', barcode: '', quantity: 0 }])}
+              onClick={() => setVariants([...variants, { id: Math.random().toString(36).substring(7), size: '', color: '', sku: '', barcode: '', quantity: 0 }])}
               className="text-[10px] font-black uppercase text-orange-500 hover:bg-orange-500 hover:text-white transition-all bg-orange-500/10 px-4 py-2 rounded-full border border-orange-500/20"
             >
               + Add Size/Color
@@ -468,7 +469,7 @@ export default function ProductForm() {
                ) : (
                  variants.map((v, i) => (
                    <motion.div 
-                     key={i}
+                     key={v.id || i}
                      initial={{ opacity: 0, x: -10 }}
                      animate={{ opacity: 1, x: 0 }}
                      className="grid grid-cols-5 gap-4 p-5 bg-brand-bg rounded-xl border border-border-subtle group hover:border-orange-200 transition-all shadow-sm"
