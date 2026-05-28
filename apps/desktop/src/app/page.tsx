@@ -259,8 +259,6 @@ export default function Home() {
                 {isOnline ? 'Online' : 'Offline Mode'}
               </span>
             </div>
-            <span>🔔</span>
-            <span>❓</span>
           </div>
           <div 
             style={{ WebkitAppRegion: 'no-drag' } as any}
