@@ -18,7 +18,16 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
+  const [globalAlert, setGlobalAlert] = useState<string | null>(null);
   const { isAuthenticated, user, logout, isAdmin, isOnline } = useAuth();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.alert = (message: any) => {
+        setGlobalAlert(String(message));
+      };
+    }
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && isAdmin !== undefined) {
@@ -321,6 +330,46 @@ export default function Home() {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Global Beautiful Custom Alert Modal */}
+      <AnimatePresence>
+        {globalAlert && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-6"
+          >
+             <motion.div 
+               initial={{ y: 20, opacity: 0 }}
+               animate={{ y: 0, opacity: 1 }}
+               exit={{ y: 20, opacity: 0 }}
+               className="bg-[#1a1f2b] w-full max-w-md rounded-2xl border border-slate-800 shadow-2xl overflow-hidden"
+             >
+                <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                   <h3 className="text-xs font-black uppercase tracking-widest text-[#ffb443] flex items-center gap-2">
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                     System Notification
+                   </h3>
+                   <button onClick={() => setGlobalAlert(null)} className="text-slate-400 hover:text-white">✕</button>
+                </div>
+                <div className="p-8">
+                   <p className="text-sm font-medium text-slate-300 leading-relaxed">
+                     {globalAlert}
+                   </p>
+                </div>
+                <div className="p-6 bg-slate-900/30 flex justify-end border-t border-slate-800/50">
+                   <button 
+                     onClick={() => setGlobalAlert(null)} 
+                     className="px-8 py-3 bg-[#ffb443] hover:bg-[#fca42d] text-[#1a1f2b] font-black rounded-xl text-[10px] uppercase tracking-widest transition-colors shadow-lg"
+                   >
+                     Acknowledge
+                   </button>
+                </div>
+             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
