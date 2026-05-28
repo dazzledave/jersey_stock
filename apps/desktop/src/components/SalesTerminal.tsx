@@ -55,6 +55,7 @@ export default function SalesTerminal() {
 
   // Accountability States
   const [saleType, setSaleType] = useState('Standard'); // 'Standard', 'Credit', 'Free'
+  const [showSaleTypeSelector, setShowSaleTypeSelector] = useState(false);
   const [debtorName, setDebtorName] = useState('');
   const [debtorPhone, setDebtorPhone] = useState('');
   const [authorizer, setAuthorizer] = useState('');
@@ -374,16 +375,59 @@ export default function SalesTerminal() {
           </div>
 
           <div className="space-y-3">
-             <div className="flex bg-surface rounded-xl border border-border-subtle p-1">
-                {['Standard', 'Credit', 'Free'].map((type) => (
-                   <button 
-                     key={type}
-                     onClick={() => setSaleType(type)}
-                     className={`flex-1 py-2 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all ${saleType === type ? 'bg-orange-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+             <div className="space-y-2">
+                {/* Dropdown Toggle Header */}
+                <button
+                   type="button"
+                   onClick={() => setShowSaleTypeSelector(!showSaleTypeSelector)}
+                   className="w-full flex items-center justify-between bg-surface px-4 py-2.5 rounded-xl border border-border-subtle hover:border-orange-300 transition-all text-foreground cursor-pointer"
+                >
+                   <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sale Mode:</span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-foreground">{saleType}</span>
+                   </div>
+                   <motion.svg 
+                      animate={{ rotate: showSaleTypeSelector ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="w-3.5 h-3.5 text-slate-400" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
                    >
-                     {type}
-                   </button>
-                ))}
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+                   </motion.svg>
+                </button>
+
+                {/* Dropdown Options (Collapsible) */}
+                <AnimatePresence>
+                   {showSaleTypeSelector && (
+                      <motion.div
+                         initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                         animate={{ height: 'auto', opacity: 1, marginTop: 8 }}
+                         exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                         className="overflow-hidden"
+                      >
+                         <div className="flex bg-surface rounded-xl border border-border-subtle p-1 shadow-inner">
+                            {['Standard', 'Credit', 'Free'].map((type) => (
+                               <button 
+                                 key={type}
+                                 type="button"
+                                 onClick={() => {
+                                    setSaleType(type);
+                                    setShowSaleTypeSelector(false);
+                                 }}
+                                 className={`flex-1 py-2 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                                    saleType === type ? 'bg-orange-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
+                                 }`}
+                               >
+                                 {type}
+                               </button>
+                            ))}
+                         </div>
+                      </motion.div>
+                   )}
+                </AnimatePresence>
              </div>
 
              <AnimatePresence mode="wait">
