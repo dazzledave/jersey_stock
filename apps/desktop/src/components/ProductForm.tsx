@@ -34,6 +34,7 @@ export default function ProductForm() {
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [statusMessage, setStatusMessage] = useState({ text: '', type: '' });
+  const [categoryDeleteConfirm, setCategoryDeleteConfirm] = useState<{ id: string, name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -120,16 +121,20 @@ export default function ProductForm() {
     }
   };
 
-  const handleDeleteCategory = async () => {
+  const handleDeleteCategory = () => {
     const categoryId = formData.categoryId;
     if (!categoryId) return;
     
     const category = categories.find(c => c.id === categoryId);
     if (!category) return;
     
-    if (!window.confirm(`Are you sure you want to delete the category "${category.name}"?\nThis action will fail if the category contains active products.`)) {
-      return;
-    }
+    setCategoryDeleteConfirm({ id: categoryId, name: category.name });
+  };
+
+  const handleExecuteDeleteCategory = async () => {
+    if (!categoryDeleteConfirm) return;
+    const { id: categoryId, name: categoryName } = categoryDeleteConfirm;
+    setCategoryDeleteConfirm(null);
     
     try {
       const res = await fetch(`/api/products/categories/${categoryId}`, {
@@ -138,7 +143,7 @@ export default function ProductForm() {
       
       const data = await res.json();
       if (res.ok) {
-        setStatusMessage({ text: `SUCCESS: Category "${category.name}" has been deleted.`, type: 'success' });
+        setStatusMessage({ text: `SUCCESS: Category "${categoryName}" has been deleted.`, type: 'success' });
         const updatedCats = categories.filter(c => c.id !== categoryId);
         setCategories(updatedCats);
         setFormData(prev => ({ 
@@ -549,6 +554,55 @@ export default function ProductForm() {
            </button>
         </div>
       </div>
+
+       {/* Category Delete Confirmation Modal */}
+       <AnimatePresence>
+         {categoryDeleteConfirm && (
+           <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-6"
+           >
+              <motion.div 
+                 initial={{ y: 20, opacity: 0 }}
+                 animate={{ y: 0, opacity: 1 }}
+                 exit={{ y: 20, opacity: 0 }}
+                 className="bg-[#1a1f2b] w-full max-w-md rounded-2xl border border-slate-800 shadow-2xl overflow-hidden"
+              >
+                 <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-rose-500/10">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-rose-500 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                      Delete Category
+                    </h3>
+                    <button onClick={() => setCategoryDeleteConfirm(null)} className="text-slate-400 hover:text-white">✕</button>
+                 </div>
+                 <div className="p-8 space-y-4">
+                    <p className="text-sm font-medium text-slate-300">
+                      Are you sure you want to delete the category <strong className="text-white">"{categoryDeleteConfirm.name}"</strong>?
+                    </p>
+                    <p className="text-xs font-bold text-rose-500/80 uppercase tracking-wider bg-rose-500/5 p-3 rounded-lg border border-rose-500/10">
+                      ⚠️ This action will fail if the category currently contains any active products in the system.
+                    </p>
+                 </div>
+                 <div className="p-6 bg-slate-900/30 flex gap-3 border-t border-slate-800/50">
+                    <button 
+                      onClick={() => setCategoryDeleteConfirm(null)} 
+                      className="flex-1 bg-slate-800 text-slate-400 font-black py-3 rounded-xl text-[10px] uppercase tracking-widest border border-slate-800 hover:bg-slate-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleExecuteDeleteCategory} 
+                      className="flex-1 bg-rose-600 text-white font-black py-3 rounded-xl text-[10px] uppercase tracking-widest hover:bg-rose-500 transition-colors shadow-lg shadow-rose-900/20"
+                    >
+                      Confirm Delete
+                    </button>
+                 </div>
+              </motion.div>
+           </motion.div>
+         )}
+       </AnimatePresence>
     </div>
   );
 }

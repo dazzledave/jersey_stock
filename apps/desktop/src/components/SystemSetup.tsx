@@ -29,6 +29,7 @@ export default function SystemSetup() {
   const [newUser, setNewUser] = useState({ username: '', password: '', role: 'STAFF' });
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, username: string } | null>(null);
+  const [confirmResetLogs, setConfirmResetLogs] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -260,9 +261,12 @@ export default function SystemSetup() {
     }
   };
 
-  const handleResetLogs = async () => {
-    if (!window.confirm('Are you sure you want to permanently delete all synchronization logs?')) return;
-    
+  const handleResetLogs = () => {
+    setConfirmResetLogs(true);
+  };
+
+  const handleExecuteResetLogs = async () => {
+    setConfirmResetLogs(false);
     setIsResetting(true);
     try {
       const res = await fetch('/api/sync/logs', {
@@ -678,6 +682,55 @@ export default function SystemSetup() {
                      className="flex-1 bg-rose-600 text-white font-black py-3 rounded-xl text-[10px] uppercase tracking-widest hover:bg-rose-500 transition-colors shadow-lg shadow-rose-900/20"
                    >
                      Confirm Delete
+                   </button>
+                </div>
+             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Sync Logs Reset Confirmation Modal */}
+      <AnimatePresence>
+        {confirmResetLogs && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-6"
+          >
+             <motion.div 
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 20, opacity: 0 }}
+                className="bg-[#1a1f2b] w-full max-w-md rounded-2xl border border-slate-800 shadow-2xl overflow-hidden"
+             >
+                <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-[#ffb443]/10">
+                   <h3 className="text-xs font-black uppercase tracking-widest text-[#ffb443] flex items-center gap-2">
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                     Purge Sync Logs
+                   </h3>
+                   <button onClick={() => setConfirmResetLogs(false)} className="text-slate-400 hover:text-white">✕</button>
+                </div>
+                <div className="p-8 space-y-4">
+                   <p className="text-sm font-medium text-slate-300">
+                     Are you sure you want to permanently delete all synchronization logs?
+                   </p>
+                   <p className="text-xs font-bold text-[#ffb443]/80 uppercase tracking-wider bg-[#ffb443]/5 p-3 rounded-lg border border-[#ffb443]/10">
+                     ⚠️ This action will clear all sync trace records. It will not affect actual synced product or user data.
+                   </p>
+                </div>
+                <div className="p-6 bg-slate-900/30 flex gap-3 border-t border-slate-800/50">
+                   <button 
+                     onClick={() => setConfirmResetLogs(false)} 
+                     className="flex-1 bg-slate-800 text-slate-400 font-black py-3 rounded-xl text-[10px] uppercase tracking-widest border border-slate-800 hover:bg-slate-700 transition-colors"
+                   >
+                     Cancel
+                   </button>
+                   <button 
+                     onClick={handleExecuteResetLogs} 
+                     className="flex-1 bg-[#ffb443] text-[#1a1f2b] font-black py-3 rounded-xl text-[10px] uppercase tracking-widest hover:bg-[#fca42d] transition-colors shadow-lg"
+                   >
+                     Confirm Purge
                    </button>
                 </div>
              </motion.div>
