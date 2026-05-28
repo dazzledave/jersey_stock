@@ -215,7 +215,8 @@ function startServer() {
       ELECTRON_RUN_AS_NODE: '1', 
       DATABASE_PATH: targetDbPath 
     },
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true
   });
 }
 
