@@ -205,42 +205,24 @@ export default function SystemSetup() {
   };
 
   const handleSync = async () => {
-    if (!settings.supabaseUrl || !settings.supabaseKey) {
-      alert('Please provide Supabase URL and Key first.');
-      return;
-    }
-
     setIsSyncing(true);
     try {
-      // 1. Save credentials to server first
-      await fetch('/api/sync/credentials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          supabaseUrl: settings.supabaseUrl,
-          supabaseKey: settings.supabaseKey
-        })
-      });
-
-      // 2. Trigger a full manual sync test
+      // Trigger a full manual sync using the hardcoded/env credentials on the server
       const res = await fetch('/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          supabaseUrl: settings.supabaseUrl,
-          supabaseKey: settings.supabaseKey
-        })
+        body: JSON.stringify({})
       });
 
       const data = await res.json();
       if (res.ok) {
         setLastSync(new Date().toLocaleString());
-        alert('Credentials saved and Cloud synchronization successful!');
+        alert('Cloud synchronization successful!');
       } else {
-        alert('Sync failed: ' + data.error);
+        alert('Sync failed: ' + (data.error || 'Unknown error'));
       }
     } catch (err) {
-      alert('Network error during sync.');
+      alert('Network error. Cloud synchronization failed.');
     } finally {
       setIsSyncing(false);
     }
@@ -462,30 +444,18 @@ export default function SystemSetup() {
           <div className="space-y-8">
             <div className="bg-surface p-10 rounded-xl border border-border-subtle space-y-8 shadow-sm">
                <div>
-                  <h3 className="text-xl font-bold text-foreground mb-1">Cloud Sync (Supabase)</h3>
-                  <p className="text-xs text-slate-400 font-medium">Connect your store to the cloud for remote access.</p>
+                  <h3 className="text-xl font-bold text-foreground mb-1">Cloud Synchronization</h3>
+                  <p className="text-xs text-slate-400 font-medium">Automatic cloud replication is active and managed by the system.</p>
                </div>
-               <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Supabase URL</label>
-                    <input 
-                      type="text" 
-                      placeholder="https://xyz.supabase.co"
-                      value={settings.supabaseUrl}
-                      onChange={(e) => setSettings({...settings, supabaseUrl: e.target.value})}
-                      className="w-full bg-brand-bg p-3 rounded-lg border border-border-subtle text-xs font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
-                    />
+               <div className="bg-brand-bg/50 p-4 rounded-lg border border-border-subtle flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                     <div>
+                        <div className="text-[10px] font-black uppercase text-foreground">Cloud Sync Channel</div>
+                        <div className="text-[8px] font-bold uppercase text-slate-500 mt-0.5">Production Database</div>
+                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Service Role Key / Anon Key</label>
-                    <input 
-                      type="password" 
-                      placeholder="eyJhbG..."
-                      value={settings.supabaseKey}
-                      onChange={(e) => setSettings({...settings, supabaseKey: e.target.value})}
-                      className="w-full bg-brand-bg p-3 rounded-lg border border-border-subtle text-xs font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
-                    />
-                  </div>
+                  <span className="text-[8px] font-black uppercase px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">Secure</span>
                </div>
                <div className="flex flex-col gap-3">
                   <button 
