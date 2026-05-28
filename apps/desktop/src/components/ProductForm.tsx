@@ -518,8 +518,9 @@ export default function ProductForm() {
                         <label className="text-[8px] font-black text-slate-400 uppercase ml-1">Qty</label>
                         <input 
                           type="number" 
-                          value={v.quantity}
-                          onChange={(e) => updateVariant(i, 'quantity', parseInt(e.target.value))}
+                          placeholder="0"
+                          value={v.quantity === 0 ? '' : v.quantity}
+                          onChange={(e) => updateVariant(i, 'quantity', parseInt(e.target.value) || 0)}
                           className="w-full bg-surface px-4 py-3 rounded-lg border border-transparent focus:border-orange-200 outline-none text-sm font-bold text-foreground" 
                         />
                      </div>
