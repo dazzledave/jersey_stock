@@ -56,9 +56,11 @@ body {
   background: #cbd5e1;
 }
 
-/* FIX: Input Focus Reinforcement */
-input, textarea, [contenteditable="true"] {
+/* FIX: Input Focus Reinforcement - ensures interactive elements are always clickable */
+input, textarea, select, button, [contenteditable="true"] {
   pointer-events: auto !important;
+}
+input, textarea, [contenteditable="true"] {
   cursor: text !important;
   user-select: text !important;
   -webkit-user-select: text !important;

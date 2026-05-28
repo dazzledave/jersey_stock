@@ -129,8 +129,56 @@ export const productService = {
   },
 
   async deleteProduct(id: string) {
-    return await prisma.product.delete({
+    // 1. Get variants to delete their related records in Supabase and locally
+    const product = await prisma.product.findUnique({
+      where: { id },
+      include: { variants: true }
+    });
+
+    if (!product) return null;
+
+    const variantIds = product.variants.map(v => v.id);
+
+    // 2. Delete related records locally to prevent foreign key constraint violations
+    if (variantIds.length > 0) {
+      await prisma.stockMovement.deleteMany({
+        where: { variantId: { in: variantIds } }
+      });
+      await prisma.saleItem.deleteMany({
+        where: { variantId: { in: variantIds } }
+      });
+    }
+
+    // 3. Delete from local SQLite database (variants and inventory will cascade)
+    const deletedProduct = await prisma.product.delete({
       where: { id }
     });
+
+    // 4. Delete from Supabase to prevent them from being restored during subsequent downsyncs
+    try {
+      const supabase = await cloudSyncService.getSupabaseClient();
+      if (supabase) {
+        if (variantIds.length > 0) {
+          // Delete inventory entries on Supabase
+          const { error: invError } = await supabase.from('inventory').delete().in('variantId', variantIds);
+          if (invError) console.error('Supabase inventory deletion failed:', invError);
+
+          // Delete variants on Supabase
+          const { error: varError } = await supabase.from('product_variants').delete().in('id', variantIds);
+          if (varError) console.error('Supabase variants deletion failed:', varError);
+        }
+
+        // Delete product on Supabase
+        const { data, error } = await supabase.from('products').delete().eq('id', id);
+        console.log(`[SYNC] Product delete response for ID ${id}:`, { data, error });
+        if (error) {
+          console.error('Supabase product deletion failed:', error);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync product deletion to cloud:', err);
+    }
+
+    return deletedProduct;
   }
 };

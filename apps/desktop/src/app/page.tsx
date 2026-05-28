@@ -26,12 +26,7 @@ export default function Home() {
     }
   }, [isAuthenticated, isAdmin]);
 
-  useEffect(() => {
-    // GLOBAL FOCUS FORCE: Ensures the window is 'Awake' for input events
-    if (typeof window !== 'undefined') {
-       window.focus();
-    }
-  }, [activeTab]);
+  // REMOVED: window.focus() was stealing focus from inputs in Electron
 
   useEffect(() => {
     checkSetupStatus();
@@ -65,12 +60,7 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [activeTab, isAuthenticated]);
 
-  useEffect(() => {
-    // QUICK SAFETY NET: ensure no ghost exit nodes linger blocking interaction on view change
-    if (typeof document !== 'undefined') {
-      document.querySelectorAll('[data-framer-exit]').forEach(el => el.remove());
-    }
-  }, [activeTab]);
+  // Ghost node cleanup now handled via onAnimationComplete below
 
   if (setupRequired === null) {
     return (
@@ -133,14 +123,13 @@ export default function Home() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-brand-bg font-['Segoe_UI_Variable_Text',_system-ui,_sans-serif]">
-      {/* Sidebar - Collapsible with Framer Motion for smoothness */}
-      <motion.aside
-        initial={false}
-        animate={{
+      {/* Sidebar - Collapsible with CSS transitions (avoids Framer Motion transform compositing layers) */}
+      <aside
+        style={{
           width: sidebarExpanded ? 280 : 80,
-          padding: sidebarExpanded ? '24px' : '12px'
+          padding: sidebarExpanded ? '24px' : '12px',
+          transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
         }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className="bg-[#1a1f2b] text-white flex flex-col h-screen flex-shrink-0 overflow-hidden"
       >
         <div className={`flex items-center justify-between px-2 ${sidebarExpanded ? 'mb-8' : 'mb-4'}`}>
@@ -247,9 +236,9 @@ export default function Home() {
             </AnimatePresence>
           </div>
         </div>
-      </motion.aside>
+      </aside>
 
-      {/* Main Content Area - Explicitly relative with z-index to sit above any residual sidebar transforms */}
+      {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
         {/* Top Header - Sticky */}
     <header 
@@ -289,10 +278,16 @@ export default function Home() {
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.15 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
+              style={{ willChange: 'opacity' }}
+              onAnimationComplete={() => {
+                // NUCLEAR CLEANUP: After animation settles, purge any ghost nodes
+                // and force-reset pointer events on the content area
+                document.querySelectorAll('[data-framer-exit]').forEach(el => el.remove());
+              }}
               className={activeTab === 'Sales Terminal' ? 'max-w-none w-full h-full' : 'max-w-[1400px] w-full mx-auto'}
             >
               {activeTab === 'Dashboard' && user?.role === 'ADMIN' && <InventoryDashboard />}

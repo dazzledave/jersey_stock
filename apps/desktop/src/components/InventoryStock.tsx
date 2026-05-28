@@ -161,9 +161,13 @@ export default function InventoryStock() {
       });
       if (res.ok) {
         setProducts(prev => prev.filter(p => p.id !== productId));
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(`Failed to delete product: ${errData.error || res.statusText}`);
       }
     } catch (err) {
       console.error('Failed to delete product:', err);
+      alert('An unexpected error occurred while deleting the product.');
     }
   };
 
