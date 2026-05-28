@@ -11,6 +11,13 @@ export async function GET() {
       return NextResponse.json({ cloudConnected: false, reason: 'No Keys Found' });
     }
 
+    // Lazy start of the Sync Worker in dev mode or as a fallback
+    if (!(global as any).syncWorkerStarted) {
+      console.log('[SYNC] Lazily starting Cloud Sync Worker from API route...');
+      cloudSyncService.startWorker();
+      (global as any).syncWorkerStarted = true;
+    }
+
     // Attempt a lightweight ping to Supabase with a 3-second timeout to prevent hanging when network drops
     const pingPromise = supabase.from('users').select('id', { count: 'exact', head: true }).limit(1);
     const timeoutPromise = new Promise<any>((_, reject) => 

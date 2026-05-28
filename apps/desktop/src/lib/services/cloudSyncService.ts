@@ -54,13 +54,16 @@ export const cloudSyncService = {
   },
 
   queueSync: async (entity: string, entityId: string) => {
-    return await prisma.syncLog.create({
+    const log = await prisma.syncLog.create({
       data: {
         entity,
         entityId,
         status: 'PENDING'
       }
     });
+    // Fire the sync queue processing instantly in the background for near real-time sync!
+    cloudSyncService.processSyncQueue().catch(err => console.error('Instant sync queue error:', err));
+    return log;
   },
   processSyncQueue: async () => {
     const supabase = await cloudSyncService.getSupabaseClient();
