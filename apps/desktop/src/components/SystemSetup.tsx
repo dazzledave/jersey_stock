@@ -559,7 +559,7 @@ export default function SystemSetup() {
                  </div>
                  <button 
                    disabled={isCreatingUser}
-                   className="w-full bg-orange-500 text-white font-black py-4 rounded-lg text-[10px] uppercase tracking-[0.2em] hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
+                   className="w-full bg-orange-500 text-white font-black py-4 px-4 rounded-lg text-[10px] uppercase tracking-[0.1em] hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
                  >
                     {isCreatingUser ? 'Creating...' : 'Register Staff Member'}
                  </button>
