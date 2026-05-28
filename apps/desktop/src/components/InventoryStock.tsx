@@ -32,7 +32,6 @@ interface Product {
 export default function InventoryStock() {
   const { isAdmin } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
-  // ... existing states ...
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [currency, setCurrency] = useState('GH₵');
@@ -41,6 +40,8 @@ export default function InventoryStock() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -151,16 +152,21 @@ export default function InventoryStock() {
     }
   };
 
-  const handleDeleteProduct = async (productId: string, productName: string) => {
+  const handleDeleteProduct = (productId: string, productName: string) => {
     if (!isAdmin) return;
-    if (!window.confirm(`Are you sure you want to permanently delete "${productName}"?`)) return;
+    setDeleteConfirm({ id: productId, name: productName });
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm || isDeleting) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/products/${productId}`, {
+      const res = await fetch(`/api/products/${deleteConfirm.id}`, {
         method: 'DELETE'
       });
       if (res.ok) {
-        setProducts(prev => prev.filter(p => p.id !== productId));
+        setProducts(prev => prev.filter(p => p.id !== deleteConfirm.id));
+        setDeleteConfirm(null);
       } else {
         const errData = await res.json().catch(() => ({}));
         alert(`Failed to delete product: ${errData.error || res.statusText}`);
@@ -168,6 +174,8 @@ export default function InventoryStock() {
     } catch (err) {
       console.error('Failed to delete product:', err);
       alert('An unexpected error occurred while deleting the product.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -398,6 +406,60 @@ export default function InventoryStock() {
                 <div className="p-8 bg-brand-bg/30 flex gap-4">
                    <button onClick={() => setEditingProduct(null)} className="flex-1 bg-surface text-slate-400 font-black py-4 rounded-xl text-[10px] uppercase tracking-widest border border-border-subtle">Cancel</button>
                    <button onClick={handleFullUpdate} className="flex-1 bg-foreground text-brand-bg font-black py-4 rounded-xl text-[10px] uppercase tracking-widest hover:bg-orange-500 transition-colors shadow-lg">Save Changes</button>
+                </div>
+             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-6"
+          >
+             <motion.div 
+               initial={{ y: 20, opacity: 0 }}
+               animate={{ y: 0, opacity: 1 }}
+               exit={{ y: 20, opacity: 0 }}
+               className="bg-surface w-full max-w-md rounded-2xl border border-border-subtle shadow-2xl overflow-hidden"
+             >
+                <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-rose-500/10">
+                   <h3 className="text-xs font-black uppercase tracking-widest text-rose-500 flex items-center gap-2">
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                     Confirm Deletion
+                   </h3>
+                   <button onClick={() => setDeleteConfirm(null)} className="text-slate-400 hover:text-foreground">✕</button>
+                </div>
+                <div className="p-8 space-y-4">
+                   <p className="text-sm font-medium text-slate-300">
+                     Are you sure you want to permanently delete <strong className="text-white">"{deleteConfirm.name}"</strong>?
+                   </p>
+                   <p className="text-xs font-bold text-rose-500/80 uppercase tracking-wider bg-rose-500/5 p-3 rounded-lg border border-rose-500/10">
+                     ⚠️ This action will also delete all associated variant stocks, inventory logs, and past transaction records for this product. This cannot be undone!
+                   </p>
+                </div>
+                <div className="p-6 bg-brand-bg/30 flex gap-3 border-t border-border-subtle">
+                   <button 
+                     onClick={() => setDeleteConfirm(null)} 
+                     disabled={isDeleting}
+                     className="flex-1 bg-surface text-slate-400 font-black py-3 rounded-xl text-[10px] uppercase tracking-widest border border-border-subtle hover:bg-slate-800 transition-colors"
+                   >
+                     Cancel
+                   </button>
+                   <button 
+                     onClick={handleConfirmDelete} 
+                     disabled={isDeleting}
+                     className="flex-1 bg-rose-600 text-white font-black py-3 rounded-xl text-[10px] uppercase tracking-widest hover:bg-rose-500 transition-colors shadow-lg shadow-rose-900/20 flex items-center justify-center gap-2"
+                   >
+                     {isDeleting ? (
+                       <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                     ) : null}
+                     {isDeleting ? 'Deleting...' : 'Permanently Delete'}
+                   </button>
                 </div>
              </motion.div>
           </motion.div>

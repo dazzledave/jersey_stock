@@ -36,6 +36,7 @@ export default function Analytics() {
   }, []);
 
   const fetchDetailed = async () => {
+    setIsLoading(true);
     try {
       const res = await fetch('/api/analytics/detailed');
       const json = await res.json();
@@ -50,7 +51,7 @@ export default function Analytics() {
   const totalAnnualRevenue = (data?.trendData.reduce((acc, item) => acc + item.value, 0) || 0) / (currency === 'GH₵' ? 1 : (exchangeRate || 1));
 
   return (
-    <div className="space-y-10 bg-brand-bg/50 h-full p-10 custom-scrollbar overflow-y-auto">
+    <div className="space-y-10">
       <div className="flex justify-between items-end">
         <div>
           <div className="text-[10px] uppercase font-bold text-orange-500 tracking-[0.2em] mb-1 flex items-center gap-2">
