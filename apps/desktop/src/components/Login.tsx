@@ -9,6 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [isRecovering, setIsRecovering] = useState(false);
@@ -45,6 +46,7 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       const response = await fetch('/api/auth/login', {
@@ -68,6 +70,7 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       const response = await fetch('/api/auth/verify-recovery', {
@@ -93,6 +96,7 @@ export default function Login() {
     
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       const response = await fetch('/api/auth/recovery-reset', {
@@ -104,7 +108,7 @@ export default function Login() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Recovery failed');
 
-      alert('Password reset successful! You can now log in.');
+      setSuccess('Password reset successful! You can now log in.');
       setIsRecovering(false);
       setRecoveryStep(1);
       setPassword('');
@@ -195,6 +199,16 @@ export default function Login() {
                   {error.includes('Failed to fetch') 
                     ? 'Connection Error: Backend server is not responding.' 
                     : error}
+                </motion.div>
+              )}
+
+              {success && (
+                <motion.div 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-xs font-bold text-emerald-500"
+                >
+                  {success}
                 </motion.div>
               )}
 

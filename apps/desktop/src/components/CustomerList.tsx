@@ -10,7 +10,9 @@ export default function CustomerList() {
   const [search, setSearch] = useState('');
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '' });
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, name: string } | null>(null);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     fetchCustomers();
@@ -30,6 +32,7 @@ export default function CustomerList() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     const method = selectedCustomer && isAdding === false ? 'PUT' : 'POST';
     const url = method === 'PUT' 
       ? `/api/customers/${selectedCustomer.id}` 
@@ -45,27 +48,37 @@ export default function CustomerList() {
         setIsAdding(false);
         setFormData({ name: '', phone: '', email: '', address: '' });
         fetchCustomers();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Failed to save customer.');
       }
     } catch (err) {
-      alert('Failed to save customer.');
+      setError('Failed to save customer.');
     }
   };
 
   const deleteCustomer = (id: string) => {
     const c = customers.find(x => x.id === id);
     if (!c) return;
+    setDeleteError('');
     setDeleteConfirm({ id, name: c.name });
   };
 
   const handleConfirmDeleteCustomer = async () => {
     if (!deleteConfirm) return;
+    setDeleteError('');
     try {
-      await fetch(`/api/customers/${deleteConfirm.id}`, { method: 'DELETE' });
-      fetchCustomers();
-      setSelectedCustomer(null);
-      setDeleteConfirm(null);
+      const res = await fetch(`/api/customers/${deleteConfirm.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchCustomers();
+        setSelectedCustomer(null);
+        setDeleteConfirm(null);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setDeleteError(data.error || 'Failed to delete customer.');
+      }
     } catch (err) {
-      alert('Failed to delete.');
+      setDeleteError('Failed to delete.');
     }
   };
 
@@ -165,6 +178,11 @@ export default function CustomerList() {
 
                     <div className="p-10 flex-1 overflow-y-auto">
                        <form onSubmit={handleSave} className="grid grid-cols-2 gap-8">
+                          {error && (
+                             <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl text-xs font-bold text-rose-500 col-span-2">
+                                {error}
+                             </div>
+                          )}
                           <div className="space-y-6 col-span-2">
                              <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-2">
@@ -233,6 +251,11 @@ export default function CustomerList() {
                    <button onClick={() => setDeleteConfirm(null)} className="text-slate-400 hover:text-white">✕</button>
                 </div>
                 <div className="p-8 space-y-4">
+                   {deleteError && (
+                      <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl text-xs font-bold text-rose-500">
+                         {deleteError}
+                      </div>
+                   )}
                    <p className="text-sm font-medium text-slate-300">
                      Are you sure you want to permanently delete customer <strong className="text-white">"{deleteConfirm.name}"</strong>?
                    </p>

@@ -38,9 +38,11 @@ export default function InventoryStock() {
   const [exchangeRate, setExchangeRate] = useState(1);
   const [editingPrice, setEditingPrice] = useState<{ id: string, price: string } | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editError, setEditError] = useState('');
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, name: string } | null>(null);
+  const [deleteError, setDeleteError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,6 +121,7 @@ export default function InventoryStock() {
 
   const handleFullUpdate = async () => {
     if (!isAdmin || !editingProduct) return;
+    setEditError('');
     try {
       const res = await fetch(`/api/products/${editingProduct.id}`, {
         method: 'PUT',
@@ -135,9 +138,12 @@ export default function InventoryStock() {
       if (res.ok) {
         await fetchProducts(); // Refresh list
         setEditingProduct(null);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setEditError(errData.error || 'Failed to update product details.');
       }
     } catch (err) {
-      alert('Failed to update product details.');
+      setEditError('Failed to update product details due to a connection issue.');
     }
   };
 
@@ -154,12 +160,14 @@ export default function InventoryStock() {
 
   const handleDeleteProduct = (productId: string, productName: string) => {
     if (!isAdmin) return;
+    setDeleteError('');
     setDeleteConfirm({ id: productId, name: productName });
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteConfirm || isDeleting) return;
     setIsDeleting(true);
+    setDeleteError('');
     try {
       const res = await fetch(`/api/products/${deleteConfirm.id}`, {
         method: 'DELETE'
@@ -169,11 +177,11 @@ export default function InventoryStock() {
         setDeleteConfirm(null);
       } else {
         const errData = await res.json().catch(() => ({}));
-        alert(`Failed to delete product: ${errData.error || res.statusText}`);
+        setDeleteError(`Failed to delete product: ${errData.error || res.statusText}`);
       }
     } catch (err) {
       console.error('Failed to delete product:', err);
-      alert('An unexpected error occurred while deleting the product.');
+      setDeleteError('An unexpected error occurred while deleting the product.');
     } finally {
       setIsDeleting(false);
     }
@@ -273,7 +281,10 @@ export default function InventoryStock() {
                         <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Retail Price:</div>
                         <div className="text-lg font-black text-foreground">{currency}{(product.basePrice / (currency === 'GH₵' || currency === 'GHS' ? 1 : (exchangeRate || 1))).toFixed(2)}</div>
                         <button 
-                          onClick={() => setEditingProduct(product)}
+                          onClick={() => {
+                            setEditError('');
+                            setEditingProduct(product);
+                          }}
                           className="p-2 rounded-lg bg-brand-bg text-slate-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all"
                           title="Edit Details"
                         >
@@ -368,6 +379,11 @@ export default function InventoryStock() {
                    </div>
                    
                    <div className="space-y-4">
+                      {editError && (
+                         <div className="bg-rose-500/10 border border-rose-500/20 p-3.5 rounded-xl text-xs font-bold text-rose-500">
+                            {editError}
+                         </div>
+                      )}
                       <div className="space-y-1">
                          <label className="text-[9px] font-black text-slate-400 uppercase">Product Name</label>
                          <input type="text" value={editingProduct.name} onChange={(e) => setEditingProduct({...editingProduct, name: e.target.value})} className="w-full bg-brand-bg p-3 rounded-lg border border-border-subtle text-sm font-bold text-foreground outline-none focus:border-orange-500" />
@@ -435,6 +451,11 @@ export default function InventoryStock() {
                    <button onClick={() => setDeleteConfirm(null)} className="text-slate-400 hover:text-foreground">✕</button>
                 </div>
                 <div className="p-8 space-y-4">
+                   {deleteError && (
+                      <div className="bg-rose-500/10 border border-rose-500/20 p-3.5 rounded-xl text-xs font-bold text-rose-500">
+                         {deleteError}
+                      </div>
+                   )}
                    <p className="text-sm font-medium text-slate-300">
                      Are you sure you want to permanently delete <strong className="text-white">"{deleteConfirm.name}"</strong>?
                    </p>

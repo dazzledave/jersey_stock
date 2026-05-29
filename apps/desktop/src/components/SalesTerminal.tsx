@@ -583,6 +583,7 @@ export default function SalesTerminal() {
                     className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
                   />
                 </motion.div>
+              )}
               {saleType === 'Free' && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
@@ -613,7 +614,6 @@ export default function SalesTerminal() {
                     </div>
                   )}
                 </motion.div>
-              )}
               )}
             </AnimatePresence>
           </div>
