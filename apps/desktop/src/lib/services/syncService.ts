@@ -52,7 +52,8 @@ export const syncToCloud = async (supabaseUrl: string, supabaseKey: string) => {
     { name: 'inventory', model: (prisma as any).inventory, idField: 'variantId' },
     { name: 'customers', model: (prisma as any).customer, idField: 'id' },
     { name: 'sales', model: (prisma as any).sale, idField: 'id' },
-    { name: 'sale_items', model: (prisma as any).saleItem, idField: 'id' }
+    { name: 'sale_items', model: (prisma as any).saleItem, idField: 'id' },
+    { name: 'audit_logs', model: (prisma as any).auditLog, idField: 'id' }
   ];
 
   try {
