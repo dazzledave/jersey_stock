@@ -946,7 +946,7 @@ export default function SalesTerminal() {
                         <p className="opacity-70 text-[9px] uppercase">{item.size} • {item.color}</p>
                         <p className="opacity-70">Qty: {item.quantity}</p>
                       </div>
-                      <p className="font-bold">{currency}{((item.price * item.quantity) / (showReceipt.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="font-bold">{currency}{((item.price * item.quantity) / (showReceipt.currency === 'GH₵' || showReceipt.currency === 'GHS' ? 1 : (showReceipt.exchangeRate || 1))).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                   ))}
                 </div>
@@ -956,11 +956,11 @@ export default function SalesTerminal() {
                   <div className="text-[10px] space-y-1 mb-2">
                     <div className="flex justify-between">
                       <span>SUBTOTAL</span>
-                      <span>{currency}{(showReceipt.subtotal / (showReceipt.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span>{currency}{(showReceipt.subtotal / (showReceipt.currency === 'GH₵' || showReceipt.currency === 'GHS' ? 1 : (showReceipt.exchangeRate || 1))).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between text-black font-bold">
                       <span>DISCOUNT</span>
-                      <span>-{showReceipt.discountType === 'percentage' ? `${showReceipt.discountAmount}%` : `${currency}${(showReceipt.discountAmount / (showReceipt.exchangeRate || 1)).toFixed(2)}`}</span>
+                      <span>-{showReceipt.discountType === 'percentage' ? `${showReceipt.discountAmount}%` : `${currency}${(showReceipt.discountAmount / (showReceipt.currency === 'GH₵' || showReceipt.currency === 'GHS' ? 1 : (showReceipt.exchangeRate || 1))).toFixed(2)}`}</span>
                     </div>
                     <div className="border-b border-dashed border-black mb-2" />
                   </div>
@@ -968,7 +968,7 @@ export default function SalesTerminal() {
 
                 <div className="flex justify-between font-bold text-sm mb-4">
                   <span>TOTAL</span>
-                  <span>{currency}{(showReceipt.total / (showReceipt.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span>{currency}{(showReceipt.total / (showReceipt.currency === 'GH₵' || showReceipt.currency === 'GHS' ? 1 : (showReceipt.exchangeRate || 1))).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
 
                 <div className="text-[9px] text-center space-y-1">
