@@ -84,14 +84,16 @@ model Customer {
 }
 
 model User {
-  id              String   @id @default(cuid())
-  username        String   @unique
+  id              String    @id @default(cuid())
+  username        String    @unique
   password        String
-  role            String   @default("STAFF") // "ADMIN" or "STAFF"
-  recoveryKey     String?  // Hashed recovery key for password reset
+  role            String    @default("STAFF") // "ADMIN", "SUPERVISOR", or "STAFF"
+  recoveryKey     String?   // Hashed recovery key for password reset
+  isActive        Boolean   @default(true)
+  lastLogin       DateTime?
   sales           Sale[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now()) @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
 
   @@map("users")
 }

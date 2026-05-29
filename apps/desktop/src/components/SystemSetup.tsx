@@ -27,10 +27,24 @@ export default function SystemSetup() {
   // Staff Management State
   const [users, setUsers] = useState<any[]>([]);
   const [newUser, setNewUser] = useState({ username: '', password: '', role: 'STAFF' });
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+  const [createdUserSuccess, setCreatedUserSuccess] = useState<{ username: string; password: string } | null>(null);
+  
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, username: string } | null>(null);
   const [confirmResetLogs, setConfirmResetLogs] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Search, filter and modals
+  const [searchTerm, setSearchTerm] = useState('');
+  const [resetPasswordModal, setResetPasswordModal] = useState<{ id: string; username: string } | null>(null);
+  const [newResetPassword, setNewResetPassword] = useState('');
+  const [showResetPasswordToggle, setShowResetPasswordToggle] = useState(false);
+  const [isResettingUserPassword, setIsResettingUserPassword] = useState(false);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -43,6 +57,36 @@ export default function SystemSetup() {
     fetchSettings();
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    if (!newUser.username) {
+      setUsernameError('');
+    } else if (users.some(u => u.username.toLowerCase() === newUser.username.toLowerCase())) {
+      setUsernameError('⚠️ Username already taken');
+    } else {
+      setUsernameError('');
+    }
+  }, [newUser.username, users]);
+
+  useEffect(() => {
+    if (!newUser.password) {
+      setPasswordError('');
+    } else if (newUser.password.length < 6) {
+      setPasswordError('⚠️ Password must be at least 6 characters');
+    } else {
+      setPasswordError('');
+    }
+  }, [newUser.password]);
+
+  useEffect(() => {
+    if (!confirmPassword) {
+      setConfirmPasswordError('');
+    } else if (confirmPassword !== newUser.password) {
+      setConfirmPasswordError('⚠️ Passwords do not match');
+    } else {
+      setConfirmPasswordError('');
+    }
+  }, [confirmPassword, newUser.password]);
 
   const fetchSettings = async () => {
     try {
@@ -97,6 +141,14 @@ export default function SystemSetup() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (usernameError || passwordError || confirmPasswordError) {
+      showToast('Please resolve all validation errors first.', 'error');
+      return;
+    }
+    if (newUser.password !== confirmPassword) {
+      showToast('Passwords do not match.', 'error');
+      return;
+    }
     setIsCreatingUser(true);
     try {
       const res = await fetch('/api/users', {
@@ -105,7 +157,9 @@ export default function SystemSetup() {
         body: JSON.stringify(newUser)
       });
       if (res.ok) {
+        setCreatedUserSuccess({ username: newUser.username, password: newUser.password });
         setNewUser({ username: '', password: '', role: 'STAFF' });
+        setConfirmPassword('');
         fetchUsers();
         showToast('Staff member added successfully!', 'success');
       } else {
@@ -116,6 +170,64 @@ export default function SystemSetup() {
       showToast('Failed to connect to server.', 'error');
     } finally {
       setIsCreatingUser(false);
+    }
+  };
+
+  const handleUpdateUserStatus = async (id: string, updates: { role?: string; isActive?: boolean; password?: string }) => {
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...updates,
+          updaterId: user?.id,
+          updaterUsername: user?.username
+        })
+      });
+      if (res.ok) {
+        showToast('User settings updated successfully.', 'success');
+        fetchUsers();
+      } else {
+        const errData = await res.json();
+        showToast(errData.error || 'Failed to update user.', 'error');
+      }
+    } catch (err) {
+      showToast('Failed to connect to server.', 'error');
+    }
+  };
+
+  const handleResetUserPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetPasswordModal) return;
+    if (newResetPassword.length < 6) {
+      showToast('Password must be at least 6 characters.', 'error');
+      return;
+    }
+    setIsResettingUserPassword(true);
+    try {
+      const res = await fetch(`/api/users/${resetPasswordModal.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: newResetPassword,
+          updaterId: user?.id,
+          updaterUsername: user?.username
+        })
+      });
+      if (res.ok) {
+        showToast(`Password reset successfully for "${resetPasswordModal.username}"!`, 'success');
+        setResetPasswordModal(null);
+        setNewResetPassword('');
+        setShowResetPasswordToggle(false);
+        fetchUsers();
+      } else {
+        const errData = await res.json();
+        showToast(errData.error || 'Failed to reset password.', 'error');
+      }
+    } catch (err) {
+      showToast('Failed to connect to server.', 'error');
+    } finally {
+      setIsResettingUserPassword(false);
     }
   };
 
@@ -141,7 +253,7 @@ export default function SystemSetup() {
   const handleConfirmDeleteUser = async () => {
     if (!deleteConfirm) return;
     try {
-      const res = await fetch(`/api/users/${deleteConfirm.id}`, {
+      const res = await fetch(`/api/users/${deleteConfirm.id}?updaterId=${user?.id}&updaterUsername=${user?.username}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -572,9 +684,15 @@ export default function SystemSetup() {
                         onChange={(e) => setNewUser(prev => ({...prev, role: e.target.value}))}
                         className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground appearance-none pr-10 cursor-pointer"
                       >
-                         <option value="STAFF">Sales Staff</option>
-                         <option value="SUPERVISOR">Supervisor / Manager</option>
-                         <option value="ADMIN">System Admin</option>
+                         {user?.role === 'ADMIN' ? (
+                           <>
+                             <option value="STAFF">Sales Staff</option>
+                             <option value="SUPERVISOR">Supervisor / Manager</option>
+                             <option value="ADMIN">System Admin</option>
+                           </>
+                         ) : (
+                           <option value="STAFF">Sales Staff</option>
+                         )}
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-orange-500 transition-colors">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
@@ -582,75 +700,254 @@ export default function SystemSetup() {
                     </div>
                  </div>
                  <button 
-                   disabled={isCreatingUser}
-                   className="w-full bg-orange-500 text-white font-black py-4 px-4 rounded-lg text-[10px] uppercase tracking-[0.1em] hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
+                   disabled={isCreatingUser || !!usernameError || !!passwordError || !!confirmPasswordError || !newUser.username || !newUser.password || !confirmPassword}
+                   className="w-full bg-orange-500 text-white font-black py-4 px-4 rounded-lg text-[10px] uppercase tracking-[0.1em] hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
                  >
                     {isCreatingUser ? 'Creating...' : 'Register Staff Member'}
                  </button>
               </form>
            </div>
-
+ 
            <div className="col-span-8 bg-surface p-10 rounded-xl border border-border-subtle shadow-sm overflow-hidden">
-              <div className="flex justify-between items-center mb-8">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                  <div>
                     <h3 className="text-xl font-bold text-foreground mb-1">Active Team</h3>
-                    <p className="text-xs text-slate-400 font-medium">Manage existing employee credentials.</p>
+                    <p className="text-xs text-slate-400 font-medium">Manage existing employee credentials, roles, and status.</p>
                  </div>
                  <span className="px-4 py-1.5 bg-brand-bg rounded-full text-[9px] font-black text-slate-500 border border-border-subtle uppercase">
                     {users.length} Total Users
                  </span>
               </div>
 
-               <div className="space-y-3">
-                 {users.map((u) => (
-                    <div key={u.id} className="flex items-center justify-between p-6 bg-brand-bg/50 rounded-xl border border-border-subtle hover:border-orange-200 transition-all group">
-                       <div className="flex items-center gap-5">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xs ${u.role === 'ADMIN' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : u.role === 'SUPERVISOR' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
-                             {u.username.substring(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                             <div className="flex items-center gap-2">
-                                <p className="text-sm font-bold text-foreground uppercase tracking-tight">{u.username}</p>
-                                {u.id === user?.id && <span className="text-[8px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-black uppercase">My Profile</span>}
-                             </div>
-                             <div className="flex items-center gap-2">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{u.role} • Member since {new Date(u.createdAt).toLocaleDateString()}</p>
-                                {isAdmin && u.visiblePassword && (
-                                  <div className="flex items-center gap-2 ml-4 px-2 py-0.5 bg-orange-500/10 rounded-md border border-orange-500/20">
-                                    <span className="text-[8px] font-black text-orange-500 uppercase tracking-tighter">PWD:</span>
-                                    <span className="text-[9px] font-bold text-slate-600 dark:text-slate-300 font-mono">
-                                      {visiblePasswords[u.id] ? u.visiblePassword : '••••••••'}
-                                    </span>
-                                    <button 
-                                      onClick={() => togglePasswordVisibility(u.id)}
-                                      className="text-orange-500 hover:text-orange-600"
-                                    >
-                                      {visiblePasswords[u.id] ? (
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
-                                      ) : (
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                      )}
-                                    </button>
-                                  </div>
-                                )}
-                             </div>
-                          </div>
-                       </div>
-                       {u.id !== user?.id && (
-                         <button 
-                           onClick={() => handleDeleteUser(u.id)}
-                           className="p-3 rounded-lg bg-white/50 dark:bg-slate-800/50 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
-                         >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                         </button>
-                       )}
-                    </div>
-                 ))}
+              <div className="mb-6">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search staff members by username..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-brand-bg p-4 pl-12 rounded-xl border border-border-subtle text-xs font-bold outline-none focus:border-orange-200 transition-all text-foreground"
+                  />
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                  </div>
+                </div>
               </div>
-           </div>
-        </div>
+ 
+               <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+                 {users.filter(u => u.username.toLowerCase().includes(searchTerm.toLowerCase())).map((u) => {
+                   const isSelf = u.id === user?.id;
+                   
+                   const avatarClass = u.role === 'ADMIN' 
+                     ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' 
+                     : u.role === 'SUPERVISOR' 
+                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' 
+                       : 'bg-slate-600 text-white shadow-md shadow-slate-600/20';
+
+                   const roleBadge = u.role === 'ADMIN'
+                     ? <span className="text-[8px] bg-orange-500/10 text-orange-500 border border-orange-500/20 px-2 py-0.5 rounded-full font-black uppercase">ADMIN</span>
+                     : u.role === 'SUPERVISOR'
+                       ? <span className="text-[8px] bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 px-2 py-0.5 rounded-full font-black uppercase">SUPERVISOR</span>
+                       : <span className="text-[8px] bg-slate-500/10 text-slate-400 border border-slate-500/20 px-2 py-0.5 rounded-full font-black uppercase">STAFF</span>;
+
+                   return (
+                     <div key={u.id} className={`flex flex-col md:flex-row md:items-center justify-between p-5 bg-brand-bg/50 rounded-xl border transition-all ${!u.isActive ? 'opacity-65 border-dashed border-border-subtle' : 'border-border-subtle hover:border-orange-200'}`}>
+                        <div className="flex items-center gap-4 flex-1">
+                           <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-black text-xs flex-shrink-0 ${avatarClass}`}>
+                              {u.username.substring(0, 2).toUpperCase()}
+                           </div>
+                           <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                 <p className="text-xs font-black text-foreground uppercase tracking-tight">{u.username}</p>
+                                 {isSelf && <span className="text-[8px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full font-black uppercase">(You)</span>}
+                                 {roleBadge}
+                                 {u.isActive ? (
+                                   <span className="text-[8px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-2 py-0.5 rounded-full font-black uppercase">Active</span>
+                                 ) : (
+                                   <span className="text-[8px] bg-rose-500/10 text-rose-500 border border-rose-500/20 px-2 py-0.5 rounded-full font-black uppercase">Disabled</span>
+                                 )}
+                              </div>
+                              <div className="flex flex-col text-[9px] font-bold text-slate-500 space-y-0.5">
+                                 <p className="uppercase tracking-widest">Since: {new Date(u.createdAt).toLocaleDateString()}</p>
+                                 <p className="uppercase tracking-widest text-[8px] text-slate-400">
+                                   Last Login: {u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never logged in'}
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 mt-4 md:mt-0 flex-wrap">
+                           {isAdmin && !isSelf && (
+                             <>
+                               <select
+                                 value={u.role}
+                                 onChange={(e) => handleUpdateUserStatus(u.id, { role: e.target.value })}
+                                 className="bg-surface border border-border-subtle text-[9px] font-black uppercase tracking-wider rounded-lg px-2.5 py-1.5 outline-none cursor-pointer text-slate-300 focus:border-orange-500 transition-colors"
+                               >
+                                 <option value="STAFF">Staff</option>
+                                 <option value="SUPERVISOR">Supervisor</option>
+                                 <option value="ADMIN">Admin</option>
+                               </select>
+
+                               <button 
+                                 onClick={() => setResetPasswordModal({ id: u.id, username: u.username })}
+                                 className="px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border bg-orange-500/5 text-orange-500 border-orange-500/20 hover:bg-orange-500/15"
+                               >
+                                 Reset Pass
+                               </button>
+
+                               <button 
+                                 onClick={() => handleUpdateUserStatus(u.id, { isActive: !u.isActive })}
+                                 className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border ${
+                                   u.isActive 
+                                     ? 'bg-rose-500/5 text-rose-500 border-rose-500/25 hover:bg-rose-500/15' 
+                                     : 'bg-emerald-500/5 text-emerald-500 border-emerald-500/25 hover:bg-emerald-500/15'
+                                 }`}
+                               >
+                                 {u.isActive ? 'Disable' : 'Enable'}
+                               </button>
+
+                               <button 
+                                 onClick={() => handleDeleteUser(u.id)}
+                                 className="p-1.5 rounded-lg bg-rose-500/5 text-rose-400 hover:text-rose-500 hover:bg-rose-500/15 border border-rose-500/20 transition-all"
+                                 title="Permanently Delete User"
+                               >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                               </button>
+                             </>
+                           )}
+                        </div>
+                     </div>
+                   );
+                 })}
+               </div>
+            </div>
+         </div>
       )}
-      {/* User Delete Confirmation Modal */}
+      <AnimatePresence>
+        {createdUserSuccess && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-6"
+          >
+             <motion.div 
+               initial={{ y: 20, opacity: 0 }}
+               animate={{ y: 0, opacity: 1 }}
+               exit={{ y: 20, opacity: 0 }}
+               className="bg-[#121620] w-full max-w-md rounded-2xl border border-emerald-500/30 shadow-2xl overflow-hidden"
+             >
+                <div className="p-5 border-b border-emerald-500/20 flex justify-between items-center bg-emerald-500/10">
+                   <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                     Staff Registered Successfully
+                   </h3>
+                   <button onClick={() => setCreatedUserSuccess(null)} className="text-slate-400 hover:text-white">✕</button>
+                </div>
+                <div className="p-8 space-y-6">
+                   <p className="text-xs font-medium text-slate-300">
+                     The employee account has been securely added to the system. Share these credentials with the new hire:
+                   </p>
+                   <div className="bg-slate-900/60 p-5 rounded-xl border border-slate-800 space-y-3 font-mono text-xs select-all">
+                      <div className="flex justify-between border-b border-slate-800/40 pb-2">
+                        <span className="text-slate-500 font-bold">USERNAME:</span>
+                        <span className="text-emerald-400 font-black">{createdUserSuccess.username}</span>
+                      </div>
+                      <div className="flex justify-between pt-1">
+                        <span className="text-slate-500 font-bold">PASSWORD:</span>
+                        <span className="text-white font-black">{createdUserSuccess.password}</span>
+                      </div>
+                   </div>
+                   <div className="text-[10px] text-slate-400 font-medium leading-relaxed bg-slate-900/30 p-3 rounded-lg border border-slate-800">
+                     💡 For security, pass these credentials through a secure private channel. The initial password is encrypted immediately.
+                   </div>
+                </div>
+                <div className="p-5 bg-slate-900/30 border-t border-slate-800/50">
+                   <button 
+                     onClick={() => setCreatedUserSuccess(null)} 
+                     className="w-full bg-emerald-600 text-white font-black py-3.5 rounded-xl text-[10px] uppercase tracking-widest hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-950/20"
+                   >
+                     Done, Clear Form
+                   </button>
+                </div>
+             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {resetPasswordModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-6"
+          >
+             <motion.div 
+               initial={{ y: 20, opacity: 0 }}
+               animate={{ y: 0, opacity: 1 }}
+               exit={{ y: 20, opacity: 0 }}
+               className="bg-[#121620] w-full max-w-md rounded-2xl border border-orange-500/25 shadow-2xl overflow-hidden"
+             >
+                <form onSubmit={handleResetUserPasswordSubmit}>
+                  <div className="p-5 border-b border-orange-500/20 flex justify-between items-center bg-orange-500/5">
+                     <h3 className="text-xs font-black uppercase tracking-widest text-orange-500 flex items-center gap-2">
+                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 7a2 2 0 012 2m-5 8a2 2 0 11-4 0 2 2 0 014 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                       Secure Password Reset
+                     </h3>
+                     <button type="button" onClick={() => { setResetPasswordModal(null); setNewResetPassword(''); }} className="text-slate-400 hover:text-white">✕</button>
+                  </div>
+                  <div className="p-8 space-y-5">
+                     <p className="text-xs font-semibold text-slate-300">
+                       Resetting password for staff member <strong className="text-orange-400">"{resetPasswordModal.username}"</strong>.
+                     </p>
+                     
+                     <div className="space-y-2">
+                        <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">New Secure Password</label>
+                        <div className="relative">
+                          <input 
+                            type={showResetPasswordToggle ? "text" : "password"}
+                            required
+                            value={newResetPassword}
+                            onChange={(e) => setNewResetPassword(e.target.value)}
+                            placeholder="Min. 6 characters"
+                            className="w-full bg-brand-bg p-4 pr-12 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowResetPasswordToggle(!showResetPasswordToggle)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-foreground"
+                          >
+                            {showResetPasswordToggle ? (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            )}
+                          </button>
+                        </div>
+                     </div>
+                  </div>
+                  <div className="p-5 bg-slate-900/30 flex gap-3 border-t border-slate-800/50">
+                     <button 
+                       type="button"
+                       onClick={() => { setResetPasswordModal(null); setNewResetPassword(''); }} 
+                       className="flex-1 bg-slate-800 text-slate-400 font-black py-3 rounded-xl text-[10px] uppercase tracking-widest border border-slate-800 hover:bg-slate-700 transition-colors"
+                     >
+                       Cancel
+                     </button>
+                     <button 
+                       type="submit"
+                       disabled={isResettingUserPassword || newResetPassword.length < 6}
+                       className="flex-1 bg-orange-500 text-white font-black py-3 rounded-xl text-[10px] uppercase tracking-widest hover:bg-orange-600 transition-colors shadow-lg shadow-orange-950/20 disabled:opacity-40"
+                     >
+                       {isResettingUserPassword ? 'Saving...' : 'Reset Password'}
+                     </button>
+                  </div>
+                </form>
+             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {deleteConfirm && (
           <motion.div 

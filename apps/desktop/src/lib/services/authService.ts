@@ -173,10 +173,33 @@ export const authService = {
       throw new Error('Invalid credentials.');
     }
 
+    // Check account status
+    if (typeof (localUser as any).isActive === 'boolean' && !(localUser as any).isActive) {
+      throw new Error('This account has been deactivated / disabled by an Administrator.');
+    }
+
     // Verify password (works for both local and cloned users)
     const isMatch = await bcrypt.compare(password, localUser.password);
     if (!isMatch) {
       throw new Error('Invalid credentials.');
+    }
+
+    // Update lastLogin timestamp and log login audit trail
+    try {
+      await prisma.user.update({
+        where: { id: localUser.id },
+        data: { lastLogin: new Date() }
+      });
+      await prisma.auditLog.create({
+        data: {
+          userId: localUser.id,
+          username: localUser.username,
+          action: 'USER_LOGIN',
+          details: `User "${localUser.username}" logged in successfully to POS.`
+        }
+      });
+    } catch (auditErr) {
+      console.warn('Failed to save lastLogin / login audit trail:', auditErr);
     }
 
     const token = jwt.sign(

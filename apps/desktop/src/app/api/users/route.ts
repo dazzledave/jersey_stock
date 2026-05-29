@@ -13,6 +13,8 @@ export async function GET() {
         id: true,
         username: true,
         role: true,
+        isActive: true,
+        lastLogin: true,
         createdAt: true
       }
     });
