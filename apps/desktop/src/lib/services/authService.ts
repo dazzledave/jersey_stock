@@ -190,7 +190,7 @@ export const authService = {
         where: { id: localUser.id },
         data: { lastLogin: new Date() }
       });
-      await prisma.auditLog.create({
+      const log = await prisma.auditLog.create({
         data: {
           userId: localUser.id,
           username: localUser.username,
@@ -198,6 +198,7 @@ export const authService = {
           details: `User "${localUser.username}" logged in successfully to POS.`
         }
       });
+      cloudSyncService.queueSync('AuditLog', log.id).catch(console.error);
     } catch (auditErr) {
       console.warn('Failed to save lastLogin / login audit trail:', auditErr);
     }

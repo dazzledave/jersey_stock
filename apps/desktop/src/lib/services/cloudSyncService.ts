@@ -115,6 +115,10 @@ export const cloudSyncService = {
             data = await prisma.user.findUnique({ where: { id: log.entityId! } });
             tableName = 'users';
             break;
+          case 'AuditLog':
+            data = await prisma.auditLog.findUnique({ where: { id: log.entityId! } });
+            tableName = 'audit_logs';
+            break;
         }
 
         if (!data) {
@@ -224,6 +228,27 @@ export const cloudSyncService = {
             where: { variantId: inv.variantId },
             update: { quantity: inv.quantity, reorderLevel: inv.reorderLevel },
             create: inv
+          });
+        }
+      }
+
+      // 5. Sync Audit Logs
+      const { data: auditLogs } = await supabase.from('audit_logs').select('*');
+      if (auditLogs) {
+        for (const log of auditLogs) {
+          await prisma.auditLog.upsert({
+            where: { id: log.id },
+            update: {
+              userId: log.userId,
+              username: log.username,
+              action: log.action,
+              details: log.details,
+              createdAt: new Date(log.createdAt)
+            },
+            create: {
+              ...log,
+              createdAt: new Date(log.createdAt)
+            }
           });
         }
       }

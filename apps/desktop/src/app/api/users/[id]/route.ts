@@ -85,7 +85,7 @@ export async function PUT(
 
     // Write audit trail for security logs
     if (auditDetails.length > 0) {
-      await prisma.auditLog.create({
+      const log = await prisma.auditLog.create({
         data: {
           userId: updaterId || null,
           username: updaterUsername || 'System',
@@ -93,6 +93,10 @@ export async function PUT(
           details: `User "${user.username}" (ID: ${user.id}) was modified: ${auditDetails.join(', ')}.`
         }
       });
+      try {
+        const { cloudSyncService } = require('@/lib/services/cloudSyncService');
+        cloudSyncService.queueSync('AuditLog', log.id).catch(console.error);
+      } catch (e) {}
     }
 
     return NextResponse.json({ message: 'User updated successfully', user: updatedUser });
@@ -152,7 +156,7 @@ export async function DELETE(
     });
 
     // Write audit trail for security logs
-    await prisma.auditLog.create({
+    const log = await prisma.auditLog.create({
       data: {
         userId: updaterId || null,
         username: updaterUsername || 'System',
@@ -160,6 +164,10 @@ export async function DELETE(
         details: `User "${user.username}" (ID: ${user.id}) was permanently hard-deleted from register.`
       }
     });
+    try {
+      const { cloudSyncService } = require('@/lib/services/cloudSyncService');
+      cloudSyncService.queueSync('AuditLog', log.id).catch(console.error);
+    } catch (e) {}
 
     return NextResponse.json({ message: 'User deleted successfully from local and cloud' });
   } catch (error: any) {
