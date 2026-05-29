@@ -61,6 +61,7 @@ export default function SalesTerminal() {
   const [debtorName, setDebtorName] = useState('');
   const [debtorPhone, setDebtorPhone] = useState('');
   const [authorizer, setAuthorizer] = useState('');
+  const [admins, setAdmins] = useState<{ id: string, username: string, role: string }[]>([]);
 
   const [showMultiPayment, setShowMultiPayment] = useState(false);
   const [splitPayments, setSplitPayments] = useState<{ method: string, amount: number }[]>([]);
@@ -71,6 +72,25 @@ export default function SalesTerminal() {
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('fixed');
   const [showDiscountInput, setShowDiscountInput] = useState(false);
+
+  useEffect(() => {
+    const fetchAdmins = async () => {
+      try {
+        const res = await fetch('/api/users');
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          // Filter only active ADMIN or SUPERVISOR users
+          const filtered = data.filter((u: any) => 
+            (u.role === 'ADMIN' || u.role === 'SUPERVISOR') && u.isActive !== false
+          );
+          setAdmins(filtered);
+        }
+      } catch (err) {
+        console.error('Failed to fetch managers & admins:', err);
+      }
+    };
+    fetchAdmins();
+  }, []);
 
   useEffect(() => {
     focusSearch();
@@ -563,7 +583,6 @@ export default function SalesTerminal() {
                     className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
                   />
                 </motion.div>
-              )}
               {saleType === 'Free' && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
@@ -573,19 +592,28 @@ export default function SalesTerminal() {
                 >
                   {user?.role === 'ADMIN' ? (
                     <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-3 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       Self-Authorized as Administrator ({user?.username})
                     </div>
                   ) : (
-                    <input
-                      type="text"
-                      placeholder="Authorized By (Admin Name)"
-                      value={authorizer}
-                      onChange={(e) => setAuthorizer(e.target.value)}
-                      className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
-                    />
+                    <div className="space-y-1.5">
+                      <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 block">Authorized By</label>
+                      <select
+                        value={authorizer}
+                        onChange={(e) => setAuthorizer(e.target.value)}
+                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground cursor-pointer animate-fade-in"
+                      >
+                        <option value="">-- Select Manager or Admin --</option>
+                        {admins.map(adm => (
+                          <option key={adm.id} value={adm.username} className="bg-[#1a1f2b] text-white">
+                            {adm.username} ({adm.role === 'ADMIN' ? 'Admin' : 'Supervisor'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   )}
                 </motion.div>
+              )}
               )}
             </AnimatePresence>
           </div>

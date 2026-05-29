@@ -20,6 +20,7 @@ export default function Home() {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
   const [globalAlert, setGlobalAlert] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { isAuthenticated, user, logout, isAdmin, isSupervisor, isOnline } = useAuth();
 
   useEffect(() => {
@@ -273,8 +274,8 @@ export default function Home() {
               </div>
             </div>
             <button
-              onClick={logout}
-              className="bg-foreground text-brand-bg text-xs font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-all"
+              onClick={() => setShowLogoutConfirm(true)}
+              className="bg-foreground text-brand-bg text-xs font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-all cursor-pointer"
             >
               Logout
             </button>
@@ -341,10 +342,10 @@ export default function Home() {
             className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-6"
           >
              <motion.div 
-               initial={{ y: 20, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               exit={{ y: 20, opacity: 0 }}
-               className="bg-[#1a1f2b] w-full max-w-md rounded-2xl border border-slate-800 shadow-2xl overflow-hidden"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 20, opacity: 0 }}
+                className="bg-[#1a1f2b] w-full max-w-md rounded-2xl border border-slate-800 shadow-2xl overflow-hidden"
              >
                 <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
                    <h3 className="text-xs font-black uppercase tracking-widest text-[#ffb443] flex items-center gap-2">
@@ -361,9 +362,62 @@ export default function Home() {
                 <div className="p-6 bg-slate-900/30 flex justify-end border-t border-slate-800/50">
                    <button 
                      onClick={() => setGlobalAlert(null)} 
-                     className="px-8 py-3 bg-[#ffb443] hover:bg-[#fca42d] text-[#1a1f2b] font-black rounded-xl text-[10px] uppercase tracking-widest transition-colors shadow-lg"
+                     className="px-8 py-3 bg-[#ffb443] hover:bg-[#fca42d] text-[#1a1f2b] font-black rounded-xl text-[10px] uppercase tracking-widest transition-colors shadow-lg cursor-pointer"
                    >
                      Acknowledge
+                   </button>
+                </div>
+             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-6"
+          >
+             <motion.div 
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 20, opacity: 0 }}
+                className="bg-[#1a1f2b] w-full max-w-md rounded-2xl border border-slate-800 shadow-2xl overflow-hidden"
+             >
+                <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                   <h3 className="text-xs font-black uppercase tracking-widest text-[#ffb443] flex items-center gap-2">
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                     Confirm Sign Out
+                   </h3>
+                   <button onClick={() => setShowLogoutConfirm(false)} className="text-slate-400 hover:text-white">✕</button>
+                </div>
+                <div className="p-8 text-center space-y-3">
+                   <div className="w-16 h-16 bg-[#ffb443]/10 text-[#ffb443] rounded-full flex items-center justify-center mx-auto mb-2">
+                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                   </div>
+                   <h4 className="text-base font-bold text-white leading-tight">Ready to end your session?</h4>
+                   <p className="text-xs font-medium text-slate-400 max-w-xs mx-auto">
+                     Make sure all pending cart items are processed or cleared before signing out of the POS system.
+                   </p>
+                </div>
+                <div className="p-6 bg-slate-900/30 flex gap-3 border-t border-slate-800/50">
+                   <button 
+                     onClick={() => setShowLogoutConfirm(false)} 
+                     className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-xl text-[10px] uppercase tracking-widest transition-colors cursor-pointer"
+                   >
+                     Cancel
+                   </button>
+                   <button 
+                     onClick={() => {
+                       setShowLogoutConfirm(false);
+                       logout();
+                     }} 
+                     className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest transition-colors shadow-lg cursor-pointer"
+                   >
+                     Log Out
                    </button>
                 </div>
              </motion.div>
