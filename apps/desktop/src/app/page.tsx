@@ -234,10 +234,10 @@ export default function Home() {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
-        {/* Top Header - Sticky */}
-    <header 
+        {/* Top Header */}
+        <header 
           style={{ WebkitAppRegion: 'drag' } as any}
-          className="h-20 flex items-center justify-between px-10 flex-shrink-0 bg-brand-bg/80 backdrop-blur-md sticky top-0 z-50 border-b border-border-subtle/50"
+          className="h-20 flex items-center justify-between px-10 flex-shrink-0 bg-brand-bg/80 backdrop-blur-md border-b border-border-subtle/50"
         >
           <div 
             style={{ WebkitAppRegion: 'no-drag' } as any}
