@@ -175,6 +175,10 @@ export const cloudSyncService = {
       // 1. Sync Categories
       const { data: categories } = await supabase.from('categories').select('*');
       if (categories) {
+        const remoteCatIds = categories.map(cat => cat.id);
+        await prisma.category.deleteMany({
+          where: { id: { notIn: remoteCatIds } }
+        });
         for (const cat of categories) {
           await prisma.category.upsert({
             where: { id: cat.id },
@@ -187,6 +191,25 @@ export const cloudSyncService = {
       // 2. Sync Products
       const { data: products } = await supabase.from('products').select('*');
       if (products) {
+        const remoteProdIds = products.map(prod => prod.id);
+        const localProdsToDelete = await prisma.product.findMany({
+          where: { id: { notIn: remoteProdIds } },
+          include: { variants: true }
+        });
+        if (localProdsToDelete.length > 0) {
+          const variantIdsToDelete = localProdsToDelete.flatMap(p => p.variants.map(v => v.id));
+          if (variantIdsToDelete.length > 0) {
+            await prisma.stockMovement.deleteMany({
+              where: { variantId: { in: variantIdsToDelete } }
+            });
+            await prisma.saleItem.deleteMany({
+              where: { variantId: { in: variantIdsToDelete } }
+            });
+          }
+          await prisma.product.deleteMany({
+            where: { id: { notIn: remoteProdIds } }
+          });
+        }
         for (const prod of products) {
           await prisma.product.upsert({
             where: { id: prod.id },
@@ -206,7 +229,30 @@ export const cloudSyncService = {
       // 3. Sync Variants
       const { data: variants } = await supabase.from('product_variants').select('*');
       if (variants) {
+        const remoteVariantIds = variants.map(v => v.id);
+        const localVariantsToDelete = await prisma.productVariant.findMany({
+          where: { id: { notIn: remoteVariantIds } }
+        });
+        if (localVariantsToDelete.length > 0) {
+          const varIds = localVariantsToDelete.map(v => v.id);
+          await prisma.stockMovement.deleteMany({
+            where: { variantId: { in: varIds } }
+          });
+          await prisma.saleItem.deleteMany({
+            where: { variantId: { in: varIds } }
+          });
+          await prisma.productVariant.deleteMany({
+            where: { id: { notIn: remoteVariantIds } }
+          });
+        }
+        
+        // SAFETY: Only upsert variants whose parent product actually exists in SQLite!
+        const localProductIds = (await prisma.product.findMany({ select: { id: true } })).map(p => p.id);
         for (const v of variants) {
+          if (!localProductIds.includes(v.productId)) {
+            console.warn(`[SYNC] Skipping orphan variant ${v.id} because parent product ${v.productId} is missing.`);
+            continue;
+          }
           await prisma.productVariant.upsert({
             where: { id: v.id },
             update: { 
@@ -223,7 +269,18 @@ export const cloudSyncService = {
       // 4. Sync Inventory
       const { data: inventory } = await supabase.from('inventory').select('*');
       if (inventory) {
+        const remoteVariantIds = inventory.map(inv => inv.variantId);
+        await prisma.inventory.deleteMany({
+          where: { variantId: { notIn: remoteVariantIds } }
+        });
+
+        // SAFETY: Only upsert inventory records whose variant actually exists in SQLite!
+        const localVariantIds = (await prisma.productVariant.findMany({ select: { id: true } })).map(v => v.id);
         for (const inv of inventory) {
+          if (!localVariantIds.includes(inv.variantId)) {
+            console.warn(`[SYNC] Skipping orphan inventory record for variant ${inv.variantId} because variant is missing.`);
+            continue;
+          }
           await prisma.inventory.upsert({
             where: { variantId: inv.variantId },
             update: { quantity: inv.quantity, reorderLevel: inv.reorderLevel },

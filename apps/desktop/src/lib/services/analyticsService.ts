@@ -1,7 +1,7 @@
 import { prisma } from '../prisma';
 
 export const analyticsService = {
-  async getSummary() {
+  async getSummary(userId?: string) {
     const now = new Date();
     
     // Set up Boundaries for Today and Yesterday
@@ -49,6 +49,15 @@ export const analyticsService = {
 
     const yesterdaySales = yesterdaySalesList.reduce((sum, s) => sum + s.totalAmount, 0);
     const yesterdayTransactions = yesterdaySalesList.length;
+
+    // Personal Shift Stats for front-line operators
+    let myTodaySales = 0;
+    let myTodayTransactions = 0;
+    if (userId) {
+      const myTodayList = todaySalesList.filter(s => s.userId === userId);
+      myTodaySales = myTodayList.reduce((sum, s) => sum + s.totalAmount, 0);
+      myTodayTransactions = myTodayList.length;
+    }
 
     // 3. Last 6 transactions (live feed)
     const recentTransactions = await prisma.sale.findMany({
@@ -99,6 +108,8 @@ export const analyticsService = {
       todayTransactions,
       yesterdaySales,
       yesterdayTransactions,
+      myTodaySales,
+      myTodayTransactions,
       recentTransactions,
       topProductToday,
       chartData
