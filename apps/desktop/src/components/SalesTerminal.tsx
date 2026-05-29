@@ -42,6 +42,8 @@ export default function SalesTerminal() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currency, setCurrency] = useState('GH₵');
   const [exchangeRate, setExchangeRate] = useState(1);
+  const [shopName, setShopName] = useState('Awards Centre');
+  const [address, setAddress] = useState('Accra, Ghana');
   
   const [variantSelector, setVariantSelector] = useState<Product | null>(null);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -75,6 +77,8 @@ export default function SalesTerminal() {
       const parsed = JSON.parse(saved);
       if (parsed.currency) setCurrency(parsed.currency);
       if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
+      if (parsed.shopName) setShopName(parsed.shopName);
+      if (parsed.address) setAddress(parsed.address);
     }
     fetchProducts();
   }, []);
@@ -752,16 +756,93 @@ export default function SalesTerminal() {
                   </span>
                 </div>
 
-                <button 
-                  onClick={() => setShowReceipt(null)}
-                  className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black py-4 rounded-xl uppercase tracking-[0.2em] text-xs shadow-xl active:scale-95 transition-all"
-                >
-                  New Transaction
-                </button>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-3 text-center">
-                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Awards Centre POS • Official Digital Record</p>
-              </div>
+                <div className="flex gap-4 pt-2">
+                   <button 
+                     onClick={() => window.print()}
+                     className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-black py-4 rounded-xl text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-800 shadow-sm"
+                   >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                      Print Receipt
+                   </button>
+                   <button 
+                     onClick={() => setShowReceipt(null)}
+                     className="flex-1 bg-[#ffb443] hover:bg-[#fca42d] text-[#1a1f2b] font-black py-4 rounded-xl uppercase tracking-widest text-[10px] shadow-xl active:scale-95 transition-all"
+                   >
+                     New Transaction
+                   </button>
+                 </div>
+               </div>
+ 
+               {/* HIDDEN THERMAL PRINT VIEW FOR QUICK SALE PRINTING */}
+               <div className="hidden print:block print:fixed print:inset-0 print:bg-white print:p-0 print:m-0" id="thermal-receipt">
+                  <style dangerouslySetInnerHTML={{ __html: `
+                    @media print {
+                      body * { visibility: hidden !important; }
+                      #thermal-receipt, #thermal-receipt * { visibility: visible !important; }
+                      #thermal-receipt { 
+                        position: absolute !important; 
+                        left: 0 !important; 
+                        top: 0 !important; 
+                        width: 80mm !important; 
+                        padding: 5mm !important;
+                        font-family: 'Courier New', Courier, monospace !important;
+                        color: black !important;
+                        background: white !important;
+                        line-height: 1.2 !important;
+                      }
+                      @page { size: 80mm auto; margin: 0; }
+                    }
+                  `}} />
+                  <div className="text-center space-y-1 mb-4 border-b border-black pb-4">
+                     <h2 className="text-xl font-bold uppercase">{shopName}</h2>
+                     <p className="text-[10px]">{address}</p>
+                     <p className="text-[10px]">Official Sales Receipt</p>
+                  </div>
+                  
+                  <div className="text-[10px] space-y-1 mb-4">
+                     <div className="flex justify-between">
+                        <span>REF: {showReceipt.id.slice(-8).toUpperCase()}</span>
+                        <span>{showReceipt.date}</span>
+                     </div>
+                     <div className="flex justify-between">
+                        <span>STAFF: {(showReceipt.soldBy || 'SYSTEM').toUpperCase()}</span>
+                        <span>TYPE: {(showReceipt.paymentMethod === 'credit' ? 'CREDIT' : showReceipt.paymentMethod === 'free' ? 'FREE' : 'STANDARD')}</span>
+                     </div>
+                     <p>CUSTOMER: {showReceipt.debtorName || 'WALK-IN'}</p>
+                     {showReceipt.debtorName && <p className="font-bold">DEBTOR: {showReceipt.debtorName.toUpperCase()}</p>}
+                     {showReceipt.authorizer && <p className="font-bold">AUTH BY: {showReceipt.authorizer.toUpperCase()}</p>}
+                  </div>
+ 
+                  <div className="border-b border-dashed border-black mb-2" />
+                  <div className="space-y-2 text-[10px] mb-4">
+                     {showReceipt.items.map((item: any, idx: number) => (
+                        <div key={idx} className="flex justify-between">
+                           <div className="flex-1">
+                              <p className="font-bold">{item.name}</p>
+                              <p className="opacity-70 text-[9px] uppercase">{item.size} • {item.color}</p>
+                              <p className="opacity-70">Qty: {item.quantity}</p>
+                           </div>
+                           <p className="font-bold">{currency}{((item.price * item.quantity) / (showReceipt.exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                        </div>
+                     ))}
+                  </div>
+                  <div className="border-b border-dashed border-black mb-2" />
+ 
+                  <div className="flex justify-between font-bold text-sm mb-4">
+                     <span>TOTAL</span>
+                     <span>{currency}{(showReceipt.total / (showReceipt.exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                  </div>
+ 
+                  <div className="text-[9px] text-center space-y-1">
+                     <p>Paid via {showReceipt.paymentMethod.toUpperCase()}</p>
+                     <p className="mt-4 font-bold italic">Thank you for your business!</p>
+                     <p>Visit us again at {shopName}.</p>
+                  </div>
+               </div>
+ 
+               <div className="bg-slate-50 dark:bg-slate-800/50 p-3 text-center">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Awards Centre POS • Official Digital Record</p>
+               </div>
             </motion.div>
           </motion.div>
         )}
