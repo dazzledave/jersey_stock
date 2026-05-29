@@ -44,7 +44,7 @@ export default function SalesTerminal() {
   const [exchangeRate, setExchangeRate] = useState(1);
   const [shopName, setShopName] = useState('Awards Centre');
   const [address, setAddress] = useState('Accra, Ghana');
-  
+
   const [variantSelector, setVariantSelector] = useState<Product | null>(null);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -63,7 +63,7 @@ export default function SalesTerminal() {
   const [authorizer, setAuthorizer] = useState('');
 
   const [showMultiPayment, setShowMultiPayment] = useState(false);
-  const [splitPayments, setSplitPayments] = useState<{method: string, amount: number}[]>([]);
+  const [splitPayments, setSplitPayments] = useState<{ method: string, amount: number }[]>([]);
   const [showReceipt, setShowReceipt] = useState<any>(null);
   const { user } = useAuth();
 
@@ -102,7 +102,7 @@ export default function SalesTerminal() {
 
   const handleProductClick = (product: Product) => {
     const totalStock = product.variants.reduce((acc, v) => acc + (v.inventory?.quantity || 0), 0);
-    if (totalStock <= 0) return; 
+    if (totalStock <= 0) return;
 
     if (product.variants.length > 1) {
       setVariantSelector(product);
@@ -122,16 +122,16 @@ export default function SalesTerminal() {
           alert(`Insufficient stock. Only ${available} available.`);
           return prev;
         }
-        return prev.map(item => 
-          item.variantId === variant.id 
-          ? { ...item, quantity: item.quantity + 1 } 
-          : item
+        return prev.map(item =>
+          item.variantId === variant.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
         );
       }
-      return [...prev, { 
-        id: product.id, 
-        variantId: variant.id, 
-        name: product.name, 
+      return [...prev, {
+        id: product.id,
+        variantId: variant.id,
+        name: product.name,
         price: product.basePrice,
         size: variant.size,
         color: variant.color,
@@ -166,7 +166,7 @@ export default function SalesTerminal() {
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
-    
+
     // Validation for Credit/Free
     if (saleType === 'Credit' && !debtorName) {
       alert("Please enter a Debtor Name for credit sales.");
@@ -197,7 +197,7 @@ export default function SalesTerminal() {
           payments: splitPayments.length > 0 ? splitPayments : [{ method: finalPaymentMethod, amount: discountedTotal }],
           discountAmount: discountAmount,
           discountType: discountType,
-          items: cart.map(item => ({ 
+          items: cart.map(item => ({
             variantId: item.variantId,
             quantity: item.quantity,
             price: item.price
@@ -234,7 +234,7 @@ export default function SalesTerminal() {
         setDiscountAmount(0);
         setShowDiscountInput(false);
         setShowMultiPayment(false);
-        fetchProducts(); 
+        fetchProducts();
       } else {
         const error = await response.json();
         alert(`Error: ${error.error || 'Checkout failed.'}`);
@@ -246,8 +246,8 @@ export default function SalesTerminal() {
     }
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.brand?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -266,16 +266,16 @@ export default function SalesTerminal() {
         </div>
 
         <div className="relative">
-          <input 
+          <input
             ref={searchInputRef}
-            type="text" 
+            type="text"
             placeholder="Search jerseys..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-surface p-2.5 pl-10 rounded-lg border border-border-subtle outline-none focus:border-orange-300 transition-all text-[11px] font-medium text-foreground shadow-sm"
           />
           <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300">
-             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
           </div>
         </div>
 
@@ -292,7 +292,7 @@ export default function SalesTerminal() {
               const outOfStock = totalStock <= 0;
 
               return (
-                <motion.div 
+                <motion.div
                   key={p.id}
                   whileTap={outOfStock ? {} : { scale: 0.98 }}
                   onClick={() => handleProductClick(p)}
@@ -305,7 +305,7 @@ export default function SalesTerminal() {
                     {p.imageUrl ? (
                       <img src={p.imageUrl} alt={p.name} className={`w-full h-full object-cover ${outOfStock ? 'grayscale' : ''}`} />
                     ) : (
-                      <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                      <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                     )}
                   </div>
                   <div className="font-bold text-foreground text-[11px] mb-0.5 line-clamp-1 leading-tight">{p.name}</div>
@@ -314,7 +314,7 @@ export default function SalesTerminal() {
                     <div className="text-[11px] font-black text-foreground">{currency}{(p.basePrice / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toFixed(2)}</div>
                     {!outOfStock && (
                       <div className="w-5 h-5 rounded bg-orange-500 text-white flex items-center justify-center">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
                       </div>
                     )}
                   </div>
@@ -329,7 +329,7 @@ export default function SalesTerminal() {
       <div className="w-[420px] bg-surface rounded-xl border border-border-subtle flex flex-col overflow-hidden shadow-2xl shadow-brand-navy/5 h-full">
         <div className="p-3 px-4 border-b border-border-subtle bg-brand-bg/10 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+            <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
             <div>
               <h3 className="text-xs font-black text-foreground uppercase tracking-tight">Order Ticket</h3>
               <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Awards Centre POS</p>
@@ -342,23 +342,23 @@ export default function SalesTerminal() {
         <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
           <AnimatePresence>
             {cart.length === 0 ? (
-                <motion.div 
-                  key="empty"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="h-full flex flex-col items-center justify-center text-slate-300 gap-2 opacity-50"
-                >
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                  <p className="text-[9px] font-black uppercase tracking-[0.3em]">Empty</p>
-                </motion.div>
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-full flex flex-col items-center justify-center text-slate-300 gap-2 opacity-50"
+              >
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                <p className="text-[9px] font-black uppercase tracking-[0.3em]">Empty</p>
+              </motion.div>
             ) : (
               cart.map((item) => (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
-                  key={item.variantId} 
+                  key={item.variantId}
                   className="flex flex-col bg-brand-bg/40 p-3 rounded-lg border border-border-subtle group relative"
                 >
                   <div className="flex justify-between items-start mb-2">
@@ -369,21 +369,21 @@ export default function SalesTerminal() {
                       </div>
                     </div>
                     <button onClick={() => removeFromCart(item.variantId)} className="text-slate-300 hover:text-rose-500 transition-colors">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   </div>
-                  
+
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1 bg-surface rounded border border-border-subtle p-0.5">
                       <button onClick={() => updateQuantity(item.variantId, -1)} className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-foreground">
-                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4"/></svg>
+                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" /></svg>
                       </button>
                       <span className="w-6 text-center text-[11px] font-black text-foreground">{item.quantity}</span>
                       <button onClick={() => updateQuantity(item.variantId, 1)} className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-foreground">
-                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
+                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
                       </button>
                     </div>
-                    <div className="text-xs font-black text-foreground">{currency}{((item.price * item.quantity) / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div className="text-xs font-black text-foreground">{currency}{((item.price * item.quantity) / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                   </div>
                 </motion.div>
               ))
@@ -400,16 +400,16 @@ export default function SalesTerminal() {
                 <span>Subtotal</span>
                 <span>{currency}{(total / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toFixed(2)}</span>
               </div>
-              
+
               {/* Discount Input Area */}
               <div className="bg-brand-bg/30 p-2 rounded-xl border border-border-subtle space-y-2 mt-1">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowDiscountInput(!showDiscountInput)}
                   className="w-full flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-orange-500 transition-colors"
                 >
                   <div className="flex items-center gap-1.5">
-                    <svg className="w-3.5 h-3.5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <svg className="w-3.5 h-3.5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     <span>Discount / Adjustment</span>
                   </div>
                   <div className="flex items-center gap-1 font-bold text-foreground">
@@ -423,12 +423,12 @@ export default function SalesTerminal() {
                     <span>{showDiscountInput ? '▼' : '▲'}</span>
                   </div>
                 </button>
-                
+
                 {showDiscountInput && (
                   <div className="flex gap-2 items-center pt-1">
                     <div className="flex bg-surface rounded-lg border border-border-subtle p-0.5 shadow-inner shrink-0">
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => {
                           setDiscountType('fixed');
                           setDiscountAmount(0);
@@ -437,8 +437,8 @@ export default function SalesTerminal() {
                       >
                         {currency}
                       </button>
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => {
                           setDiscountType('percentage');
                           setDiscountAmount(0);
@@ -448,8 +448,8 @@ export default function SalesTerminal() {
                         %
                       </button>
                     </div>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       min="0"
                       max={discountType === 'percentage' ? 100 : total}
                       placeholder="0.00"
@@ -465,8 +465,8 @@ export default function SalesTerminal() {
                       className="flex-1 bg-surface p-1.5 rounded-lg border border-border-subtle text-[10px] font-bold text-foreground outline-none focus:border-orange-500 text-center"
                     />
                     {discountAmount > 0 && (
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => setDiscountAmount(0)}
                         className="text-[8px] font-black text-rose-500 uppercase hover:underline shrink-0"
                       >
@@ -481,126 +481,125 @@ export default function SalesTerminal() {
 
           <div className="flex justify-between items-center px-1">
             <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Total Amount</div>
-            <div className="text-xl font-black text-foreground">{currency}{(discountedTotal / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            <div className="text-xl font-black text-foreground">{currency}{(discountedTotal / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           </div>
 
           <div className="space-y-3">
-             <div className="space-y-2">
-                {/* Dropdown Toggle Header */}
-                <button
-                   type="button"
-                   onClick={() => setShowSaleTypeSelector(!showSaleTypeSelector)}
-                   className="w-full flex items-center justify-between bg-surface px-4 py-2.5 rounded-xl border border-border-subtle hover:border-orange-300 transition-all text-foreground cursor-pointer"
+            <div className="space-y-2">
+              {/* Dropdown Toggle Header */}
+              <button
+                type="button"
+                onClick={() => setShowSaleTypeSelector(!showSaleTypeSelector)}
+                className="w-full flex items-center justify-between bg-surface px-4 py-2.5 rounded-xl border border-border-subtle hover:border-orange-300 transition-all text-foreground cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sale Mode:</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-foreground">{saleType}</span>
+                </div>
+                <motion.svg
+                  animate={{ rotate: showSaleTypeSelector ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-3.5 h-3.5 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                   <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sale Mode:</span>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-foreground">{saleType}</span>
-                   </div>
-                   <motion.svg 
-                      animate={{ rotate: showSaleTypeSelector ? 180 : 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="w-3.5 h-3.5 text-slate-400" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                   >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
-                   </motion.svg>
-                </button>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+                </motion.svg>
+              </button>
 
-                {/* Dropdown Options (Collapsible) */}
-                <AnimatePresence>
-                   {showSaleTypeSelector && (
-                      <motion.div
-                         initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                         animate={{ height: 'auto', opacity: 1, marginTop: 8 }}
-                         exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                         className="overflow-hidden"
-                      >
-                         <div className="flex bg-surface rounded-xl border border-border-subtle p-1 shadow-inner">
-                            {['Standard', 'Credit', 'Free'].map((type) => (
-                               <button 
-                                 key={type}
-                                 type="button"
-                                 onClick={() => {
-                                    setSaleType(type);
-                                    setShowSaleTypeSelector(false);
-                                 }}
-                                 className={`flex-1 py-2 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all ${
-                                    saleType === type ? 'bg-orange-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
-                                 }`}
-                               >
-                                 {type}
-                               </button>
-                            ))}
-                         </div>
-                      </motion.div>
-                   )}
-                </AnimatePresence>
-             </div>
+              {/* Dropdown Options (Collapsible) */}
+              <AnimatePresence>
+                {showSaleTypeSelector && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                    animate={{ height: 'auto', opacity: 1, marginTop: 8 }}
+                    exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex bg-surface rounded-xl border border-border-subtle p-1 shadow-inner">
+                      {['Standard', 'Credit', 'Free'].map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => {
+                            setSaleType(type);
+                            setShowSaleTypeSelector(false);
+                          }}
+                          className={`flex-1 py-2 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all ${saleType === type ? 'bg-orange-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
+                            }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-             <AnimatePresence mode="wait">
-                {saleType === 'Credit' && (
-                   <motion.div 
-                     initial={{ height: 0, opacity: 0 }}
-                     animate={{ height: 'auto', opacity: 1 }}
-                     exit={{ height: 0, opacity: 0 }}
-                     className="space-y-2 overflow-hidden"
-                   >
-                      <input 
-                        type="text" 
-                        placeholder="Debtor Name"
-                        value={debtorName}
-                        onChange={(e) => setDebtorName(e.target.value)}
-                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Phone Number"
-                        value={debtorPhone}
-                        onChange={(e) => setDebtorPhone(e.target.value)}
-                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
-                      />
-                   </motion.div>
-                )}
-                {saleType === 'Free' && (
-                   <motion.div 
-                     initial={{ height: 0, opacity: 0 }}
-                     animate={{ height: 'auto', opacity: 1 }}
-                     exit={{ height: 0, opacity: 0 }}
-                     className="space-y-2 overflow-hidden"
-                   >
-                      <input 
-                        type="text" 
-                        placeholder="Authorized By (Admin Name)"
-                        value={authorizer}
-                        onChange={(e) => setAuthorizer(e.target.value)}
-                        className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
-                      />
-                   </motion.div>
-                )}
-             </AnimatePresence>
+            <AnimatePresence mode="wait">
+              {saleType === 'Credit' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="space-y-2 overflow-hidden"
+                >
+                  <input
+                    type="text"
+                    placeholder="Debtor Name"
+                    value={debtorName}
+                    onChange={(e) => setDebtorName(e.target.value)}
+                    className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Phone Number"
+                    value={debtorPhone}
+                    onChange={(e) => setDebtorPhone(e.target.value)}
+                    className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
+                  />
+                </motion.div>
+              )}
+              {saleType === 'Free' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="space-y-2 overflow-hidden"
+                >
+                  <input
+                    type="text"
+                    placeholder="Authorized By (Admin Name)"
+                    value={authorizer}
+                    onChange={(e) => setAuthorizer(e.target.value)}
+                    className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-             <button 
-               onClick={() => setPaymentMethod('Cash')}
-               className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border transition-all ${paymentMethod === 'Cash' ? 'bg-foreground text-brand-bg border-foreground shadow-md' : 'bg-surface text-slate-400 border-border-subtle'}`}
-             >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                <span className="text-[10px] font-black uppercase">Cash</span>
-             </button>
-             <button 
-               onClick={() => setPaymentMethod('MoMo')}
-               className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border transition-all ${paymentMethod === 'MoMo' ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-surface text-slate-400 border-border-subtle'}`}
-             >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                <span className="text-[10px] font-black uppercase">MoMo</span>
-             </button>
+            <button
+              onClick={() => setPaymentMethod('Cash')}
+              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border transition-all ${paymentMethod === 'Cash' ? 'bg-foreground text-brand-bg border-foreground shadow-md' : 'bg-surface text-slate-400 border-border-subtle'}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+              <span className="text-[10px] font-black uppercase">Cash</span>
+            </button>
+            <button
+              onClick={() => setPaymentMethod('MoMo')}
+              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border transition-all ${paymentMethod === 'MoMo' ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-surface text-slate-400 border-border-subtle'}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+              <span className="text-[10px] font-black uppercase">MoMo</span>
+            </button>
           </div>
 
-          <button 
+          <button
             onClick={() => {
               setSplitPayments([{ method: paymentMethod, amount: discountedTotal }]);
               setShowMultiPayment(true);
@@ -611,15 +610,15 @@ export default function SalesTerminal() {
             Split / Partial Payment
           </button>
 
-          <button 
+          <button
             onClick={handleCheckout}
             disabled={cart.length === 0 || isProcessing}
             className={`w-full font-black py-4 rounded-lg uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-2 ${cart.length > 0 && !isProcessing ? 'bg-emerald-600 text-white shadow-lg active:scale-95' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'}`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
             {isProcessing ? 'Wait...' : 'Complete Sale'}
           </button>
-          
+
           <button onClick={() => setCart([])} className="w-full text-[8px] font-black text-slate-400 uppercase hover:text-rose-500 text-center transition-colors">
             Cancel Order
           </button>
@@ -629,94 +628,94 @@ export default function SalesTerminal() {
       {/* Multi-Payment Modal */}
       <AnimatePresence>
         {showMultiPayment && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/70 backdrop-blur-md"
           >
-             <motion.div 
-               initial={{ opacity: 0, scale: 0.9 }}
-               animate={{ opacity: 1, scale: 1 }}
-               exit={{ opacity: 0, scale: 0.9 }}
-               className="bg-surface w-full max-w-lg rounded-2xl border border-border-subtle shadow-2xl overflow-hidden"
-             >
-                <div className="p-6 border-b border-border-subtle bg-brand-bg/30 flex justify-between items-center">
-                   <div>
-                      <h3 className="text-sm font-black uppercase tracking-tight">Split Payment Setup</h3>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Distribute total across multiple methods</p>
-                   </div>
-                   <button onClick={() => setShowMultiPayment(false)} className="text-slate-400 hover:text-foreground">✕</button>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-surface w-full max-w-lg rounded-2xl border border-border-subtle shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-border-subtle bg-brand-bg/30 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-tight">Split Payment Setup</h3>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Distribute total across multiple methods</p>
                 </div>
-                
-                <div className="p-8 space-y-6">
-                    <div className="flex justify-between items-end">
-                      <div>
-                         <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Total to Pay</div>
-                         <div className="text-2xl font-black text-foreground">{currency}{discountedTotal.toFixed(2)}</div>
+                <button onClick={() => setShowMultiPayment(false)} className="text-slate-400 hover:text-foreground">✕</button>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Total to Pay</div>
+                    <div className="text-2xl font-black text-foreground">{currency}{discountedTotal.toFixed(2)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Remaining</div>
+                    <div className={`text-xl font-black ${discountedTotal - splitPayments.reduce((acc, p) => acc + p.amount, 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      {currency}{(discountedTotal - splitPayments.reduce((acc, p) => acc + p.amount, 0)).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {['Cash', 'MoMo', 'Card', 'Credit'].map((method) => {
+                    const current = splitPayments.find(p => p.method === method);
+                    return (
+                      <div key={method} className="flex items-center gap-4 bg-brand-bg/40 p-4 rounded-xl border border-border-subtle group">
+                        <div className="w-10 h-10 rounded-lg bg-surface border border-border-subtle flex items-center justify-center font-black text-[10px] uppercase text-slate-400 group-hover:text-orange-500 transition-colors">
+                          {method.substring(0, 2)}
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">{method} Amount</div>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{currency}</span>
+                            <input
+                              type="number"
+                              placeholder="0.00"
+                              value={current?.amount || ''}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setSplitPayments(prev => {
+                                  const existing = prev.filter(p => p.method !== method);
+                                  return [...existing, { method, amount: val }];
+                                });
+                              }}
+                              className="w-full bg-surface p-2.5 pl-8 rounded-lg border border-border-subtle text-sm font-bold text-foreground outline-none focus:border-orange-500 transition-all"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const currentAllocated = splitPayments.reduce((acc, p) => p.method !== method ? acc + p.amount : acc, 0);
+                            const remaining = discountedTotal - currentAllocated;
+                            setSplitPayments(prev => {
+                              const existing = prev.filter(p => p.method !== method);
+                              return [...existing, { method, amount: Math.max(0, remaining) }];
+                            });
+                          }}
+                          className="h-10 px-4 bg-orange-500 text-white text-[8px] font-black uppercase tracking-widest rounded-lg shadow-lg hover:bg-orange-600 transition-all"
+                        >
+                          All
+                        </button>
                       </div>
-                      <div className="text-right">
-                         <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Remaining</div>
-                         <div className={`text-xl font-black ${discountedTotal - splitPayments.reduce((acc, p) => acc + p.amount, 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            {currency}{(discountedTotal - splitPayments.reduce((acc, p) => acc + p.amount, 0)).toFixed(2)}
-                         </div>
-                      </div>
-                   </div>
- 
-                   <div className="space-y-3">
-                      {['Cash', 'MoMo', 'Card', 'Credit'].map((method) => {
-                         const current = splitPayments.find(p => p.method === method);
-                         return (
-                            <div key={method} className="flex items-center gap-4 bg-brand-bg/40 p-4 rounded-xl border border-border-subtle group">
-                               <div className="w-10 h-10 rounded-lg bg-surface border border-border-subtle flex items-center justify-center font-black text-[10px] uppercase text-slate-400 group-hover:text-orange-500 transition-colors">
-                                  {method.substring(0, 2)}
-                               </div>
-                               <div className="flex-1">
-                                  <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">{method} Amount</div>
-                                  <div className="relative">
-                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{currency}</span>
-                                     <input 
-                                       type="number" 
-                                       placeholder="0.00"
-                                       value={current?.amount || ''}
-                                       onChange={(e) => {
-                                          const val = parseFloat(e.target.value) || 0;
-                                          setSplitPayments(prev => {
-                                             const existing = prev.filter(p => p.method !== method);
-                                             return [...existing, { method, amount: val }];
-                                          });
-                                       }}
-                                       className="w-full bg-surface p-2.5 pl-8 rounded-lg border border-border-subtle text-sm font-bold text-foreground outline-none focus:border-orange-500 transition-all" 
-                                     />
-                                  </div>
-                               </div>
-                               <button 
-                                 onClick={() => {
-                                    const currentAllocated = splitPayments.reduce((acc, p) => p.method !== method ? acc + p.amount : acc, 0);
-                                    const remaining = discountedTotal - currentAllocated;
-                                    setSplitPayments(prev => {
-                                       const existing = prev.filter(p => p.method !== method);
-                                       return [...existing, { method, amount: Math.max(0, remaining) }];
-                                    });
-                                 }}
-                                 className="h-10 px-4 bg-orange-500 text-white text-[8px] font-black uppercase tracking-widest rounded-lg shadow-lg hover:bg-orange-600 transition-all"
-                               >
-                                  All
-                               </button>
-                            </div>
-                         );
-                      })}
-                   </div>
- 
-                   <button 
-                     onClick={handleCheckout}
-                     disabled={Math.abs(discountedTotal - splitPayments.reduce((acc, p) => acc + p.amount, 0)) > 0.01 || isProcessing}
-                     className={`w-full font-black py-4 rounded-xl uppercase tracking-[0.2em] text-xs shadow-xl transition-all ${Math.abs(discountedTotal - splitPayments.reduce((acc, p) => acc + p.amount, 0)) <= 0.01 ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'}`}
-                   >
-                      {isProcessing ? 'Wait...' : 'Confirm Multi-Payment Sale'}
-                   </button>
-                 </div>
-             </motion.div>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={handleCheckout}
+                  disabled={Math.abs(discountedTotal - splitPayments.reduce((acc, p) => acc + p.amount, 0)) > 0.01 || isProcessing}
+                  className={`w-full font-black py-4 rounded-xl uppercase tracking-[0.2em] text-xs shadow-xl transition-all ${Math.abs(discountedTotal - splitPayments.reduce((acc, p) => acc + p.amount, 0)) <= 0.01 ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'}`}
+                >
+                  {isProcessing ? 'Wait...' : 'Confirm Multi-Payment Sale'}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -724,13 +723,13 @@ export default function SalesTerminal() {
       {/* Variant Selector */}
       <AnimatePresence>
         {variantSelector && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
           >
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -738,7 +737,7 @@ export default function SalesTerminal() {
             >
               <div className="p-5 border-b border-border-subtle flex justify-between items-center bg-brand-bg/20">
                 <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 11h.01M7 15h.01M11 7h.01M11 11h.01M11 15h.01M15 7h.01M15 11h.01M15 15h.01M19 7h.01M19 11h.01M19 15h.01M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+                  <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 11h.01M7 15h.01M11 7h.01M11 11h.01M11 15h.01M15 7h.01M15 11h.01M15 15h.01M19 7h.01M19 11h.01M19 15h.01M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z" /></svg>
                   <div>
                     <h3 className="text-sm font-black text-foreground uppercase tracking-tight">{variantSelector.name}</h3>
                     <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mt-0.5">Select Variation</p>
@@ -752,7 +751,7 @@ export default function SalesTerminal() {
                   const variantOutOfStock = qty <= 0;
 
                   return (
-                    <button 
+                    <button
                       key={v.id}
                       disabled={variantOutOfStock}
                       onClick={() => addToCart(variantSelector, v)}
@@ -763,11 +762,11 @@ export default function SalesTerminal() {
                         <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Color: {v.color}</div>
                       </div>
                       <div className="flex flex-col items-end">
-                         <div className={`text-sm font-black ${variantOutOfStock ? 'text-slate-400' : 'text-orange-500'}`}>
-                           {currency}
-                           {(variantSelector.basePrice / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                         </div>
-                         <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-0.5">{variantOutOfStock ? 'Unavailable' : 'Select'}</div>
+                        <div className={`text-sm font-black ${variantOutOfStock ? 'text-slate-400' : 'text-orange-500'}`}>
+                          {currency}
+                          {(variantSelector.basePrice / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-0.5">{variantOutOfStock ? 'Unavailable' : 'Select'}</div>
                       </div>
                     </button>
                   );
@@ -781,13 +780,13 @@ export default function SalesTerminal() {
       {/* Digital Receipt Modal */}
       <AnimatePresence>
         {showReceipt && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
           >
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -796,7 +795,7 @@ export default function SalesTerminal() {
               <div className="p-8 space-y-6">
                 <div className="text-center space-y-2">
                   <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500 mx-auto mb-4">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   </div>
                   <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Sale Successful</h3>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Transaction Complete</p>
@@ -813,10 +812,9 @@ export default function SalesTerminal() {
                   </div>
                   <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
                     <span>Payment Method</span>
-                    <span className={`px-2 py-0.5 rounded ${
-                      showReceipt.paymentMethod === 'credit' ? 'bg-amber-500 text-white' : 
-                      showReceipt.paymentMethod === 'free' ? 'bg-rose-500 text-white' : 'text-slate-900 dark:text-white'
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded ${showReceipt.paymentMethod === 'credit' ? 'bg-amber-500 text-white' :
+                        showReceipt.paymentMethod === 'free' ? 'bg-rose-500 text-white' : 'text-slate-900 dark:text-white'
+                      }`}>
                       {showReceipt.paymentMethod.toUpperCase()}
                     </span>
                   </div>
@@ -874,25 +872,26 @@ export default function SalesTerminal() {
                 </div>
 
                 <div className="flex gap-4 pt-2">
-                   <button 
-                     onClick={() => window.print()}
-                     className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-black py-4 rounded-xl text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-800 shadow-sm"
-                   >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                      Print Receipt
-                   </button>
-                   <button 
-                     onClick={() => setShowReceipt(null)}
-                     className="flex-1 bg-[#ffb443] hover:bg-[#fca42d] text-[#1a1f2b] font-black py-4 rounded-xl uppercase tracking-widest text-[10px] shadow-xl active:scale-95 transition-all"
-                   >
-                     New Transaction
-                   </button>
-                 </div>
-               </div>
- 
-               {/* HIDDEN THERMAL PRINT VIEW FOR QUICK SALE PRINTING */}
-               <div className="hidden print:block print:fixed print:inset-0 print:bg-white print:p-0 print:m-0" id="thermal-receipt">
-                  <style dangerouslySetInnerHTML={{ __html: `
+                  <button
+                    onClick={() => window.print()}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-black py-4 rounded-xl text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-800 shadow-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                    Print Receipt
+                  </button>
+                  <button
+                    onClick={() => setShowReceipt(null)}
+                    className="flex-1 bg-[#ffb443] hover:bg-[#fca42d] text-[#1a1f2b] font-black py-4 rounded-xl uppercase tracking-widest text-[10px] shadow-xl active:scale-95 transition-all"
+                  >
+                    New Transaction
+                  </button>
+                </div>
+              </div>
+
+              {/* HIDDEN THERMAL PRINT VIEW FOR QUICK SALE PRINTING */}
+              <div className="hidden print:block print:fixed print:inset-0 print:bg-white print:p-0 print:m-0" id="thermal-receipt">
+                <style dangerouslySetInnerHTML={{
+                  __html: `
                     @media print {
                       body * { visibility: hidden !important; }
                       #thermal-receipt, #thermal-receipt * { visibility: visible !important; }
@@ -910,70 +909,70 @@ export default function SalesTerminal() {
                       @page { size: 80mm auto; margin: 0; }
                     }
                   `}} />
-                  <div className="text-center space-y-1 mb-4 border-b border-black pb-4">
-                     <h2 className="text-xl font-bold uppercase">{shopName}</h2>
-                     <p className="text-[10px]">{address}</p>
-                     <p className="text-[10px]">Official Sales Receipt</p>
-                  </div>
-                  
-                  <div className="text-[10px] space-y-1 mb-4">
-                     <div className="flex justify-between">
-                        <span>REF: {showReceipt.id.slice(-8).toUpperCase()}</span>
-                        <span>{showReceipt.date}</span>
-                     </div>
-                     <div className="flex justify-between">
-                        <span>STAFF: {(showReceipt.soldBy || 'SYSTEM').toUpperCase()}</span>
-                        <span>TYPE: {(showReceipt.paymentMethod === 'credit' ? 'CREDIT' : showReceipt.paymentMethod === 'free' ? 'FREE' : 'STANDARD')}</span>
-                     </div>
-                     <p>CUSTOMER: {showReceipt.debtorName || 'WALK-IN'}</p>
-                     {showReceipt.debtorName && <p className="font-bold">DEBTOR: {showReceipt.debtorName.toUpperCase()}</p>}
-                     {showReceipt.authorizer && <p className="font-bold">AUTH BY: {showReceipt.authorizer.toUpperCase()}</p>}
-                  </div>
- 
-                  <div className="border-b border-dashed border-black mb-2" />
-                  <div className="space-y-2 text-[10px] mb-4">
-                     {showReceipt.items.map((item: any, idx: number) => (
-                        <div key={idx} className="flex justify-between">
-                           <div className="flex-1">
-                              <p className="font-bold">{item.name}</p>
-                              <p className="opacity-70 text-[9px] uppercase">{item.size} • {item.color}</p>
-                              <p className="opacity-70">Qty: {item.quantity}</p>
-                           </div>
-                           <p className="font-bold">{currency}{((item.price * item.quantity) / (showReceipt.exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                        </div>
-                     ))}
-                  </div>
-                  <div className="border-b border-dashed border-black mb-2" />
+                <div className="text-center space-y-1 mb-4 border-b border-black pb-4">
+                  <h2 className="text-xl font-bold uppercase">{shopName}</h2>
+                  <p className="text-[10px]">{address}</p>
+                  <p className="text-[10px]">Official Sales Receipt</p>
+                </div>
 
-                  {showReceipt.discountAmount > 0 && (
-                      <div className="text-[10px] space-y-1 mb-2">
-                         <div className="flex justify-between">
-                            <span>SUBTOTAL</span>
-                            <span>{currency}{(showReceipt.subtotal / (showReceipt.exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                         </div>
-                         <div className="flex justify-between text-black font-bold">
-                            <span>DISCOUNT</span>
-                            <span>-{showReceipt.discountType === 'percentage' ? `${showReceipt.discountAmount}%` : `${currency}${(showReceipt.discountAmount / (showReceipt.exchangeRate || 1)).toFixed(2)}`}</span>
-                         </div>
-                         <div className="border-b border-dashed border-black mb-2" />
+                <div className="text-[10px] space-y-1 mb-4">
+                  <div className="flex justify-between">
+                    <span>REF: {showReceipt.id.slice(-8).toUpperCase()}</span>
+                    <span>{showReceipt.date}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>STAFF: {(showReceipt.soldBy || 'SYSTEM').toUpperCase()}</span>
+                    <span>TYPE: {(showReceipt.paymentMethod === 'credit' ? 'CREDIT' : showReceipt.paymentMethod === 'free' ? 'FREE' : 'STANDARD')}</span>
+                  </div>
+                  <p>CUSTOMER: {showReceipt.debtorName || 'WALK-IN'}</p>
+                  {showReceipt.debtorName && <p className="font-bold">DEBTOR: {showReceipt.debtorName.toUpperCase()}</p>}
+                  {showReceipt.authorizer && <p className="font-bold">AUTH BY: {showReceipt.authorizer.toUpperCase()}</p>}
+                </div>
+
+                <div className="border-b border-dashed border-black mb-2" />
+                <div className="space-y-2 text-[10px] mb-4">
+                  {showReceipt.items.map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between">
+                      <div className="flex-1">
+                        <p className="font-bold">{item.name}</p>
+                        <p className="opacity-70 text-[9px] uppercase">{item.size} • {item.color}</p>
+                        <p className="opacity-70">Qty: {item.quantity}</p>
                       </div>
-                   )}
- 
-                  <div className="flex justify-between font-bold text-sm mb-4">
-                     <span>TOTAL</span>
-                     <span>{currency}{(showReceipt.total / (showReceipt.exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                      <p className="font-bold">{currency}{((item.price * item.quantity) / (showReceipt.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-b border-dashed border-black mb-2" />
+
+                {showReceipt.discountAmount > 0 && (
+                  <div className="text-[10px] space-y-1 mb-2">
+                    <div className="flex justify-between">
+                      <span>SUBTOTAL</span>
+                      <span>{currency}{(showReceipt.subtotal / (showReceipt.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between text-black font-bold">
+                      <span>DISCOUNT</span>
+                      <span>-{showReceipt.discountType === 'percentage' ? `${showReceipt.discountAmount}%` : `${currency}${(showReceipt.discountAmount / (showReceipt.exchangeRate || 1)).toFixed(2)}`}</span>
+                    </div>
+                    <div className="border-b border-dashed border-black mb-2" />
                   </div>
- 
-                  <div className="text-[9px] text-center space-y-1">
-                     <p>Paid via {showReceipt.paymentMethod.toUpperCase()}</p>
-                     <p className="mt-4 font-bold italic">Thank you for your business!</p>
-                     <p>Visit us again at {shopName}.</p>
-                  </div>
-               </div>
- 
-               <div className="bg-slate-50 dark:bg-slate-800/50 p-3 text-center">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Awards Centre POS • Official Digital Record</p>
-               </div>
+                )}
+
+                <div className="flex justify-between font-bold text-sm mb-4">
+                  <span>TOTAL</span>
+                  <span>{currency}{(showReceipt.total / (showReceipt.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+
+                <div className="text-[9px] text-center space-y-1">
+                  <p>Paid via {showReceipt.paymentMethod.toUpperCase()}</p>
+                  <p className="mt-4 font-bold italic">Thank you for your purchase!</p>
+                  <p>Visit us again at {shopName}.</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-3 text-center">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Awards Centre POS • Official Digital Record</p>
+              </div>
             </motion.div>
           </motion.div>
         )}

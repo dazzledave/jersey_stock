@@ -56,12 +56,7 @@ export const inventoryService = {
   },
 
   async getLowStockItems() {
-    return await prisma.inventory.findMany({
-      where: {
-        quantity: {
-          lte: 5 
-        }
-      },
+    const all = await prisma.inventory.findMany({
       include: {
         variant: {
           include: {
@@ -70,5 +65,6 @@ export const inventoryService = {
         }
       }
     });
+    return all.filter(i => i.quantity <= i.reorderLevel);
   }
 };

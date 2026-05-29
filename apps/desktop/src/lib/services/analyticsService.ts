@@ -2,6 +2,13 @@ import { prisma } from '../prisma';
 
 export const analyticsService = {
   async getSummary() {
+    const now = new Date();
+    
+    // Set up Boundaries for Today and Yesterday
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    const endOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59);
+
     const sales = await prisma.sale.findMany({
       include: {
         items: {
@@ -16,11 +23,14 @@ export const analyticsService = {
       }
     });
 
-    const totalRevenue = sales.reduce((acc, s) => acc + s.totalAmount, 0);
-    const totalOrders = sales.length;
+    const activeSales = sales.filter(s => !s.isRefunded);
+
+    // 1. Overall stats
+    const totalRevenue = activeSales.reduce((acc, s) => acc + s.totalAmount, 0);
+    const totalOrders = activeSales.length;
     
     let totalProfit = 0;
-    sales.forEach(sale => {
+    activeSales.forEach(sale => {
       sale.items.forEach(item => {
         const cost = (item.variant as any).product.costPrice || 0;
         totalProfit += (item.price - cost) * item.quantity;
@@ -30,14 +40,54 @@ export const analyticsService = {
     const allInventory = await prisma.inventory.findMany();
     const lowStockCount = allInventory.filter(i => i.quantity <= i.reorderLevel).length;
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    const recentSales = await prisma.sale.findMany({
-      where: { createdAt: { gte: sevenDaysAgo } },
-      select: { createdAt: true, totalAmount: true }
+    // 2. Today's and Yesterday's Stats
+    const todaySalesList = activeSales.filter(s => s.createdAt >= startOfToday);
+    const yesterdaySalesList = activeSales.filter(s => s.createdAt >= startOfYesterday && s.createdAt <= endOfYesterday);
+
+    const todaySales = todaySalesList.reduce((sum, s) => sum + s.totalAmount, 0);
+    const todayTransactions = todaySalesList.length;
+
+    const yesterdaySales = yesterdaySalesList.reduce((sum, s) => sum + s.totalAmount, 0);
+    const yesterdayTransactions = yesterdaySalesList.length;
+
+    // 3. Last 6 transactions (live feed)
+    const recentTransactions = await prisma.sale.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 6,
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: true
+              }
+            }
+          }
+        }
+      }
     });
 
+    // 4. Top Product Today
+    const todayProductsMap: Record<string, { quantity: number; revenue: number }> = {};
+    todaySalesList.forEach(s => {
+      s.items.forEach(item => {
+        const name = item.variant.product.name;
+        if (!todayProductsMap[name]) {
+          todayProductsMap[name] = { quantity: 0, revenue: 0 };
+        }
+        todayProductsMap[name].quantity += item.quantity;
+        todayProductsMap[name].revenue += item.price * item.quantity;
+      });
+    });
+
+    const topProductToday = Object.entries(todayProductsMap)
+      .map(([name, stats]) => ({ name, ...stats }))
+      .sort((a, b) => b.revenue - a.revenue)[0] || null;
+
+    // 5. 7-Day Chart Data
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentSales = activeSales.filter(s => s.createdAt >= sevenDaysAgo);
     const chartData = this.formatChartData(recentSales);
 
     return {
@@ -45,6 +95,12 @@ export const analyticsService = {
       totalProfit,
       totalOrders,
       lowStockCount,
+      todaySales,
+      todayTransactions,
+      yesterdaySales,
+      yesterdayTransactions,
+      recentTransactions,
+      topProductToday,
       chartData
     };
   },
