@@ -138,55 +138,57 @@ export default function SalesRecords() {
       </div>
 
       <div className="bg-surface rounded-xl border border-border-subtle overflow-hidden shadow-sm min-h-[400px]">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-brand-bg/50 text-[10px] uppercase font-black text-slate-400 tracking-widest">
-              <th className="p-8 border-b border-border-subtle/50">Reference</th>
-              <th className="p-8 border-b border-border-subtle/50">Timestamp</th>
-              <th className="p-8 border-b border-border-subtle/50">Staff</th>
-              <th className="p-8 border-b border-border-subtle/50">Type</th>
-              <th className="p-8 border-b border-border-subtle/50">Amount</th>
-              <th className="p-8 border-b border-border-subtle/50">Method</th>
-              <th className="p-8 border-b border-border-subtle/50 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-subtle/30">
-            {isLoading ? (
-               <tr>
-                 <td colSpan={7} className="p-20 text-center text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Loading Transaction History...</td>
-               </tr>
-            ) : filteredRecords.length === 0 ? (
-               <tr>
-                 <td colSpan={7} className="p-20 text-center text-xs font-bold text-slate-400 uppercase tracking-widest opacity-40">No records found for this period.</td>
-               </tr>
-            ) : (
-              filteredRecords.map((r) => (
-                <tr key={r.id} className="hover:bg-brand-bg/20 transition-colors group">
-                  <td className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-tight">#{r.id.substring(0, 8)}</td>
-                  <td className="p-8 text-[10px] font-bold text-foreground">{new Date(r.createdAt).toLocaleString()}</td>
-                  <td className="p-8 text-[10px] font-black text-orange-500 uppercase tracking-widest">{r.soldBy || 'System'}</td>
-                  <td className="p-8">
-                     <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${r.debtorName ? 'bg-orange-500/10 text-orange-500' : r.paymentMethod === 'free' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-500/10 text-slate-500'}`}>
-                        {r.debtorName ? 'Credit' : r.paymentMethod === 'free' ? 'Free' : 'Standard'}
-                     </span>
-                  </td>
-                  <td className="p-8 text-[10px] font-black text-foreground">{currency}{(r.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                  <td className="p-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    {r.debtorName ? 'Credit' : r.paymentMethod === 'free' ? 'Free' : r.paymentMethod}
-                  </td>
-                  <td className="p-8 text-right">
-                      <button 
-                        onClick={() => setSelectedSale(r)}
-                        className="px-4 py-2 rounded-lg bg-brand-bg text-slate-400 hover:text-orange-500 border border-border-subtle hover:border-orange-200 transition-all text-[9px] font-black uppercase tracking-widest"
-                      >
-                         View
-                      </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto w-full custom-scrollbar">
+          <table className="w-full text-left min-w-[800px]">
+            <thead>
+              <tr className="bg-brand-bg/50 text-[10px] uppercase font-black text-slate-400 tracking-widest">
+                <th className="px-6 py-5 border-b border-border-subtle/50">Reference</th>
+                <th className="px-6 py-5 border-b border-border-subtle/50">Timestamp</th>
+                <th className="px-6 py-5 border-b border-border-subtle/50">Staff</th>
+                <th className="px-6 py-5 border-b border-border-subtle/50">Type</th>
+                <th className="px-6 py-5 border-b border-border-subtle/50">Amount</th>
+                <th className="px-6 py-5 border-b border-border-subtle/50">Method</th>
+                <th className="px-6 py-5 border-b border-border-subtle/50 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border-subtle/30">
+              {isLoading ? (
+                 <tr>
+                   <td colSpan={7} className="p-20 text-center text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Loading Transaction History...</td>
+                 </tr>
+              ) : filteredRecords.length === 0 ? (
+                 <tr>
+                   <td colSpan={7} className="p-20 text-center text-xs font-bold text-slate-400 uppercase tracking-widest opacity-40">No records found for this period.</td>
+                 </tr>
+              ) : (
+                filteredRecords.map((r) => (
+                  <tr key={r.id} className="hover:bg-brand-bg/20 transition-colors group">
+                    <td className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-tight">#{r.id.substring(0, 8)}</td>
+                    <td className="px-6 py-5 text-[10px] font-bold text-foreground">{new Date(r.createdAt).toLocaleString()}</td>
+                    <td className="px-6 py-5 text-[10px] font-black text-orange-500 uppercase tracking-widest">{r.soldBy || 'System'}</td>
+                    <td className="px-6 py-5">
+                       <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${r.debtorName ? 'bg-orange-500/10 text-orange-500' : r.paymentMethod === 'free' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-500/10 text-slate-500'}`}>
+                          {r.debtorName ? 'Credit' : r.paymentMethod === 'free' ? 'Free' : 'Standard'}
+                       </span>
+                    </td>
+                    <td className="px-6 py-5 text-[10px] font-black text-foreground">{currency}{(r.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      {r.debtorName ? 'Credit' : r.paymentMethod === 'free' ? 'Free' : r.paymentMethod}
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                        <button 
+                          onClick={() => setSelectedSale(r)}
+                          className="px-4 py-2 rounded-lg bg-brand-bg text-slate-400 hover:text-orange-500 border border-border-subtle hover:border-orange-200 transition-all text-[9px] font-black uppercase tracking-widest"
+                        >
+                           View
+                        </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Receipt Modal */}
