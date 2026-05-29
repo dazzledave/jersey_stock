@@ -40,6 +40,8 @@ export default function SalesRecords() {
   const [isLoading, setIsLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState('');
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [shopName, setShopName] = useState('Awards Centre');
+  const [address, setAddress] = useState('Accra, Ghana');
 
   useEffect(() => {
     const saved = localStorage.getItem('ac_settings');
@@ -47,6 +49,8 @@ export default function SalesRecords() {
       const parsed = JSON.parse(saved);
       if (parsed.currency) setCurrency(parsed.currency);
       if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
+      if (parsed.shopName) setShopName(parsed.shopName);
+      if (parsed.address) setAddress(parsed.address);
     }
     fetchSales();
   }, []);
@@ -215,7 +219,7 @@ export default function SalesRecords() {
                 </div>
                 <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
                    <div className="text-center space-y-2">
-                      <h4 className="text-xl font-black text-foreground uppercase tracking-tight">Awards Centre</h4>
+                      <h4 className="text-xl font-black text-foreground uppercase tracking-tight">{shopName}</h4>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Transaction Record</p>
                    </div>
                                   <div className="space-y-4 pt-4 border-t border-dashed border-border-subtle">
@@ -302,8 +306,8 @@ export default function SalesRecords() {
                    }
                  `}} />
                  <div className="text-center space-y-1 mb-4 border-b border-black pb-4">
-                    <h2 className="text-xl font-bold uppercase">Awards Centre</h2>
-                    <p className="text-[10px]">Accra, Ghana</p>
+                    <h2 className="text-xl font-bold uppercase">{shopName}</h2>
+                    <p className="text-[10px]">{address}</p>
                     <p className="text-[10px]">Official Sales Receipt</p>
                  </div>
                  
