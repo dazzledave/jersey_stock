@@ -67,6 +67,11 @@ export default function SalesTerminal() {
   const [showReceipt, setShowReceipt] = useState<any>(null);
   const { user } = useAuth();
 
+  // Discount States
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('fixed');
+  const [showDiscountInput, setShowDiscountInput] = useState(false);
+
   useEffect(() => {
     focusSearch();
   }, [variantSelector, showReceipt, showMultiPayment]); // Re-focus when any modal closes
@@ -156,6 +161,8 @@ export default function SalesTerminal() {
   };
 
   const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const discountVal = discountType === 'percentage' ? (total * discountAmount / 100) : discountAmount;
+  const discountedTotal = Math.max(0, total - discountVal);
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
@@ -180,14 +187,16 @@ export default function SalesTerminal() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          totalAmount: total,
+          totalAmount: discountedTotal,
           paymentMethod: finalPaymentMethod,
           userId: user?.id,
           soldBy: user?.username,
           debtorName: saleType === 'Credit' ? debtorName : null,
           debtorPhone: saleType === 'Credit' ? debtorPhone : null,
           authorizer: saleType === 'Free' ? authorizer : null,
-          payments: splitPayments.length > 0 ? splitPayments : [{ method: finalPaymentMethod, amount: total }],
+          payments: splitPayments.length > 0 ? splitPayments : [{ method: finalPaymentMethod, amount: discountedTotal }],
+          discountAmount: discountAmount,
+          discountType: discountType,
           items: cart.map(item => ({ 
             variantId: item.variantId,
             quantity: item.quantity,
@@ -204,7 +213,10 @@ export default function SalesTerminal() {
           date: timestamp.toLocaleDateString(),
           time: timestamp.toLocaleTimeString(),
           items: [...cart],
-          total: total,
+          total: discountedTotal,
+          subtotal: total,
+          discountAmount: discountAmount,
+          discountType: discountType,
           paymentMethod: finalPaymentMethod,
           debtorName,
           authorizer,
@@ -219,6 +231,8 @@ export default function SalesTerminal() {
         setAuthorizer('');
         setSaleType('Standard');
         setSplitPayments([]);
+        setDiscountAmount(0);
+        setShowDiscountInput(false);
         setShowMultiPayment(false);
         fetchProducts(); 
       } else {
@@ -379,9 +393,95 @@ export default function SalesTerminal() {
 
         {/* Footer Section */}
         <div className="border-t border-border-subtle bg-brand-bg/5 p-3 space-y-3 shrink-0">
+          {/* Subtotal & Discount row */}
+          {total > 0 && (
+            <div className="space-y-1.5 px-1 border-b border-border-subtle/50 pb-2">
+              <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                <span>Subtotal</span>
+                <span>{currency}{(total / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toFixed(2)}</span>
+              </div>
+              
+              {/* Discount Input Area */}
+              <div className="bg-brand-bg/30 p-2 rounded-xl border border-border-subtle space-y-2 mt-1">
+                <button 
+                  type="button" 
+                  onClick={() => setShowDiscountInput(!showDiscountInput)}
+                  className="w-full flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-orange-500 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Discount / Adjustment</span>
+                  </div>
+                  <div className="flex items-center gap-1 font-bold text-foreground">
+                    {discountAmount > 0 ? (
+                      <span className="text-emerald-500 font-extrabold text-[10px]">
+                        -{discountType === 'percentage' ? `${discountAmount}%` : `${currency}${(discountAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toFixed(2)}`}
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 text-[9px]">Add Discount</span>
+                    )}
+                    <span>{showDiscountInput ? '▼' : '▲'}</span>
+                  </div>
+                </button>
+                
+                {showDiscountInput && (
+                  <div className="flex gap-2 items-center pt-1">
+                    <div className="flex bg-surface rounded-lg border border-border-subtle p-0.5 shadow-inner shrink-0">
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setDiscountType('fixed');
+                          setDiscountAmount(0);
+                        }}
+                        className={`px-2.5 py-1 text-[8px] font-black uppercase rounded transition-all ${discountType === 'fixed' ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                      >
+                        {currency}
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setDiscountType('percentage');
+                          setDiscountAmount(0);
+                        }}
+                        className={`px-2.5 py-1 text-[8px] font-black uppercase rounded transition-all ${discountType === 'percentage' ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                      >
+                        %
+                      </button>
+                    </div>
+                    <input 
+                      type="number" 
+                      min="0"
+                      max={discountType === 'percentage' ? 100 : total}
+                      placeholder="0.00"
+                      value={discountAmount || ''}
+                      onChange={(e) => {
+                        const val = Math.max(0, parseFloat(e.target.value) || 0);
+                        if (discountType === 'percentage') {
+                          setDiscountAmount(val > 100 ? 100 : val);
+                        } else {
+                          setDiscountAmount(val > total ? total : val);
+                        }
+                      }}
+                      className="flex-1 bg-surface p-1.5 rounded-lg border border-border-subtle text-[10px] font-bold text-foreground outline-none focus:border-orange-500 text-center"
+                    />
+                    {discountAmount > 0 && (
+                      <button 
+                        type="button" 
+                        onClick={() => setDiscountAmount(0)}
+                        className="text-[8px] font-black text-rose-500 uppercase hover:underline shrink-0"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-between items-center px-1">
             <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Total Amount</div>
-            <div className="text-xl font-black text-foreground">{currency}{(total / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            <div className="text-xl font-black text-foreground">{currency}{(discountedTotal / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
           </div>
 
           <div className="space-y-3">
@@ -502,7 +602,7 @@ export default function SalesTerminal() {
 
           <button 
             onClick={() => {
-              setSplitPayments([{ method: paymentMethod, amount: total }]);
+              setSplitPayments([{ method: paymentMethod, amount: discountedTotal }]);
               setShowMultiPayment(true);
             }}
             disabled={cart.length === 0 || isProcessing}
@@ -550,19 +650,19 @@ export default function SalesTerminal() {
                 </div>
                 
                 <div className="p-8 space-y-6">
-                   <div className="flex justify-between items-end">
+                    <div className="flex justify-between items-end">
                       <div>
                          <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Total to Pay</div>
-                         <div className="text-2xl font-black text-foreground">{currency}{total.toFixed(2)}</div>
+                         <div className="text-2xl font-black text-foreground">{currency}{discountedTotal.toFixed(2)}</div>
                       </div>
                       <div className="text-right">
                          <div className="text-[8px] uppercase font-black text-slate-400 tracking-widest">Remaining</div>
-                         <div className={`text-xl font-black ${total - splitPayments.reduce((acc, p) => acc + p.amount, 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            {currency}{(total - splitPayments.reduce((acc, p) => acc + p.amount, 0)).toFixed(2)}
+                         <div className={`text-xl font-black ${discountedTotal - splitPayments.reduce((acc, p) => acc + p.amount, 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {currency}{(discountedTotal - splitPayments.reduce((acc, p) => acc + p.amount, 0)).toFixed(2)}
                          </div>
                       </div>
                    </div>
-
+ 
                    <div className="space-y-3">
                       {['Cash', 'MoMo', 'Card', 'Credit'].map((method) => {
                          const current = splitPayments.find(p => p.method === method);
@@ -593,7 +693,7 @@ export default function SalesTerminal() {
                                <button 
                                  onClick={() => {
                                     const currentAllocated = splitPayments.reduce((acc, p) => p.method !== method ? acc + p.amount : acc, 0);
-                                    const remaining = total - currentAllocated;
+                                    const remaining = discountedTotal - currentAllocated;
                                     setSplitPayments(prev => {
                                        const existing = prev.filter(p => p.method !== method);
                                        return [...existing, { method, amount: Math.max(0, remaining) }];
@@ -607,15 +707,15 @@ export default function SalesTerminal() {
                          );
                       })}
                    </div>
-
+ 
                    <button 
                      onClick={handleCheckout}
-                     disabled={Math.abs(total - splitPayments.reduce((acc, p) => acc + p.amount, 0)) > 0.01 || isProcessing}
-                     className={`w-full font-black py-4 rounded-xl uppercase tracking-[0.2em] text-xs shadow-xl transition-all ${Math.abs(total - splitPayments.reduce((acc, p) => acc + p.amount, 0)) <= 0.01 ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'}`}
+                     disabled={Math.abs(discountedTotal - splitPayments.reduce((acc, p) => acc + p.amount, 0)) > 0.01 || isProcessing}
+                     className={`w-full font-black py-4 rounded-xl uppercase tracking-[0.2em] text-xs shadow-xl transition-all ${Math.abs(discountedTotal - splitPayments.reduce((acc, p) => acc + p.amount, 0)) <= 0.01 ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'}`}
                    >
                       {isProcessing ? 'Wait...' : 'Confirm Multi-Payment Sale'}
                    </button>
-                </div>
+                 </div>
              </motion.div>
           </motion.div>
         )}
@@ -749,7 +849,24 @@ export default function SalesTerminal() {
                   ))}
                 </div>
 
-                <div className="flex justify-between items-center pt-4">
+                {showReceipt.discountAmount > 0 && (
+                  <div className="space-y-1.5 py-3 border-t border-dashed border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span className="text-slate-900 dark:text-white">
+                        {showReceipt.currency}{(showReceipt.subtotal / (showReceipt.currency === 'GH₵' ? 1 : (showReceipt.exchangeRate || 1))).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-emerald-500">
+                      <span>Discount</span>
+                      <span>
+                        -{showReceipt.discountType === 'percentage' ? `${showReceipt.discountAmount}%` : `${showReceipt.currency}${(showReceipt.discountAmount / (showReceipt.currency === 'GH₵' ? 1 : (showReceipt.exchangeRate || 1))).toFixed(2)}`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-800">
                   <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">Total Amount</span>
                   <span className="text-2xl font-black text-slate-900 dark:text-white">
                     {showReceipt.currency}{(showReceipt.total / (showReceipt.currency === 'GH₵' ? 1 : (showReceipt.exchangeRate || 1))).toFixed(2)}
@@ -827,6 +944,20 @@ export default function SalesTerminal() {
                      ))}
                   </div>
                   <div className="border-b border-dashed border-black mb-2" />
+
+                  {showReceipt.discountAmount > 0 && (
+                      <div className="text-[10px] space-y-1 mb-2">
+                         <div className="flex justify-between">
+                            <span>SUBTOTAL</span>
+                            <span>{currency}{(showReceipt.subtotal / (showReceipt.exchangeRate || 1)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                         </div>
+                         <div className="flex justify-between text-black font-bold">
+                            <span>DISCOUNT</span>
+                            <span>-{showReceipt.discountType === 'percentage' ? `${showReceipt.discountAmount}%` : `${currency}${(showReceipt.discountAmount / (showReceipt.exchangeRate || 1)).toFixed(2)}`}</span>
+                         </div>
+                         <div className="border-b border-dashed border-black mb-2" />
+                      </div>
+                   )}
  
                   <div className="flex justify-between font-bold text-sm mb-4">
                      <span>TOTAL</span>

@@ -1,11 +1,13 @@
 import { prisma } from '../prisma';
 import { cloudSyncService } from './cloudSyncService';
+import { logActivity } from '../utils/auditLogger';
 
 export const salesService = {
   async createSale(data: any) {
     const {
       totalAmount, paymentMethod, items, customerId,
-      userId, soldBy, debtorName, debtorPhone, authorizer, payments
+      userId, soldBy, debtorName, debtorPhone, authorizer, payments,
+      discountAmount = 0, discountType = null
     } = data;
 
     const sale = await prisma.$transaction(async (tx) => {
@@ -36,6 +38,8 @@ export const salesService = {
           debtorPhone: debtorPhone || null,
           authorizer: authorizer || null,
           payments: payments ? JSON.stringify(payments) : null,
+          discountAmount: parseFloat(discountAmount.toString()) || 0,
+          discountType: discountType || null,
           items: {
             create: items.map((item: any) => ({
               variantId: item.variantId,
@@ -70,9 +74,64 @@ export const salesService = {
       return newSale;
     });
 
+    // Log to Audit Trail
+    const detailsMsg = `Completed sale ref: ${sale.id} for amount GH₵${totalAmount.toFixed(2)}.` + 
+      (discountAmount > 0 ? ` Applied ${discountType === 'percentage' ? discountAmount + '%' : 'GH₵' + discountAmount} discount.` : '');
+    await logActivity(userId, soldBy, "SALE_COMPLETED", detailsMsg);
+
     cloudSyncService.queueSync('Sale', sale.id).catch(console.error);
     for (const item of sale.items) {
       cloudSyncService.queueSync('SaleItem', item.id).catch(console.error);
+      cloudSyncService.queueSync('Inventory', item.variantId).catch(console.error);
+    }
+
+    return sale;
+  },
+
+  async refundSale(saleId: string, refundedBy: string, reason: string) {
+    const sale = await prisma.$transaction(async (tx) => {
+      const saleRecord = await tx.sale.findUnique({
+        where: { id: saleId },
+        include: { items: true }
+      });
+      if (!saleRecord) throw new Error('Sale not found');
+      if (saleRecord.isRefunded) throw new Error('Sale is already refunded');
+
+      const updatedSale = await tx.sale.update({
+        where: { id: saleId },
+        data: {
+          isRefunded: true,
+          refundReason: reason
+        },
+        include: { items: true }
+      });
+
+      // Restore inventory levels and log stock movements
+      for (const item of saleRecord.items) {
+        await tx.inventory.update({
+          where: { variantId: item.variantId },
+          data: { quantity: { increment: item.quantity } }
+        });
+
+        await tx.stockMovement.create({
+          data: {
+            variantId: item.variantId,
+            quantity: item.quantity,
+            type: 'RESTOCK',
+            reason: `Refund Ref: ${saleId} | Reason: ${reason}`
+          }
+        });
+      }
+
+      return updatedSale;
+    });
+
+    // Log the refund to Audit Trail
+    await logActivity(null, refundedBy, "SALE_REFUNDED", `Refunded transaction ref: ${saleId}. Reason: ${reason}`);
+
+    // Queue sync for restored inventory and sale status
+    cloudSyncService.queueSync('Sale', saleId).catch(console.error);
+    for (const item of sale.items) {
       cloudSyncService.queueSync('Inventory', item.variantId).catch(console.error);
     }
 

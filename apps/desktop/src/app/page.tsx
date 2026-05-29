@@ -12,6 +12,7 @@ import Analytics from "@/components/Analytics";
 import SystemSetup from "@/components/SystemSetup";
 import Login from "@/components/Login";
 import SetupWizard from "@/components/SetupWizard";
+import AuditLogs from "@/components/AuditLogs";
 import { useAuth } from "@/components/AuthContext";
 
 export default function Home() {
@@ -19,7 +20,7 @@ export default function Home() {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
   const [globalAlert, setGlobalAlert] = useState<string | null>(null);
-  const { isAuthenticated, user, logout, isAdmin, isOnline } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin, isSupervisor, isOnline } = useAuth();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -109,6 +110,11 @@ export default function Home() {
       )
     },
     {
+      name: 'Audit Log', icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      )
+    },
+    {
       name: 'System Setup', icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
       )
@@ -178,8 +184,12 @@ export default function Home() {
         <nav className={`flex-1 space-y-1 pr-2 ${sidebarExpanded ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'}`}>
           {menuItems
             .filter(item => {
-              const adminOnly = ['Dashboard', 'Sales Records', 'Analytics', 'Product Manager', 'System Setup'];
-              if (!isAdmin && adminOnly.includes(item.name)) return false;
+              if (user?.role === 'STAFF') {
+                return ['Dashboard', 'Sales Terminal', 'Sales Records', 'Customer Manager', 'Inventory Stock'].includes(item.name);
+              }
+              if (user?.role === 'SUPERVISOR') {
+                return ['Dashboard', 'Sales Terminal', 'Sales Records', 'Customer Manager', 'Inventory Stock', 'Analytics', 'Audit Log'].includes(item.name);
+              }
               return true;
             })
             .map((item) => (
@@ -224,7 +234,9 @@ export default function Home() {
                   className="whitespace-nowrap overflow-hidden"
                 >
                   <div className="text-sm font-bold">{user?.username}</div>
-                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{user?.role === 'ADMIN' ? 'System Admin' : 'Staff Member'}</div>
+                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">
+                    {user?.role === 'ADMIN' ? 'System Admin' : user?.role === 'SUPERVISOR' ? 'Supervisor' : 'Staff Member'}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -256,7 +268,9 @@ export default function Home() {
           >
             <div className="text-right">
               <div className="text-sm font-bold text-foreground">{user?.username}</div>
-              <div className="text-[10px] text-orange-500 font-bold uppercase tracking-widest">{user?.role === 'ADMIN' ? 'Administrator' : 'Staff Member'}</div>
+              <div className="text-[10px] text-orange-500 font-bold uppercase tracking-widest">
+                {user?.role === 'ADMIN' ? 'Administrator' : user?.role === 'SUPERVISOR' ? 'Supervisor' : 'Staff Member'}
+              </div>
             </div>
             <button
               onClick={logout}
@@ -284,17 +298,18 @@ export default function Home() {
               }}
               className={activeTab === 'Sales Terminal' ? 'max-w-none w-full h-full' : 'max-w-[1400px] w-full mx-auto'}
             >
-              {activeTab === 'Dashboard' && user?.role === 'ADMIN' && <InventoryDashboard />}
+              {activeTab === 'Dashboard' && <InventoryDashboard />}
               {activeTab === 'Sales Terminal' && <SalesTerminal />}
-              {activeTab === 'Sales Records' && user?.role === 'ADMIN' && <SalesRecords />}
+              {activeTab === 'Sales Records' && <SalesRecords />}
               {activeTab === 'Customer Manager' && <CustomerList />}
               {activeTab === 'Product Manager' && user?.role === 'ADMIN' && <ProductForm />}
               {activeTab === 'Inventory Stock' && <InventoryStock />}
-              {activeTab === 'Analytics' && user?.role === 'ADMIN' && <Analytics />}
+              {activeTab === 'Analytics' && ['ADMIN', 'SUPERVISOR'].includes(user?.role || '') && <Analytics />}
               {activeTab === 'System Setup' && user?.role === 'ADMIN' && <SystemSetup />}
+              {activeTab === 'Audit Log' && ['ADMIN', 'SUPERVISOR'].includes(user?.role || '') && <AuditLogs />}
 
               {/* Fallback for unauthorized access */}
-              {(['Dashboard', 'Sales Records', 'Analytics', 'Product Manager', 'System Setup'].includes(activeTab) && user?.role !== 'ADMIN') && (
+              {((activeTab === 'Product Manager' || activeTab === 'System Setup') && user?.role !== 'ADMIN') && (
                 <div className="h-[60vh] flex flex-col items-center justify-center text-center space-y-6">
                   <div className="w-20 h-20 rounded-3xl bg-rose-500/10 text-rose-500 flex items-center justify-center shadow-xl">
                     <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m0 0v2m0-2h2m-2 0H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>

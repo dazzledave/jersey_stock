@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from './AuthContext';
 
 interface SaleItem {
   id: string;
@@ -30,6 +31,11 @@ interface Sale {
     phone: string;
   };
   items: SaleItem[];
+  subtotal?: number;
+  discountAmount?: number;
+  discountType?: string;
+  isRefunded?: boolean;
+  refundReason?: string;
 }
 
 export default function SalesRecords() {
@@ -42,6 +48,13 @@ export default function SalesRecords() {
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [shopName, setShopName] = useState('Awards Centre');
   const [address, setAddress] = useState('Accra, Ghana');
+
+  const { user, isSupervisor } = useAuth();
+  const role = user?.role || 'STAFF';
+  const [showRefundForm, setShowRefundForm] = useState(false);
+  const [refundReason, setRefundReason] = useState('');
+  const [isRefunding, setIsRefunding] = useState(false);
+  const [refundError, setRefundError] = useState('');
 
   useEffect(() => {
     const saved = localStorage.getItem('ac_settings');
@@ -56,15 +69,17 @@ export default function SalesRecords() {
   }, []);
 
   useEffect(() => {
+    let list = records;
+    if (role === 'STAFF' && user?.username) {
+      list = list.filter(r => r.soldBy === user.username);
+    }
     if (dateFilter) {
-      const filtered = records.filter(r =>
+      list = list.filter(r =>
         new Date(r.createdAt).toISOString().split('T')[0] === dateFilter
       );
-      setFilteredRecords(filtered);
-    } else {
-      setFilteredRecords(records);
     }
-  }, [dateFilter, records]);
+    setFilteredRecords(list);
+  }, [dateFilter, records, role, user]);
 
   const fetchSales = async () => {
     try {
@@ -76,6 +91,37 @@ export default function SalesRecords() {
       console.error('Failed to fetch sales:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRefund = async () => {
+    if (!selectedSale || !refundReason) return;
+    setIsRefunding(true);
+    setRefundError('');
+    try {
+      const response = await fetch(`/api/sales/${selectedSale.id}/refund`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          refundedBy: user?.username || 'System',
+          reason: refundReason
+        })
+      });
+
+      if (response.ok) {
+        await fetchSales();
+        setShowRefundForm(false);
+        setRefundReason('');
+        setSelectedSale(null);
+        setRefundError('');
+      } else {
+        const error = await response.json();
+        setRefundError(error.error || 'Refund failed');
+      }
+    } catch (err) {
+      setRefundError('Network error occurred.');
+    } finally {
+      setIsRefunding(false);
     }
   };
 
@@ -170,10 +216,15 @@ export default function SalesRecords() {
                     <td className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-tight">#{r.id.substring(0, 8)}</td>
                     <td className="px-6 py-5 text-[10px] font-bold text-foreground">{new Date(r.createdAt).toLocaleString()}</td>
                     <td className="px-6 py-5 text-[10px] font-black text-orange-500 uppercase tracking-widest">{r.soldBy || 'System'}</td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 flex items-center gap-2">
                       <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${r.debtorName ? 'bg-orange-500/10 text-orange-500' : r.paymentMethod === 'free' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-500/10 text-slate-500'}`}>
                         {r.debtorName ? 'Credit' : r.paymentMethod === 'free' ? 'Free' : 'Standard'}
                       </span>
+                      {r.isRefunded && (
+                        <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-500 border border-rose-500/30 text-[8px] font-black uppercase tracking-widest">
+                          Refunded
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-5 text-[10px] font-black text-foreground">{currency}{(r.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -261,8 +312,25 @@ export default function SalesRecords() {
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-dashed border-border-subtle space-y-2">
-                  <div className="flex justify-between text-xl font-black text-foreground">
+                {selectedSale.discountAmount && selectedSale.discountAmount > 0 && (
+                  <div className="space-y-1 py-2 border-t border-dashed border-border-subtle text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span className="text-foreground">
+                        {currency}{(selectedSale.subtotal ? (selectedSale.subtotal / (currency === 'GH₵' ? 1 : (exchangeRate || 1))) : (selectedSale.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1)))).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-emerald-500">
+                      <span>Discount</span>
+                      <span>
+                        -{selectedSale.discountType === 'percentage' ? `${selectedSale.discountAmount}%` : `${currency}${(selectedSale.discountAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toFixed(2)}`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-6 border-t border-dashed border-border-subtle space-y-3">
+                  <div className="flex justify-between items-center text-xl font-black text-foreground">
                     <span>TOTAL</span>
                     <span>{currency}{(selectedSale.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
@@ -272,16 +340,73 @@ export default function SalesRecords() {
                     </span>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic">Method: {selectedSale.paymentMethod}</p>
                   </div>
+                  
+                  {selectedSale.isRefunded && (
+                    <div className="bg-rose-500/10 p-3 rounded-xl border border-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-wider text-center mt-3">
+                      ⚠ Transaction Refunded / Voided
+                      {selectedSale.refundReason && <p className="text-[9px] font-normal text-rose-400 normal-case mt-1">Reason: {selectedSale.refundReason}</p>}
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="p-6 bg-brand-bg/30 flex gap-4">
+              <div className="p-6 bg-brand-bg/30 flex gap-4 border-t border-border-subtle relative">
+                {/* Custom Inline Refund Form Overlay inside the Modal */}
+                {showRefundForm && (
+                  <div className="absolute inset-0 bg-black/95 backdrop-blur-md flex flex-col justify-center p-6 z-[60]">
+                    <h4 className="text-sm font-black text-rose-500 uppercase tracking-wider mb-1">Void Transaction</h4>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-3 leading-normal">Are you sure you want to refund this sale? Inventory quantities will be automatically restored.</p>
+                    
+                    {refundError && (
+                      <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-2 rounded-lg text-[9px] font-bold uppercase tracking-wider mb-3">
+                        ⚠ {refundError}
+                      </div>
+                    )}
+
+                    <input 
+                      type="text"
+                      placeholder="Reason for Refund / Void..."
+                      value={refundReason}
+                      onChange={(e) => setRefundReason(e.target.value)}
+                      className="w-full bg-surface p-2.5 rounded-lg border border-border-subtle text-[11px] font-bold text-foreground outline-none focus:border-rose-500 mb-3 placeholder:text-slate-500 shadow-inner"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setShowRefundForm(false);
+                          setRefundReason('');
+                          setRefundError('');
+                        }}
+                        className="flex-1 bg-surface text-slate-400 font-black py-2.5 rounded-lg text-[9px] uppercase tracking-widest border border-border-subtle hover:text-foreground transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleRefund}
+                        disabled={!refundReason || isRefunding}
+                        className="flex-1 bg-rose-600 text-white font-black py-2.5 rounded-lg text-[9px] uppercase tracking-widest hover:bg-rose-700 disabled:bg-slate-800 disabled:text-slate-600 transition-all shadow-md"
+                      >
+                        {isRefunding ? 'Wait...' : 'Confirm Refund'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={() => window.print()}
-                  className="flex-1 bg-foreground text-brand-bg font-black py-4 rounded-xl text-[10px] uppercase tracking-widest hover:bg-orange-500 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 bg-slate-800 text-white border border-border-subtle font-black py-4 rounded-xl text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                   Print Receipt
                 </button>
+
+                {(role === 'ADMIN' || isSupervisor) && !selectedSale.isRefunded && (
+                  <button
+                    onClick={() => setShowRefundForm(true)}
+                    className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-black py-4 rounded-xl text-[10px] uppercase tracking-widest transition-all shadow-lg active:scale-95"
+                  >
+                    Refund Sale
+                  </button>
+                )}
               </div>
             </motion.div>
 

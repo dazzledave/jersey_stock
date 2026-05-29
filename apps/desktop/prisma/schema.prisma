@@ -130,6 +130,10 @@ model Sale {
   customer      Customer?  @relation(fields: [customerId], references: [id])
   items         SaleItem[]
   payments      String?    // SQLite doesn't support Json, changed to String (will store stringified JSON)
+  discountAmount Float      @default(0)
+  discountType  String?    // "percentage" or "fixed"
+  isRefunded    Boolean    @default(false)
+  refundReason  String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @default(now()) @updatedAt
 
@@ -147,4 +151,15 @@ model SaleItem {
   createdAt DateTime       @default(now())
 
   @@map("sale_items")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  username  String?
+  action    String   // e.g. "SALE_REFUNDED", "STOCK_WRITE_OFF", "LOGIN", "PRODUCT_CREATED"
+  details   String   // Text or stringified JSON with audit details
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
 }

@@ -16,6 +16,7 @@ interface AuthContextType {
   updateUser: (newUser: Partial<User>) => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isSupervisor: boolean;
   isOnline: boolean;
 }
 
@@ -129,6 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateUser,
       isAuthenticated: !!token,
       isAdmin: user?.role === 'ADMIN',
+      isSupervisor: user?.role === 'SUPERVISOR',
       isOnline
     }}>
       {children}
