@@ -181,7 +181,7 @@ export default function Home() {
           </button>
         )}
 
-        <nav className={`flex-1 space-y-1 pr-2 ${sidebarExpanded ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'}`}>
+        <nav className="flex-1 space-y-1 pr-1 overflow-y-auto custom-scrollbar">
           {menuItems
             .filter(item => {
               if (user?.role === 'STAFF') {

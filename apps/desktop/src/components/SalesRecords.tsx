@@ -255,12 +255,62 @@ export default function SalesRecords() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-6"
           >
-            <motion.div
+            <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-surface w-full max-w-md rounded-2xl border border-border-subtle shadow-2xl overflow-hidden"
+              className="bg-surface w-full max-w-md rounded-2xl border border-border-subtle shadow-2xl overflow-hidden relative"
             >
+              {/* Custom full-screen Overlay inside the modal for Refunds */}
+              {showRefundForm && (
+                <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col justify-center p-8 z-[60] space-y-6">
+                  <div className="flex items-center gap-3 text-rose-500 mb-2">
+                    <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <h4 className="text-lg font-black text-rose-500 uppercase tracking-widest">Void Transaction</h4>
+                  </div>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider leading-relaxed">
+                    Are you sure you want to refund this sale? This action is permanent, and inventory quantities will be automatically restored to stock.
+                  </p>
+                  
+                  {refundError && (
+                    <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3 rounded-xl text-xs font-bold uppercase tracking-wider">
+                      ⚠ {refundError}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Reason for Refund / Void</label>
+                    <input 
+                      type="text"
+                      placeholder="e.g. Customer returned items, incorrect size..."
+                      value={refundReason}
+                      onChange={(e) => setRefundReason(e.target.value)}
+                      className="w-full bg-surface p-4 rounded-xl border border-border-subtle text-sm font-bold text-foreground outline-none focus:border-rose-500 placeholder:text-slate-600 shadow-inner"
+                    />
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      onClick={() => {
+                        setShowRefundForm(false);
+                        setRefundReason('');
+                        setRefundError('');
+                      }}
+                      className="flex-1 bg-transparent hover:bg-white/5 border border-border-subtle text-slate-300 font-black py-4 rounded-xl text-[10px] uppercase tracking-widest transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleRefund}
+                      disabled={!refundReason || isRefunding}
+                      className="flex-1 bg-rose-600 text-white font-black py-4 rounded-xl text-[10px] uppercase tracking-widest hover:bg-rose-700 disabled:bg-slate-800 disabled:text-slate-600 transition-all shadow-lg shadow-rose-900/20"
+                    >
+                      {isRefunding ? 'Refunding...' : 'Confirm Refund'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-brand-bg/30">
                 <div className="flex items-center gap-3">
                   <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -317,7 +367,7 @@ export default function SalesRecords() {
                     <div className="flex justify-between">
                       <span>Subtotal</span>
                       <span className="text-foreground">
-                        {currency}{(selectedSale.subtotal ? (selectedSale.subtotal / (currency === 'GH₵' ? 1 : (exchangeRate || 1))) : (selectedSale.totalAmount / (currency === 'GH₵' ? 1 : (exchangeRate || 1)))).toFixed(2)}
+                        {currency}{(selectedSale.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) / (currency === 'GH₵' ? 1 : (exchangeRate || 1))).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between text-emerald-500">
@@ -350,47 +400,6 @@ export default function SalesRecords() {
                 </div>
               </div>
               <div className="p-6 bg-brand-bg/30 flex gap-4 border-t border-border-subtle relative">
-                {/* Custom Inline Refund Form Overlay inside the Modal */}
-                {showRefundForm && (
-                  <div className="absolute inset-0 bg-black/95 backdrop-blur-md flex flex-col justify-center p-6 z-[60]">
-                    <h4 className="text-sm font-black text-rose-500 uppercase tracking-wider mb-1">Void Transaction</h4>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-3 leading-normal">Are you sure you want to refund this sale? Inventory quantities will be automatically restored.</p>
-                    
-                    {refundError && (
-                      <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-2 rounded-lg text-[9px] font-bold uppercase tracking-wider mb-3">
-                        ⚠ {refundError}
-                      </div>
-                    )}
-
-                    <input 
-                      type="text"
-                      placeholder="Reason for Refund / Void..."
-                      value={refundReason}
-                      onChange={(e) => setRefundReason(e.target.value)}
-                      className="w-full bg-surface p-2.5 rounded-lg border border-border-subtle text-[11px] font-bold text-foreground outline-none focus:border-rose-500 mb-3 placeholder:text-slate-500 shadow-inner"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setShowRefundForm(false);
-                          setRefundReason('');
-                          setRefundError('');
-                        }}
-                        className="flex-1 bg-surface text-slate-400 font-black py-2.5 rounded-lg text-[9px] uppercase tracking-widest border border-border-subtle hover:text-foreground transition-all"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleRefund}
-                        disabled={!refundReason || isRefunding}
-                        className="flex-1 bg-rose-600 text-white font-black py-2.5 rounded-lg text-[9px] uppercase tracking-widest hover:bg-rose-700 disabled:bg-slate-800 disabled:text-slate-600 transition-all shadow-md"
-                      >
-                        {isRefunding ? 'Wait...' : 'Confirm Refund'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 <button
                   onClick={() => window.print()}
                   className="flex-1 bg-slate-800 text-white border border-border-subtle font-black py-4 rounded-xl text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-all flex items-center justify-center gap-2"

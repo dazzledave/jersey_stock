@@ -30,6 +30,14 @@ export default function SystemSetup() {
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, username: string } | null>(null);
   const [confirmResetLogs, setConfirmResetLogs] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
 
   useEffect(() => {
     fetchSettings();
@@ -99,13 +107,13 @@ export default function SystemSetup() {
       if (res.ok) {
         setNewUser({ username: '', password: '', role: 'STAFF' });
         fetchUsers();
-        alert('Staff member added successfully!');
+        showToast('Staff member added successfully!', 'success');
       } else {
         const data = await res.json();
-        alert('Error: ' + data.error);
+        showToast(data.error || 'Failed to create user.', 'error');
       }
     } catch (err) {
-      alert('Failed to connect to server.');
+      showToast('Failed to connect to server.', 'error');
     } finally {
       setIsCreatingUser(false);
     }
@@ -114,7 +122,7 @@ export default function SystemSetup() {
   const handleDeleteUser = (id: string) => {
     // 1. Check if trying to delete self
     if (id === user?.id) {
-      alert("Security Alert: You cannot delete your own account while logged in.");
+      showToast("You cannot delete your own account while logged in.", 'error');
       return;
     }
 
@@ -123,7 +131,7 @@ export default function SystemSetup() {
     const adminCount = users.filter(u => u.role === 'ADMIN').length;
     
     if (targetUser?.role === 'ADMIN' && adminCount <= 1) {
-      alert("Security Alert: This is the only Administrator account. You must create another Admin before deleting this one to avoid system lockout.");
+      showToast("This is the only Administrator account. You must create another Admin before deleting this one to avoid system lockout.", 'error');
       return;
     }
 
@@ -139,11 +147,12 @@ export default function SystemSetup() {
       if (res.ok) {
         fetchUsers();
         setDeleteConfirm(null);
+        showToast('User deleted successfully.', 'success');
       } else {
-        alert('Failed to delete user.');
+        showToast('Failed to delete user.', 'error');
       }
     } catch (err) {
-      alert('Failed to delete user.');
+      showToast('Failed to delete user.', 'error');
     }
   };
 
@@ -199,16 +208,16 @@ export default function SystemSetup() {
         localStorage.setItem('ac_settings', JSON.stringify(finalSettings));
         setTimeout(() => {
           setIsSaving(false);
-          alert('Settings saved successfully and synced to server!');
+          showToast('Settings saved successfully and synced to server!', 'success');
         }, 800);
       } else {
-        alert('Failed to save to server, saved locally only.');
+        showToast('Failed to save to server, saved locally only.', 'error');
         setSettings(finalSettings);
         localStorage.setItem('ac_settings', JSON.stringify(finalSettings));
         setIsSaving(false);
       }
     } catch (err) {
-      alert('Network error. Settings saved locally only.');
+      showToast('Network error. Settings saved locally only.', 'error');
       setSettings(finalSettings);
       localStorage.setItem('ac_settings', JSON.stringify(finalSettings));
       setIsSaving(false);
@@ -228,12 +237,12 @@ export default function SystemSetup() {
       const data = await res.json();
       if (res.ok) {
         setLastSync(new Date().toLocaleString());
-        alert('Cloud synchronization successful!');
+        showToast('Cloud synchronization successful!', 'success');
       } else {
-        alert('Sync failed: ' + (data.error || 'Unknown error'));
+        showToast('Sync failed: ' + (data.error || 'Unknown error'), 'error');
       }
     } catch (err) {
-      alert('Network error. Cloud synchronization failed.');
+      showToast('Network error. Cloud synchronization failed.', 'error');
     } finally {
       setIsSyncing(false);
     }
@@ -257,7 +266,7 @@ export default function SystemSetup() {
       downloadAnchorNode.click();
       downloadAnchorNode.remove();
     } catch (error) {
-      alert('Failed to generate backup. Is the server running?');
+      showToast('Failed to generate backup. Is the server running?', 'error');
     }
   };
 
@@ -274,10 +283,10 @@ export default function SystemSetup() {
       });
       if (res.ok) {
         setLastSync(null);
-        alert('Sync logs have been purged successfully.');
+        showToast('Sync logs have been purged successfully.', 'success');
       }
     } catch (err) {
-      alert('Failed to reset logs.');
+      showToast('Failed to reset logs.', 'error');
     } finally {
       setIsResetting(false);
     }
@@ -301,14 +310,14 @@ export default function SystemSetup() {
             role: data.user.role 
           });
         }
-        alert('Profile updated successfully!');
+        showToast('Profile updated successfully!', 'success');
         setProfileData(prev => ({ ...prev, password: '' }));
       } else {
         const data = await res.json();
-        alert('Error: ' + data.error);
+        showToast('Error: ' + data.error, 'error');
       }
     } catch (err) {
-      alert('Failed to connect to server.');
+      showToast('Failed to connect to server.', 'error');
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -564,6 +573,7 @@ export default function SystemSetup() {
                         className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground appearance-none pr-10 cursor-pointer"
                       >
                          <option value="STAFF">Sales Staff</option>
+                         <option value="SUPERVISOR">Supervisor / Manager</option>
                          <option value="ADMIN">System Admin</option>
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-orange-500 transition-colors">
@@ -595,7 +605,7 @@ export default function SystemSetup() {
                  {users.map((u) => (
                     <div key={u.id} className="flex items-center justify-between p-6 bg-brand-bg/50 rounded-xl border border-border-subtle hover:border-orange-200 transition-all group">
                        <div className="flex items-center gap-5">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xs ${u.role === 'ADMIN' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xs ${u.role === 'ADMIN' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : u.role === 'SUPERVISOR' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
                              {u.username.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
@@ -734,6 +744,33 @@ export default function SystemSetup() {
                    </button>
                 </div>
              </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Action Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-2xl max-w-sm ${
+              toast.type === 'success' 
+                ? 'bg-emerald-950/80 border-emerald-500/30 text-emerald-400 backdrop-blur-md' 
+                : 'bg-rose-950/80 border-rose-500/30 text-rose-400 backdrop-blur-md'
+            }`}
+          >
+            {toast.type === 'success' ? (
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            )}
+            <span className="text-xs font-bold tracking-wide">{toast.message}</span>
           </motion.div>
         )}
       </AnimatePresence>

@@ -19,6 +19,8 @@ export default function AuditLogs() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const { user, isAdmin } = useAuth();
 
   useEffect(() => {
@@ -42,6 +44,13 @@ export default function AuditLogs() {
     setFilteredLogs(result);
   }, [search, actionFilter, logs]);
 
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
+
   const fetchLogs = async () => {
     try {
       const res = await fetch('/api/audit-logs');
@@ -58,21 +67,20 @@ export default function AuditLogs() {
   };
 
   const handlePurgeLogs = async () => {
-    if (!window.confirm('Are you sure you want to permanently clear all activity and audit logs? This action cannot be undone.')) {
-      return;
-    }
-    
+    setShowConfirmModal(false);
     setIsLoading(true);
     try {
       const res = await fetch(`/api/audit-logs?userId=${user?.id}&username=${user?.username}`, {
         method: 'DELETE'
       });
       if (res.ok) {
-        alert('Audit logs have been successfully purged.');
+        showToast('Audit logs have been successfully purged.', 'success');
         fetchLogs();
+      } else {
+        showToast('Failed to purge audit logs.', 'error');
       }
     } catch (err) {
-      alert('Failed to clear logs.');
+      showToast('Failed to clear logs.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +117,7 @@ export default function AuditLogs() {
         
         {isAdmin && (
           <button 
-            onClick={handlePurgeLogs}
+            onClick={() => setShowConfirmModal(true)}
             className="bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-lg transition-all shadow-lg flex items-center gap-2"
           >
              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -178,6 +186,76 @@ export default function AuditLogs() {
           </table>
         </div>
       </div>
+
+      {/* Custom Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-surface border border-border-subtle w-full max-w-md rounded-xl p-6 shadow-2xl space-y-6"
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-full bg-rose-500/10 text-rose-500">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-white uppercase tracking-wider">Purge Audit Logs?</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Are you sure you want to permanently clear all activity and audit logs? This action is destructive and cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="bg-transparent hover:bg-white/5 border border-border-subtle text-slate-300 hover:text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePurgeLogs}
+                  className="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors shadow-lg shadow-rose-900/20"
+                >
+                  Confirm Purge
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Action Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-2xl max-w-sm ${
+              toast.type === 'success' 
+                ? 'bg-emerald-950/80 border-emerald-500/30 text-emerald-400 backdrop-blur-md' 
+                : 'bg-rose-950/80 border-rose-500/30 text-rose-400 backdrop-blur-md'
+            }`}
+          >
+            {toast.type === 'success' ? (
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            )}
+            <span className="text-xs font-bold tracking-wide">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
