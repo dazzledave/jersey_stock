@@ -172,7 +172,7 @@ export default function SalesTerminal() {
       alert("Please enter a Debtor Name for credit sales.");
       return;
     }
-    if (saleType === 'Free' && !authorizer) {
+    if (saleType === 'Free' && user?.role !== 'ADMIN' && !authorizer) {
       alert("Please enter the name of the Admin who authorized this free sale.");
       return;
     }
@@ -180,6 +180,7 @@ export default function SalesTerminal() {
     setIsProcessing(true);
 
     const finalPaymentMethod = saleType === 'Free' ? 'free' : (saleType === 'Credit' ? 'credit' : paymentMethod.toLowerCase());
+    const finalAuthorizer = saleType === 'Free' ? (user?.role === 'ADMIN' ? (authorizer || user?.username || 'Admin') : authorizer) : null;
     const timestamp = new Date();
 
     try {
@@ -193,7 +194,7 @@ export default function SalesTerminal() {
           soldBy: user?.username,
           debtorName: saleType === 'Credit' ? debtorName : null,
           debtorPhone: saleType === 'Credit' ? debtorPhone : null,
-          authorizer: saleType === 'Free' ? authorizer : null,
+          authorizer: finalAuthorizer,
           payments: splitPayments.length > 0 ? splitPayments : [{ method: finalPaymentMethod, amount: discountedTotal }],
           discountAmount: discountAmount,
           discountType: discountType,
@@ -570,13 +571,20 @@ export default function SalesTerminal() {
                   exit={{ height: 0, opacity: 0 }}
                   className="space-y-2 overflow-hidden"
                 >
-                  <input
-                    type="text"
-                    placeholder="Authorized By (Admin Name)"
-                    value={authorizer}
-                    onChange={(e) => setAuthorizer(e.target.value)}
-                    className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
-                  />
+                  {user?.role === 'ADMIN' ? (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-3 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Self-Authorized as Administrator ({user?.username})
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="Authorized By (Admin Name)"
+                      value={authorizer}
+                      onChange={(e) => setAuthorizer(e.target.value)}
+                      className="w-full bg-brand-bg/50 p-2.5 rounded-lg border border-border-subtle text-[10px] font-bold outline-none focus:border-orange-500 text-foreground placeholder:text-slate-400"
+                    />
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
