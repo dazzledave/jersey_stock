@@ -33,6 +33,8 @@ interface Summary {
   todayTransactions: number;
   yesterdaySales: number;
   yesterdayTransactions: number;
+  myTodaySales?: number;
+  myTodayTransactions?: number;
   recentTransactions: RecentItem[];
   topProductToday: { name: string; quantity: number; revenue: number } | null;
   chartData: { name: string; value: number }[];
