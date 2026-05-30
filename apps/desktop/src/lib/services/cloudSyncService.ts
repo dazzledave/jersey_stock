@@ -29,6 +29,7 @@ export const cloudSyncService = {
       
       if (!envUrl || !envKey) return null;
       
+      console.log(`[SYNC] Fallback client using URL: ${envUrl} and Key (prefix): ${envKey.slice(0, 10)}... (suffix): ${envKey.slice(-10)}`);
       return createClient(envUrl.trim(), envKey.trim());
     }
 
@@ -171,150 +172,215 @@ export const cloudSyncService = {
     const supabase = await cloudSyncService.getSupabaseClient();
     if (!supabase) return;
 
+    // 1. Sync Categories
     try {
-      // 1. Sync Categories
-      const { data: categories } = await supabase.from('categories').select('*');
+      const { data: categories, error: catErr } = await supabase.from('categories').select('*');
+      if (catErr) throw catErr;
+      console.log(`[SYNC] Downsync fetched ${categories?.length} categories from cloud.`);
       if (categories) {
         const remoteCatIds = categories.map(cat => cat.id);
-        await prisma.category.deleteMany({
-          where: { id: { notIn: remoteCatIds } }
-        });
-        for (const cat of categories) {
-          await prisma.category.upsert({
-            where: { id: cat.id },
-            update: { name: cat.name },
-            create: cat
+        try {
+          await prisma.category.deleteMany({
+            where: { id: { notIn: remoteCatIds } }
           });
-        }
-      }
-
-      // 2. Sync Products
-      const { data: products } = await supabase.from('products').select('*');
-      if (products) {
-        const remoteProdIds = products.map(prod => prod.id);
-        const localProdsToDelete = await prisma.product.findMany({
-          where: { id: { notIn: remoteProdIds } },
-          include: { variants: true }
-        });
-        if (localProdsToDelete.length > 0) {
-          const variantIdsToDelete = localProdsToDelete.flatMap(p => p.variants.map(v => v.id));
-          if (variantIdsToDelete.length > 0) {
-            await prisma.stockMovement.deleteMany({
-              where: { variantId: { in: variantIdsToDelete } }
-            });
-            await prisma.saleItem.deleteMany({
-              where: { variantId: { in: variantIdsToDelete } }
-            });
-          }
-          await prisma.product.deleteMany({
-            where: { id: { notIn: remoteProdIds } }
-          });
-        }
-        for (const prod of products) {
-          await prisma.product.upsert({
-            where: { id: prod.id },
-            update: { 
-              name: prod.name, 
-              brand: prod.brand, 
-              basePrice: prod.basePrice, 
-              costPrice: prod.costPrice,
-              imageUrl: prod.imageUrl,
-              categoryId: prod.categoryId,
-              isActive: prod.isActive ?? true
-            },
-            create: prod
-          });
-        }
-      }
-
-      // 3. Sync Variants
-      const { data: variants } = await supabase.from('product_variants').select('*');
-      if (variants) {
-        const remoteVariantIds = variants.map(v => v.id);
-        const localVariantsToDelete = await prisma.productVariant.findMany({
-          where: { id: { notIn: remoteVariantIds } }
-        });
-        if (localVariantsToDelete.length > 0) {
-          const varIds = localVariantsToDelete.map(v => v.id);
-          await prisma.stockMovement.deleteMany({
-            where: { variantId: { in: varIds } }
-          });
-          await prisma.saleItem.deleteMany({
-            where: { variantId: { in: varIds } }
-          });
-          await prisma.productVariant.deleteMany({
-            where: { id: { notIn: remoteVariantIds } }
-          });
+        } catch (delErr: any) {
+          console.warn('[SYNC] Category deleteMany warning (probably referenced by local products):', delErr.message);
         }
         
-        // SAFETY: Only upsert variants whose parent product actually exists in SQLite!
+        for (const cat of categories) {
+          try {
+            await prisma.category.upsert({
+              where: { id: cat.id },
+              update: { name: cat.name },
+              create: cat
+            });
+          } catch (rowErr: any) {
+            console.error(`[SYNC] Failed to upsert category ${cat.name} (${cat.id}):`, rowErr.message);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('[SYNC] Categories downsync failed:', err.message);
+    }
+
+    // 2. Sync Products
+    try {
+      const { data: products, error: prodErr } = await supabase.from('products').select('*');
+      if (prodErr) throw prodErr;
+      console.log(`[SYNC] Downsync fetched ${products?.length} products from cloud.`);
+      if (products) {
+        const remoteProdIds = products.map(prod => prod.id);
+        try {
+          const localProdsToDelete = await prisma.product.findMany({
+            where: { id: { notIn: remoteProdIds } },
+            include: { variants: true }
+          });
+          if (localProdsToDelete.length > 0) {
+            const variantIdsToDelete = localProdsToDelete.flatMap(p => p.variants.map(v => v.id));
+            if (variantIdsToDelete.length > 0) {
+              await prisma.stockMovement.deleteMany({
+                where: { variantId: { in: variantIdsToDelete } }
+              });
+              await prisma.saleItem.deleteMany({
+                where: { variantId: { in: variantIdsToDelete } }
+              });
+            }
+            await prisma.product.deleteMany({
+              where: { id: { notIn: remoteProdIds } }
+            });
+          }
+        } catch (delErr: any) {
+          console.warn('[SYNC] Product deleteMany warning:', delErr.message);
+        }
+
+        for (const prod of products) {
+          try {
+            // Validate categoryId exists locally first
+            const catExists = await prisma.category.findUnique({ where: { id: prod.categoryId } });
+            if (!catExists) {
+              console.warn(`[SYNC] Skipping product ${prod.name} because parent category ${prod.categoryId} does not exist locally.`);
+              continue;
+            }
+            await prisma.product.upsert({
+              where: { id: prod.id },
+              update: { 
+                name: prod.name, 
+                brand: prod.brand, 
+                basePrice: prod.basePrice, 
+                costPrice: prod.costPrice,
+                imageUrl: prod.imageUrl,
+                categoryId: prod.categoryId,
+                isActive: prod.isActive ?? true
+              },
+              create: prod
+            });
+          } catch (rowErr: any) {
+            console.error(`[SYNC] Failed to upsert product ${prod.name} (${prod.id}):`, rowErr.message);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('[SYNC] Products downsync failed:', err.message);
+    }
+
+    // 3. Sync Variants
+    try {
+      const { data: variants, error: varErr } = await supabase.from('product_variants').select('*');
+      if (varErr) throw varErr;
+      if (variants) {
+        const remoteVariantIds = variants.map(v => v.id);
+        try {
+          const localVariantsToDelete = await prisma.productVariant.findMany({
+            where: { id: { notIn: remoteVariantIds } }
+          });
+          if (localVariantsToDelete.length > 0) {
+            const varIds = localVariantsToDelete.map(v => v.id);
+            await prisma.stockMovement.deleteMany({
+              where: { variantId: { in: varIds } }
+            });
+            await prisma.saleItem.deleteMany({
+              where: { variantId: { in: varIds } }
+            });
+            await prisma.productVariant.deleteMany({
+              where: { id: { notIn: remoteVariantIds } }
+            });
+          }
+        } catch (delErr: any) {
+          console.warn('[SYNC] Variant deleteMany warning:', delErr.message);
+        }
+        
         const localProductIds = (await prisma.product.findMany({ select: { id: true } })).map(p => p.id);
         for (const v of variants) {
-          if (!localProductIds.includes(v.productId)) {
-            console.warn(`[SYNC] Skipping orphan variant ${v.id} because parent product ${v.productId} is missing.`);
-            continue;
+          try {
+            if (!localProductIds.includes(v.productId)) {
+              console.warn(`[SYNC] Skipping orphan variant ${v.id} because parent product ${v.productId} is missing.`);
+              continue;
+            }
+            await prisma.productVariant.upsert({
+              where: { id: v.id },
+              update: { 
+                size: v.size, 
+                color: v.color, 
+                sku: v.sku, 
+                barcode: v.barcode 
+              },
+              create: v
+            });
+          } catch (rowErr: any) {
+            console.error(`[SYNC] Failed to upsert variant ${v.id}:`, rowErr.message);
           }
-          await prisma.productVariant.upsert({
-            where: { id: v.id },
-            update: { 
-              size: v.size, 
-              color: v.color, 
-              sku: v.sku, 
-              barcode: v.barcode 
-            },
-            create: v
-          });
         }
       }
+    } catch (err: any) {
+      console.error('[SYNC] Variants downsync failed:', err.message);
+    }
 
-      // 4. Sync Inventory
-      const { data: inventory } = await supabase.from('inventory').select('*');
+    // 4. Sync Inventory
+    try {
+      const { data: inventory, error: invErr } = await supabase.from('inventory').select('*');
+      if (invErr) throw invErr;
       if (inventory) {
         const remoteVariantIds = inventory.map(inv => inv.variantId);
-        await prisma.inventory.deleteMany({
-          where: { variantId: { notIn: remoteVariantIds } }
-        });
+        try {
+          await prisma.inventory.deleteMany({
+            where: { variantId: { notIn: remoteVariantIds } }
+          });
+        } catch (delErr: any) {
+          console.warn('[SYNC] Inventory deleteMany warning:', delErr.message);
+        }
 
-        // SAFETY: Only upsert inventory records whose variant actually exists in SQLite!
         const localVariantIds = (await prisma.productVariant.findMany({ select: { id: true } })).map(v => v.id);
         for (const inv of inventory) {
-          if (!localVariantIds.includes(inv.variantId)) {
-            console.warn(`[SYNC] Skipping orphan inventory record for variant ${inv.variantId} because variant is missing.`);
-            continue;
+          try {
+            if (!localVariantIds.includes(inv.variantId)) {
+              console.warn(`[SYNC] Skipping orphan inventory record for variant ${inv.variantId} because variant is missing.`);
+              continue;
+            }
+            await prisma.inventory.upsert({
+              where: { variantId: inv.variantId },
+              update: { quantity: inv.quantity, reorderLevel: inv.reorderLevel },
+              create: inv
+            });
+          } catch (rowErr: any) {
+            console.error(`[SYNC] Failed to upsert inventory for variant ${inv.variantId}:`, rowErr.message);
           }
-          await prisma.inventory.upsert({
-            where: { variantId: inv.variantId },
-            update: { quantity: inv.quantity, reorderLevel: inv.reorderLevel },
-            create: inv
-          });
         }
       }
+    } catch (err: any) {
+      console.error('[SYNC] Inventory downsync failed:', err.message);
+    }
 
-      // 5. Sync Audit Logs
-      const { data: auditLogs } = await supabase.from('audit_logs').select('*');
+    // 5. Sync Audit Logs
+    try {
+      const { data: auditLogs, error: auditErr } = await supabase.from('audit_logs').select('*');
+      if (auditErr) throw auditErr;
       if (auditLogs) {
         for (const log of auditLogs) {
-          await prisma.auditLog.upsert({
-            where: { id: log.id },
-            update: {
-              userId: log.userId,
-              username: log.username,
-              action: log.action,
-              details: log.details,
-              createdAt: new Date(log.createdAt)
-            },
-            create: {
-              ...log,
-              createdAt: new Date(log.createdAt)
-            }
-          });
+          try {
+            await prisma.auditLog.upsert({
+              where: { id: log.id },
+              update: {
+                userId: log.userId,
+                username: log.username,
+                action: log.action,
+                details: log.details,
+                createdAt: new Date(log.createdAt)
+              },
+              create: {
+                ...log,
+                createdAt: new Date(log.createdAt)
+              }
+            });
+          } catch (rowErr: any) {
+            console.error(`[SYNC] Failed to upsert audit log ${log.id}:`, rowErr.message);
+          }
         }
       }
-
-      console.log('[SYNC] Downsync complete. All records synchronized.');
     } catch (err: any) {
-      console.error('[SYNC] Downsync failed:', err.message);
+      console.error('[SYNC] Audit logs downsync failed:', err.message);
     }
+
+    console.log('[SYNC] Downsync complete. All records synchronized.');
   },
 
   startWorker: () => {
