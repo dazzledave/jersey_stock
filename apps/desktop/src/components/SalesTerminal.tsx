@@ -20,6 +20,8 @@ interface Product {
   basePrice: number;
   imageUrl?: string;
   variants: Variant[];
+  isActive?: boolean;
+  hasSales?: boolean;
 }
 
 interface CartItem {

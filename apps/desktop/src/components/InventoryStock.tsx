@@ -27,6 +27,8 @@ interface Product {
   categoryId: string;
   category: { id: string, name: string };
   variants: Variant[];
+  isActive?: boolean;
+  hasSales?: boolean;
 }
 
 export default function InventoryStock() {
