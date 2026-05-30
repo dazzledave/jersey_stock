@@ -58,3 +58,10 @@ ServerCrashLog.txt
 # Prisma Generated Client
 src/generated/
 **/src/generated/
+
+# Temporary diagnostic/check/test scripts
+check_*
+test_*
+**/check_*
+**/test_*
+
