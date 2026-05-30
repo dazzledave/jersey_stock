@@ -43,8 +43,20 @@
           "**/*"
         ]
       },
-      "node_modules/.prisma/**/*",
-      "node_modules/@prisma/client/**/*",
+      {
+        "from": "../../node_modules/.prisma",
+        "to": "app/node_modules/.prisma",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../../node_modules/@prisma/client",
+        "to": "app/node_modules/@prisma/client",
+        "filter": [
+          "**/*"
+        ]
+      },
       ".env"
     ],
     "win": {

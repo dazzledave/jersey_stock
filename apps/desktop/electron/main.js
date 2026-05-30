@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS "products" (
     "costPrice" REAL NOT NULL DEFAULT 0,
     "categoryId" TEXT NOT NULL,
     "imageUrl" TEXT,
+    "isActive" INTEGER NOT NULL DEFAULT 1,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "products_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "categories" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
@@ -142,70 +143,91 @@ CREATE TABLE IF NOT EXISTS "sync_logs" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS "audit_logs" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT,
+    "username" TEXT,
+    "action" TEXT NOT NULL,
+    "details" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 `;
 
-function initializeDatabase(dbPath, logStream) {
+function initializeDatabase(dbPath) {
+  const log = (msg) => {
+    console.log(`[FOUNDATION] ${msg}`);
+  };
+ 
   try {
-    console.log(`[FOUNDATION] Initializing/Verifying database at: ${dbPath}`);
+    log(`Initializing/Verifying database at: ${dbPath}`);
     const db = new Database(dbPath);
     db.exec(SCHEMA_SQL);
-    
+     
     const updates = [
       { t: 'products', c: 'brand', d: 'TEXT' },
       { t: 'products', c: 'basePrice', d: 'REAL NOT NULL DEFAULT 0' },
       { t: 'products', c: 'costPrice', d: 'REAL NOT NULL DEFAULT 0' },
       { t: 'products', c: 'imageUrl', d: 'TEXT' },
+      { t: 'products', c: 'isActive', d: 'INTEGER NOT NULL DEFAULT 1' },
       { t: 'product_variants', c: 'size', d: 'TEXT' },
       { t: 'product_variants', c: 'color', d: 'TEXT' },
       { t: 'inventory', c: 'reorderLevel', d: 'INTEGER NOT NULL DEFAULT 5' },
       { t: 'users', c: 'recoveryKey', d: 'TEXT' },
+      { t: 'users', c: 'isActive', d: 'INTEGER NOT NULL DEFAULT 1' },
+      { t: 'users', c: 'lastLogin', d: 'DATETIME' },
       { t: 'sync_logs', c: 'message', d: 'TEXT' },
       { t: 'sync_logs', c: 'error', d: 'TEXT' },
       { t: 'sales', c: 'totalAmount', d: 'REAL NOT NULL DEFAULT 0' },
       { t: 'sales', c: 'debtorName', d: 'TEXT' },
       { t: 'sales', c: 'debtorPhone', d: 'TEXT' },
       { t: 'sales', c: 'authorizer', d: 'TEXT' },
-      { t: 'sales', c: 'payments', d: 'TEXT' }
+      { t: 'sales', c: 'payments', d: 'TEXT' },
+      { t: 'sales', c: 'discountAmount', d: 'REAL NOT NULL DEFAULT 0' },
+      { t: 'sales', c: 'discountType', d: 'TEXT' },
+      { t: 'sales', c: 'isRefunded', d: 'INTEGER NOT NULL DEFAULT 0' },
+      { t: 'sales', c: 'refundReason', d: 'TEXT' }
     ];
-
+ 
     updates.forEach(({ t, c, d }) => {
       try {
         const info = db.prepare(`PRAGMA table_info(${t})`).all();
         if (!info.some(col => col.name === c)) {
-          console.log(`[UPGRADE] Adding missing column '${c}' to table '${t}'...`);
+          log(`Adding missing column '${c}' to table '${t}'...`);
           db.exec(`ALTER TABLE ${t} ADD COLUMN ${c} ${d}`);
         }
-      } catch (err) {}
+      } catch (err) {
+        log(`Upgrade failed for table ${t} column ${c}: ${err.message}`);
+      }
     });
-
+ 
     db.close();
-    console.log(`[FOUNDATION] Database verified and fully upgraded.`);
+    log(`Database verified and fully upgraded.`);
   } catch (err) {
     console.error(`[FOUNDATION] ERROR: ${err.message}`);
   }
 }
-
+ 
 function startServer() {
   const appData = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME || '', 'Library', 'Application Support') : path.join(process.env.HOME || '', '.config'));
   const folderName = 'awards-centre-pos';
   const userDataPath = path.join(appData, folderName);
-  
+   
   if (!fs.existsSync(userDataPath)) {
     fs.mkdirSync(userDataPath, { recursive: true });
   }
-
+ 
   const targetDbPath = path.join(userDataPath, 'jersey_stock.db');
   initializeDatabase(targetDbPath);
-
+ 
   const isDev = !app.isPackaged;
   if (isDev) {
     console.log(`[LAUNCHER] Dev Mode. Assuming external server is running.`);
     return;
   }
-
+ 
   console.log(`[LAUNCHER] Production Mode. Starting server...`);
   let serverPath = path.join(process.resourcesPath, 'app/dist-server/index.js');
-
+ 
   serverProcess = spawn(process.execPath, [serverPath], {
     cwd: path.join(process.resourcesPath, 'app'),
     env: { 
@@ -215,7 +237,7 @@ function startServer() {
       ELECTRON_RUN_AS_NODE: '1', 
       DATABASE_PATH: targetDbPath 
     },
-    stdio: ['ignore', 'pipe', 'pipe'],
+    stdio: 'inherit',
     windowsHide: true
   });
 }

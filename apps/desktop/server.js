@@ -56,23 +56,22 @@ async function ensureDatabaseHealth() {
     await prisma.user.count();
     console.log('[HEALTH CHECK] Database is healthy.');
   } catch (err) {
-    console.log('[HEALTH CHECK] Database incomplete. Running Master Constructor...');
+    console.log('[HEALTH CHECK] Database query failed:', err.message);
     
+    if (!isDev) {
+      console.warn('[HEALTH CHECK] Running in production/packaged mode. Skipping Prisma CLI repairs because devDependencies are not available. Database should be initialized/repaired by the main process.');
+      return;
+    }
+    
+    console.log('[HEALTH CHECK] Running in development. Running Master Constructor via Prisma CLI...');
     try {
       // SMART PATH DETECTION:
       let prismaBinary;
-      if (isDev) {
-        // Try local node_modules first, then parent node_modules (monorepo root)
-        const localPrisma = path.join(__dirname, 'node_modules/prisma/build/index.js');
-        const rootPrisma = path.join(__dirname, '../../node_modules/prisma/build/index.js');
-        prismaBinary = fs.existsSync(localPrisma) ? localPrisma : rootPrisma;
-      } else {
-        prismaBinary = path.join(process.resourcesPath, 'app/node_modules/prisma/build/index.js');
-      }
+      const localPrisma = path.join(__dirname, 'node_modules/prisma/build/index.js');
+      const rootPrisma = path.join(__dirname, '../../node_modules/prisma/build/index.js');
+      prismaBinary = fs.existsSync(localPrisma) ? localPrisma : rootPrisma;
         
-      const schemaPath = isDev
-        ? path.join(__dirname, 'prisma/schema.prisma')
-        : path.join(process.resourcesPath, 'app/prisma/schema.prisma');
+      const schemaPath = path.join(__dirname, 'prisma/schema.prisma');
       
       console.log(`[CONSTRUCTOR] Using schema: ${schemaPath}`);
       
