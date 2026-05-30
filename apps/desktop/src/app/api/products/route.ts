@@ -3,9 +3,11 @@ import { productService } from '@/lib/services/productService';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const products = await productService.getAllProducts();
+    const { searchParams } = new URL(request.url);
+    const includeInactive = searchParams.get('includeInactive') === 'true';
+    const products = await productService.getAllProducts(includeInactive);
     return NextResponse.json(products);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

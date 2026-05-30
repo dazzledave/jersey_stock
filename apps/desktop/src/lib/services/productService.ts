@@ -2,9 +2,10 @@ import { prisma } from '../prisma';
 import { cloudSyncService } from './cloudSyncService';
 
 export const productService = {
-  async getAllProducts() {
-    return await prisma.product.findMany({
-      where: { isActive: true },
+  async getAllProducts(includeInactive: boolean = false) {
+    const whereClause = includeInactive ? {} : { isActive: true };
+    const products = await prisma.product.findMany({
+      where: whereClause,
       include: {
         category: true,
         variants: {
@@ -14,6 +15,18 @@ export const productService = {
         }
       }
     });
+
+    return await Promise.all(products.map(async (p) => {
+      const variantIds = p.variants.map(v => v.id);
+      let hasSales = false;
+      if (variantIds.length > 0) {
+        const count = await prisma.saleItem.count({
+          where: { variantId: { in: variantIds } }
+        });
+        hasSales = count > 0;
+      }
+      return { ...p, hasSales };
+    }));
   },
 
   async getAllCategories() {
@@ -112,17 +125,23 @@ export const productService = {
   },
 
   async updateProduct(id: string, data: any) {
-    const { name, brand, basePrice, costPrice, imageUrl, categoryId } = data;
+    const { name, brand, basePrice, costPrice, imageUrl, categoryId, isActive } = data;
+    
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (brand !== undefined) updateData.brand = brand;
+    if (basePrice !== undefined) updateData.basePrice = basePrice;
+    if (costPrice !== undefined) updateData.costPrice = costPrice;
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    if (isActive !== undefined) updateData.isActive = isActive;
+    
+    if (categoryId !== undefined) {
+      updateData.category = { connect: { id: categoryId } };
+    }
+
     const product = await prisma.product.update({
       where: { id },
-      data: {
-        name,
-        brand,
-        basePrice,
-        costPrice,
-        imageUrl,
-        category: { connect: { id: categoryId } }
-      }
+      data: updateData
     });
 
     cloudSyncService.queueSync('Product', product.id).catch(console.error);

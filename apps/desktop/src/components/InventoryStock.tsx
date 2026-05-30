@@ -41,9 +41,10 @@ export default function InventoryStock() {
   const [editError, setEditError] = useState('');
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, name: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, name: string, hasSales: boolean } | null>(null);
   const [deleteError, setDeleteError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -55,11 +56,12 @@ export default function InventoryStock() {
     }
     fetchProducts();
     fetchCategories();
-  }, []);
+  }, [showArchived]);
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('/api/products');
+      const url = isAdmin && showArchived ? '/api/products?includeInactive=true' : '/api/products';
+      const res = await fetch(url);
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -161,7 +163,8 @@ export default function InventoryStock() {
   const handleDeleteProduct = (productId: string, productName: string) => {
     if (!isAdmin) return;
     setDeleteError('');
-    setDeleteConfirm({ id: productId, name: productName });
+    const targetProd = products.find(p => p.id === productId);
+    setDeleteConfirm({ id: productId, name: productName, hasSales: !!targetProd?.hasSales });
   };
 
   const handleConfirmDelete = async () => {
@@ -173,7 +176,17 @@ export default function InventoryStock() {
         method: 'DELETE'
       });
       if (res.ok) {
-        setProducts(prev => prev.filter(p => p.id !== deleteConfirm.id));
+        if (deleteConfirm.hasSales) {
+          // Soft deleted: If we're showing archived, just update status locally, else filter out
+          if (showArchived) {
+            setProducts(prev => prev.map(p => p.id === deleteConfirm.id ? { ...p, isActive: false } : p));
+          } else {
+            setProducts(prev => prev.filter(p => p.id !== deleteConfirm.id));
+          }
+        } else {
+          // Hard deleted: fully filter out
+          setProducts(prev => prev.filter(p => p.id !== deleteConfirm.id));
+        }
         setDeleteConfirm(null);
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -184,6 +197,22 @@ export default function InventoryStock() {
       setDeleteError('An unexpected error occurred while deleting the product.');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleRestoreProduct = async (productId: string) => {
+    if (!isAdmin) return;
+    try {
+      const res = await fetch(`/api/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: true })
+      });
+      if (res.ok) {
+        setProducts(prev => prev.map(p => p.id === productId ? { ...p, isActive: true } : p));
+      }
+    } catch (err) {
+      console.error('Failed to restore product:', err);
     }
   };
 
@@ -213,7 +242,21 @@ export default function InventoryStock() {
           </div>
           <p className="text-slate-400 text-sm font-medium mt-1">Track and adjust stock levels and pricing for your catalog.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
+          {isAdmin && (
+            <button 
+              onClick={() => setShowArchived(!showArchived)}
+              className={`px-5 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                showArchived 
+                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-500 hover:bg-rose-500/20' 
+                  : 'bg-surface border-border-subtle text-slate-400 hover:border-slate-500 hover:text-foreground hover:bg-slate-50/5'
+              }`}
+              title={showArchived ? 'Hide Archived Products' : 'Show Archived Products'}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+              {showArchived ? 'Hide Archived' : 'Show Archived'}
+            </button>
+          )}
           <div className="relative group">
             <select 
               value={selectedCategory}
@@ -244,7 +287,7 @@ export default function InventoryStock() {
 
       <section className="bg-orange-500/10 p-10 rounded-xl border border-orange-500/20 relative overflow-hidden">
         <div className="relative z-10 flex items-start gap-8">
-           <div className="text-7xl font-bold text-foreground">{products.reduce((acc, p) => acc + p.variants.length, 0)}</div>
+           <div className="text-7xl font-bold text-foreground">{products.filter(p => p.isActive !== false).reduce((acc, p) => acc + p.variants.length, 0)}</div>
            <div className="pt-2">
               <div className="text-2xl font-bold text-foreground">Active SKUs</div>
               <div className="text-sm font-bold text-slate-400 uppercase tracking-widest">Global Catalog Monitor</div>
@@ -268,7 +311,12 @@ export default function InventoryStock() {
                        {product.imageUrl ? <img src={product.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center opacity-20">🖼️</div>}
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-foreground">{product.name}</h3>
+                      <div className="flex items-center gap-3">
+                        <h3 className={`text-lg font-bold ${product.isActive !== false ? 'text-foreground' : 'text-slate-450 line-through opacity-60'}`}>{product.name}</h3>
+                        {product.isActive === false && (
+                          <span className="text-[8px] font-black uppercase px-2.5 py-0.5 bg-rose-500/10 text-rose-500 rounded border border-rose-500/20 tracking-wider">Archived</span>
+                        )}
+                      </div>
                       <div className="flex gap-4 mt-1">
                         <span className="text-[10px] font-black uppercase text-orange-500 tracking-widest">{product.brand}</span>
                         <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{product.category?.name}</span>
@@ -277,27 +325,43 @@ export default function InventoryStock() {
                   </div>
                                 {isAdmin && (
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-4 bg-surface p-2 px-4 rounded-xl border border-border-subtle">
-                        <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Retail Price:</div>
-                        <div className="text-lg font-black text-foreground">{currency}{(product.basePrice / (currency === 'GH₵' || currency === 'GHS' ? 1 : (exchangeRate || 1))).toFixed(2)}</div>
+                      {product.isActive !== false ? (
+                        <>
+                          <div className="flex items-center gap-4 bg-surface p-2 px-4 rounded-xl border border-border-subtle">
+                            <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Retail Price:</div>
+                            <div className="text-lg font-black text-foreground">{currency}{(product.basePrice / (currency === 'GH₵' || currency === 'GHS' ? 1 : (exchangeRate || 1))).toFixed(2)}</div>
+                            <button 
+                              onClick={() => {
+                                setEditError('');
+                                setEditingProduct(product);
+                              }}
+                              className="p-2 rounded-lg bg-brand-bg text-slate-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all"
+                              title="Edit Details"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                          </div>
+                          
+                          <button 
+                            onClick={() => handleDeleteProduct(product.id, product.name)}
+                            className="p-3 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all"
+                            title="Delete Product"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                          </button>
+                        </>
+                      ) : (
                         <button 
-                          onClick={() => {
-                            setEditError('');
-                            setEditingProduct(product);
-                          }}
-                          className="p-2 rounded-lg bg-brand-bg text-slate-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all"
-                          title="Edit Details"
+                          onClick={() => handleRestoreProduct(product.id)}
+                          className="px-5 py-3.5 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm"
+                          title="Restore Product to Active Catalog"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                          </svg>
+                          Restore Product
                         </button>
-                      </div>
-                      
-                      <button 
-                        onClick={() => handleDeleteProduct(product.id, product.name)}
-                        className="p-3 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                      </button>
+                      )}
                     </div>
                    )}
                </div>
@@ -443,10 +507,14 @@ export default function InventoryStock() {
                exit={{ y: 20, opacity: 0 }}
                className="bg-surface w-full max-w-md rounded-2xl border border-border-subtle shadow-2xl overflow-hidden"
              >
-                <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-rose-500/10">
-                   <h3 className="text-xs font-black uppercase tracking-widest text-rose-500 flex items-center gap-2">
-                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                     Confirm Deletion
+                <div className={`p-6 border-b border-border-subtle flex justify-between items-center ${
+                  deleteConfirm.hasSales ? 'bg-amber-500/10 text-amber-500' : 'bg-rose-500/10 text-rose-500'
+                }`}>
+                   <h3 className={`text-xs font-black uppercase tracking-widest flex items-center gap-2 ${
+                     deleteConfirm.hasSales ? 'text-amber-500' : 'text-rose-500'
+                   }`}>
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                     {deleteConfirm.hasSales ? 'Archive Product' : 'Confirm Deletion'}
                    </h3>
                    <button onClick={() => setDeleteConfirm(null)} className="text-slate-400 hover:text-foreground">✕</button>
                 </div>
@@ -456,12 +524,28 @@ export default function InventoryStock() {
                          {deleteError}
                       </div>
                    )}
-                   <p className="text-sm font-medium text-slate-300">
-                     Are you sure you want to permanently delete <strong className="text-white">"{deleteConfirm.name}"</strong>?
-                   </p>
-                   <p className="text-xs font-bold text-rose-500/80 uppercase tracking-wider bg-rose-500/5 p-3 rounded-lg border border-rose-500/10">
-                     ⚠️ This action will also delete all associated variant stocks, inventory logs, and past transaction records for this product. This cannot be undone!
-                   </p>
+                   <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      {deleteConfirm.hasSales ? (
+                        <span>Remove <strong className="text-amber-600 dark:text-amber-400 font-black">"{deleteConfirm.name}"</strong> from your active catalog?</span>
+                      ) : (
+                        <span>Are you sure you want to permanently delete <strong className="text-rose-600 dark:text-rose-450 font-black">"{deleteConfirm.name}"</strong>?</span>
+                      )}
+                    </p>
+                   {deleteConfirm.hasSales ? (
+                     <div className="flex gap-3 items-start bg-amber-500/5 p-4 rounded-xl border border-amber-500/15 text-amber-600 dark:text-amber-400">
+                       <svg className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                       <p className="text-xs font-bold uppercase tracking-wider leading-relaxed">
+                         Past sales will keep their records, and you can restore this product later from Archived Products.
+                       </p>
+                     </div>
+                   ) : (
+                     <div className="flex gap-3 items-start bg-rose-500/5 p-4 rounded-xl border border-rose-500/15 text-rose-600 dark:text-rose-450">
+                       <svg className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                       <p className="text-xs font-bold uppercase tracking-wider leading-relaxed">
+                         This action will permanently delete this product and all associated variant stocks. This cannot be undone!
+                       </p>
+                     </div>
+                   )}
                 </div>
                 <div className="p-6 bg-brand-bg/30 flex gap-3 border-t border-border-subtle">
                    <button 
@@ -474,12 +558,16 @@ export default function InventoryStock() {
                    <button 
                      onClick={handleConfirmDelete} 
                      disabled={isDeleting}
-                     className="flex-1 bg-rose-600 text-white font-black py-3 rounded-xl text-[10px] uppercase tracking-widest hover:bg-rose-500 transition-colors shadow-lg shadow-rose-900/20 flex items-center justify-center gap-2"
+                     className={`flex-1 text-white font-black py-3 rounded-xl text-[10px] uppercase tracking-widest transition-colors shadow-lg flex items-center justify-center gap-2 ${
+                       deleteConfirm.hasSales 
+                         ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/20' 
+                         : 'bg-rose-600 hover:bg-rose-500 shadow-rose-900/20'
+                     }`}
                    >
                      {isDeleting ? (
                        <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                      ) : null}
-                     {isDeleting ? 'Deleting...' : 'Permanently Delete'}
+                     {isDeleting ? 'Processing...' : (deleteConfirm.hasSales ? 'Archive Product' : 'Permanently Delete')}
                    </button>
                 </div>
              </motion.div>
