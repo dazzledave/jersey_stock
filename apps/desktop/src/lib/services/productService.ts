@@ -139,15 +139,24 @@ export const productService = {
 
     const variantIds = product.variants.map(v => v.id);
 
+    // Check if the product has associated sales (SaleItem records) to protect sales history
+    if (variantIds.length > 0) {
+      const saleItemsCount = await prisma.saleItem.count({
+        where: { variantId: { in: variantIds } }
+      });
+
+      if (saleItemsCount > 0) {
+        throw new Error('This product has associated sales history and cannot be deleted. Deleting it would wipe out past receipt records. You can adjust its stock quantity to 0 instead.');
+      }
+    }
+
     // 2. Delete related records locally to prevent foreign key constraint violations
     if (variantIds.length > 0) {
       await prisma.stockMovement.deleteMany({
         where: { variantId: { in: variantIds } }
       });
-      await prisma.saleItem.deleteMany({
-        where: { variantId: { in: variantIds } }
-      });
     }
+
 
     // 3. Delete from local SQLite database (variants and inventory will cascade)
     const deletedProduct = await prisma.product.delete({
