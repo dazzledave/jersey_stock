@@ -382,7 +382,15 @@ export default function InventoryDashboard() {
                           #{tx.id.slice(-6).toUpperCase()}
                         </span>
                         <span className="text-[9px] font-bold text-slate-500">
-                          {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          {(() => {
+                            const date = new Date(tx.createdAt);
+                            const today = new Date();
+                            const isToday = date.getDate() === today.getDate() &&
+                                            date.getMonth() === today.getMonth() &&
+                                            date.getFullYear() === today.getFullYear();
+                            const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                            return isToday ? timeStr : `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} • ${timeStr}`;
+                          })()}
                         </span>
                         {tx.isRefunded && (
                           <span className="text-[7.5px] font-black bg-rose-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">REFUNDED / VOID</span>
@@ -391,7 +399,7 @@ export default function InventoryDashboard() {
                           <span className="text-[7.5px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full uppercase tracking-wider">DISCOUNTED</span>
                         )}
                       </div>
-                      <p className="text-xs font-black truncate uppercase text-slate-200">
+                      <p className="text-xs font-black truncate uppercase text-foreground">
                         {tx.items.map(i => `${i.variant.product.name} (x${i.quantity})`).join(', ')}
                       </p>
                     </div>
