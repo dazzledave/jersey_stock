@@ -219,7 +219,8 @@ export const cloudSyncService = {
               basePrice: prod.basePrice, 
               costPrice: prod.costPrice,
               imageUrl: prod.imageUrl,
-              categoryId: prod.categoryId
+              categoryId: prod.categoryId,
+              isActive: prod.isActive ?? true
             },
             create: prod
           });

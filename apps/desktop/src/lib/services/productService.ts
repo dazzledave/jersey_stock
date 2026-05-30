@@ -4,6 +4,7 @@ import { cloudSyncService } from './cloudSyncService';
 export const productService = {
   async getAllProducts() {
     return await prisma.product.findMany({
+      where: { isActive: true },
       include: {
         category: true,
         variants: {
@@ -32,7 +33,7 @@ export const productService = {
   async deleteCategory(id: string) {
     // Safety check: Prevent deletion if products exist in this category
     const productCount = await prisma.product.count({
-      where: { categoryId: id }
+      where: { categoryId: id, isActive: true }
     });
     if (productCount > 0) {
       throw new Error('This category contains products and cannot be deleted. Please reclassify or delete its products first.');
@@ -140,23 +141,32 @@ export const productService = {
     const variantIds = product.variants.map(v => v.id);
 
     // Check if the product has associated sales (SaleItem records) to protect sales history
+    let hasSales = false;
     if (variantIds.length > 0) {
       const saleItemsCount = await prisma.saleItem.count({
         where: { variantId: { in: variantIds } }
       });
-
-      if (saleItemsCount > 0) {
-        throw new Error('This product has associated sales history and cannot be deleted. Deleting it would wipe out past receipt records. You can adjust its stock quantity to 0 instead.');
-      }
+      hasSales = saleItemsCount > 0;
     }
 
+    if (hasSales) {
+      // SOFT DELETE: Mark as inactive
+      const updatedProduct = await prisma.product.update({
+        where: { id },
+        data: { isActive: false }
+      });
+      // Queue sync update to cloud
+      cloudSyncService.queueSync('Product', id).catch(console.error);
+      return updatedProduct;
+    }
+
+    // HARD DELETE: For test products or products created by mistake with no sales history
     // 2. Delete related records locally to prevent foreign key constraint violations
     if (variantIds.length > 0) {
       await prisma.stockMovement.deleteMany({
         where: { variantId: { in: variantIds } }
       });
     }
-
 
     // 3. Delete from local SQLite database (variants and inventory will cascade)
     const deletedProduct = await prisma.product.delete({
