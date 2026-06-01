@@ -364,6 +364,54 @@ export const cloudSyncService = {
       console.error('[SYNC] Inventory downsync failed:', err.message);
     }
 
+    // 4.5 Auto-repair Products with 0 variants (Offline/Downsync safety)
+    try {
+      const productsWithNoVariants = await prisma.product.findMany({
+        where: {
+          variants: {
+            none: {}
+          }
+        }
+      });
+
+      if (productsWithNoVariants.length > 0) {
+        console.log(`[SYNC] Found ${productsWithNoVariants.length} products with 0 variants. Auto-generating default variants...`);
+        for (const prod of productsWithNoVariants) {
+          const namePrefix = prod.name.substring(0, 3).toUpperCase();
+          const brandPrefix = prod.brand ? prod.brand.substring(0, 2).toUpperCase() : 'NA';
+          const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+          const defaultSku = `AC-${brandPrefix}-${namePrefix}-S-S-${randomSuffix}`;
+
+          // Create default variant
+          const defaultVariant = await prisma.productVariant.create({
+            data: {
+              productId: prod.id,
+              size: 'Standard',
+              color: 'Standard',
+              sku: defaultSku,
+              barcode: ''
+            }
+          });
+
+          // Create inventory for the variant
+          await prisma.inventory.create({
+            data: {
+              variantId: defaultVariant.id,
+              quantity: 0,
+              reorderLevel: 5
+            }
+          });
+
+          // Queue sync to cloud so these default variants exist in Supabase as well!
+          await cloudSyncService.queueSync('ProductVariant', defaultVariant.id);
+          await cloudSyncService.queueSync('Inventory', defaultVariant.id);
+          console.log(`[SYNC] Repaired product '${prod.name}' by creating default variant (SKU: ${defaultSku})`);
+        }
+      }
+    } catch (err: any) {
+      console.error('[SYNC] Failed during 0-variant check/repair:', err.message);
+    }
+
     // 5. Sync Audit Logs
     try {
       const { data: auditLogs, error: auditErr } = await supabase.from('audit_logs').select('*');
