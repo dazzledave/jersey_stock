@@ -22,6 +22,20 @@ export const cloudSyncService = {
     const urlSetting = await prisma.setting.findUnique({ where: { key: 'supabaseUrl' } });
     const keySetting = await prisma.setting.findUnique({ where: { key: 'supabaseKey' } });
 
+    const clientOptions = {
+      auth: {
+        persistSession: false
+      },
+      global: {
+        fetch: (url: any, options: any) => {
+          return fetch(url, {
+            ...options,
+            cache: 'no-store'
+          });
+        }
+      }
+    };
+
     if (!urlSetting?.value || !keySetting?.value) {
       // FALLBACK: Use .env variables if database settings are missing (for fresh machines)
       const envUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -30,7 +44,7 @@ export const cloudSyncService = {
       if (!envUrl || !envKey) return null;
       
       console.log(`[SYNC] Fallback client using URL: ${envUrl} and Key (prefix): ${envKey.slice(0, 10)}... (suffix): ${envKey.slice(-10)}`);
-      return createClient(envUrl.trim(), envKey.trim());
+      return createClient(envUrl.trim(), envKey.trim(), clientOptions);
     }
 
     const sanitizedUrl = urlSetting.value.trim()
@@ -38,7 +52,7 @@ export const cloudSyncService = {
       .replace(/\/+$/, '');
     const sanitizedKey = keySetting.value.trim();
 
-    return createClient(sanitizedUrl, sanitizedKey);
+    return createClient(sanitizedUrl, sanitizedKey, clientOptions);
   },
 
   saveCredentials: async (url: string, key: string) => {
