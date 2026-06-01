@@ -6,6 +6,39 @@ const http = require('http');
 const Database = require('better-sqlite3');
 const dotenv = require('dotenv');
 
+// SET UP DIAGNOSTIC LOGGER ON USER DESKTOP (JUST FOR TESTING)
+const userHome = process.env.USERPROFILE || process.env.HOMEPATH || '';
+const desktopPath = path.join(userHome, 'Desktop');
+const logFilePath = path.join(desktopPath, 'POS_Server_Diagnostic.txt');
+
+let logStream = null;
+try {
+  logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
+} catch (e) {
+  console.error('[LAUNCHER] Could not create log file on Desktop:', e.message);
+}
+
+const originalLog = console.log;
+const originalError = console.error;
+
+console.log = (...args) => {
+  const msg = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ');
+  const timestamp = new Date().toISOString();
+  if (logStream) {
+    logStream.write(`[${timestamp}] [INFO] ${msg}\n`);
+  }
+  originalLog.apply(console, args);
+};
+
+console.error = (...args) => {
+  const msg = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ');
+  const timestamp = new Date().toISOString();
+  if (logStream) {
+    logStream.write(`[${timestamp}] [ERROR] ${msg}\n`);
+  }
+  originalError.apply(console, args);
+};
+
 // PACKAGED ENV LOADING: Explicitly load .env from resources if packaged
 const isPackaged = app.isPackaged;
 if (isPackaged) {
@@ -237,8 +270,24 @@ function startServer() {
       ELECTRON_RUN_AS_NODE: '1', 
       DATABASE_PATH: targetDbPath 
     },
-    stdio: 'inherit',
+    stdio: 'pipe',
     windowsHide: true
+  });
+
+  serverProcess.stdout.on('data', (data) => {
+    const text = data.toString();
+    if (logStream) {
+      logStream.write(text);
+    }
+    process.stdout.write(text);
+  });
+
+  serverProcess.stderr.on('data', (data) => {
+    const text = data.toString();
+    if (logStream) {
+      logStream.write(`[SERVER STDERR] ${text}`);
+    }
+    process.stderr.write(text);
   });
 }
 

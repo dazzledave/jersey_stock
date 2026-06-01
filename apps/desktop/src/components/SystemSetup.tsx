@@ -664,6 +664,9 @@ export default function SystemSetup() {
                       className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
                       placeholder="e.g. kojo_sales"
                     />
+                    {usernameError && (
+                      <p className="text-[10px] text-rose-500 font-bold mt-1">{usernameError}</p>
+                    )}
                  </div>
                  <div className="space-y-2">
                     <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Initial Password</label>
@@ -675,6 +678,23 @@ export default function SystemSetup() {
                       className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
                       placeholder="••••••••"
                     />
+                    {passwordError && (
+                      <p className="text-[10px] text-rose-500 font-bold mt-1">{passwordError}</p>
+                    )}
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Confirm Password</label>
+                    <input 
+                      type="password" 
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
+                      placeholder="••••••••"
+                    />
+                    {confirmPasswordError && (
+                      <p className="text-[10px] text-rose-500 font-bold mt-1">{confirmPasswordError}</p>
+                    )}
                  </div>
                  <div className="space-y-2">
                     <label className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Assigned Role</label>
