@@ -519,8 +519,22 @@ export const cloudSyncService = {
       if (itemsErr) throw itemsErr;
       if (saleItems) {
         console.log(`[SYNC] Downsync fetched ${saleItems.length} sale items from cloud.`);
+        
+        // Fetch valid parent IDs for O(1) constraints lookup
+        const localSaleIds = (await prisma.sale.findMany({ select: { id: true } })).map(s => s.id);
+        const localVariantIds = (await prisma.productVariant.findMany({ select: { id: true } })).map(v => v.id);
+
         for (const item of saleItems) {
           try {
+            if (!localSaleIds.includes(item.saleId)) {
+              console.warn(`[SYNC] Skipping orphan sale item ${item.id} because parent sale ${item.saleId} does not exist locally.`);
+              continue;
+            }
+            if (!localVariantIds.includes(item.variantId)) {
+              console.warn(`[SYNC] Skipping orphan sale item ${item.id} because referenced variant ${item.variantId} does not exist locally.`);
+              continue;
+            }
+
             await prisma.saleItem.upsert({
               where: { id: item.id },
               update: {
