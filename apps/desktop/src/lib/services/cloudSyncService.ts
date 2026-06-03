@@ -186,6 +186,20 @@ export const cloudSyncService = {
     const supabase = await cloudSyncService.getSupabaseClient();
     if (!supabase) return;
 
+    // Fetch all pending/failed sync logs to protect local-only unsynced records
+    let pendingProductIds: string[] = [];
+    let pendingVariantIds: string[] = [];
+    try {
+      const pendingSyncs = await prisma.syncLog.findMany({
+        where: { status: { in: ['PENDING', 'FAILED'] } },
+        select: { entity: true, entityId: true }
+      });
+      pendingProductIds = pendingSyncs.filter(log => log.entity === 'Product').map(log => log.entityId!);
+      pendingVariantIds = pendingSyncs.filter(log => log.entity === 'ProductVariant' || log.entity === 'Inventory').map(log => log.entityId!);
+    } catch (e: any) {
+      console.warn('[SYNC] Failed to fetch pending sync logs for delete safety checks:', e.message);
+    }
+
     // 1. Sync Categories
     try {
       const { data: categories, error: catErr } = await supabase.from('categories').select('*');
@@ -226,7 +240,9 @@ export const cloudSyncService = {
         const remoteProdIds = products.map(prod => prod.id);
         try {
           const localProdsToDelete = await prisma.product.findMany({
-            where: { id: { notIn: remoteProdIds } },
+            where: { 
+              id: { notIn: [...remoteProdIds, ...pendingProductIds] } 
+            },
             include: { variants: true }
           });
           if (localProdsToDelete.length > 0) {
@@ -240,7 +256,7 @@ export const cloudSyncService = {
               });
             }
             await prisma.product.deleteMany({
-              where: { id: { notIn: remoteProdIds } }
+              where: { id: { notIn: [...remoteProdIds, ...pendingProductIds] } }
             });
           }
         } catch (delErr: any) {
@@ -285,7 +301,10 @@ export const cloudSyncService = {
         const remoteVariantIds = variants.map(v => v.id);
         try {
           const localVariantsToDelete = await prisma.productVariant.findMany({
-            where: { id: { notIn: remoteVariantIds } }
+            where: { 
+              id: { notIn: [...remoteVariantIds, ...pendingVariantIds] },
+              productId: { notIn: pendingProductIds }
+            }
           });
           if (localVariantsToDelete.length > 0) {
             const varIds = localVariantsToDelete.map(v => v.id);
@@ -296,7 +315,10 @@ export const cloudSyncService = {
               where: { variantId: { in: varIds } }
             });
             await prisma.productVariant.deleteMany({
-              where: { id: { notIn: remoteVariantIds } }
+              where: { 
+                id: { notIn: [...remoteVariantIds, ...pendingVariantIds] },
+                productId: { notIn: pendingProductIds }
+              }
             });
           }
         } catch (delErr: any) {
@@ -337,7 +359,9 @@ export const cloudSyncService = {
         const remoteVariantIds = inventory.map(inv => inv.variantId);
         try {
           await prisma.inventory.deleteMany({
-            where: { variantId: { notIn: remoteVariantIds } }
+            where: { 
+              variantId: { notIn: [...remoteVariantIds, ...pendingVariantIds] } 
+            }
           });
         } catch (delErr: any) {
           console.warn('[SYNC] Inventory deleteMany warning:', delErr.message);
@@ -410,6 +434,114 @@ export const cloudSyncService = {
       }
     } catch (err: any) {
       console.error('[SYNC] Failed during 0-variant check/repair:', err.message);
+    }
+
+    // 4.6 Sync Users
+    try {
+      const { data: users, error: usersErr } = await supabase.from('users').select('*');
+      if (usersErr) throw usersErr;
+      if (users) {
+        console.log(`[SYNC] Downsync fetched ${users.length} users from cloud.`);
+        for (const u of users) {
+          try {
+            await prisma.user.upsert({
+              where: { id: u.id },
+              update: {
+                username: u.username,
+                password: u.password,
+                role: u.role,
+                recoveryKey: u.recoveryKey,
+                isActive: u.isActive ?? true,
+                lastLogin: u.lastLogin ? new Date(u.lastLogin) : null,
+                createdAt: new Date(u.createdAt),
+                updatedAt: new Date(u.updatedAt)
+              },
+              create: {
+                ...u,
+                createdAt: new Date(u.createdAt),
+                updatedAt: new Date(u.updatedAt)
+              }
+            });
+          } catch (rowErr: any) {
+            console.error(`[SYNC] Failed to upsert user ${u.username}:`, rowErr.message);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('[SYNC] Users downsync failed:', err.message);
+    }
+
+    // 4.7 Sync Sales
+    try {
+      const { data: sales, error: salesErr } = await supabase.from('sales').select('*');
+      if (salesErr) throw salesErr;
+      if (sales) {
+        console.log(`[SYNC] Downsync fetched ${sales.length} sales from cloud.`);
+        for (const sale of sales) {
+          try {
+            await prisma.sale.upsert({
+              where: { id: sale.id },
+              update: {
+                totalAmount: sale.totalAmount,
+                paymentMethod: sale.paymentMethod,
+                userId: sale.userId,
+                soldBy: sale.soldBy,
+                debtorName: sale.debtorName,
+                debtorPhone: sale.debtorPhone,
+                authorizer: sale.authorizer,
+                customerId: sale.customerId,
+                payments: sale.payments,
+                discountAmount: sale.discountAmount,
+                discountType: sale.discountType,
+                isRefunded: sale.isRefunded ?? false,
+                refundReason: sale.refundReason,
+                createdAt: new Date(sale.createdAt),
+                updatedAt: new Date(sale.updatedAt)
+              },
+              create: {
+                ...sale,
+                createdAt: new Date(sale.createdAt),
+                updatedAt: new Date(sale.updatedAt)
+              }
+            });
+          } catch (rowErr: any) {
+            console.error(`[SYNC] Failed to upsert sale ${sale.id}:`, rowErr.message);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('[SYNC] Sales downsync failed:', err.message);
+    }
+
+    // 4.8 Sync SaleItems
+    try {
+      const { data: saleItems, error: itemsErr } = await supabase.from('sale_items').select('*');
+      if (itemsErr) throw itemsErr;
+      if (saleItems) {
+        console.log(`[SYNC] Downsync fetched ${saleItems.length} sale items from cloud.`);
+        for (const item of saleItems) {
+          try {
+            await prisma.saleItem.upsert({
+              where: { id: item.id },
+              update: {
+                saleId: item.saleId,
+                variantId: item.variantId,
+                quantity: item.quantity,
+                price: item.price,
+                createdAt: new Date(item.createdAt)
+              },
+              create: {
+                ...item,
+                createdAt: new Date(item.createdAt)
+              }
+            });
+          } catch (rowErr: any) {
+            console.error(`[SYNC] Failed to upsert sale item ${item.id}:`, rowErr.message);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('[SYNC] Sale items downsync failed:', err.message);
     }
 
     // 5. Sync Audit Logs

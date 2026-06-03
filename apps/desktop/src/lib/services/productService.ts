@@ -121,6 +121,12 @@ export const productService = {
     });
 
     cloudSyncService.queueSync('Product', product.id).catch(console.error);
+    if (product.variants && product.variants.length > 0) {
+      for (const v of product.variants) {
+        cloudSyncService.queueSync('ProductVariant', v.id).catch(console.error);
+        cloudSyncService.queueSync('Inventory', v.id).catch(console.error);
+      }
+    }
     return product;
   },
 
