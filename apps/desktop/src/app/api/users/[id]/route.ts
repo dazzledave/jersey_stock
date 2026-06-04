@@ -99,6 +99,12 @@ export async function PUT(
       } catch (e) {}
     }
 
+    // Queue sync for the User record to push password/role changes to the cloud
+    try {
+      const { cloudSyncService } = require('@/lib/services/cloudSyncService');
+      cloudSyncService.queueSync('User', updatedUser.id).catch(console.error);
+    } catch (e) {}
+
     return NextResponse.json({ message: 'User updated successfully', user: updatedUser });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
