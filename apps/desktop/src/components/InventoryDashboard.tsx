@@ -332,44 +332,20 @@ export default function InventoryDashboard() {
         
         {/* Left Column: Live Feed (Recent Transactions) & Top Product Today */}
         <div className="col-span-12 xl:col-span-8 space-y-6">
-          {role === 'STAFF' ? (
-            <div className="bg-surface p-8 rounded-xl border border-border-subtle shadow-sm flex flex-col justify-between min-h-[300px]">
-              <div>
-                <h3 className="text-base font-black text-foreground uppercase tracking-tight mb-2">My Daily Operational Checklist</h3>
-                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-6">Key tasks to optimize register transactions and floor stock</p>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3 bg-brand-bg/40 p-4 rounded-lg border border-border-subtle/50">
-                    <input type="checkbox" className="mt-1" defaultChecked={alerts.length === 0} readOnly />
-                    <div>
-                      <p className="text-xs font-bold text-foreground">Restock Critical Items</p>
-                      <p className="text-[10px] text-slate-500">Retrieve low stock items listed in the right panel and update floor stock shelves.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 bg-brand-bg/40 p-4 rounded-lg border border-border-subtle/50">
-                    <input type="checkbox" className="mt-1" />
-                    <div>
-                      <p className="text-xs font-bold text-foreground">Verify Register Float & Terminal Sync</p>
-                      <p className="text-[10px] text-slate-500">Confirm starting capital matches drawer contents and verify network connectivity indicator is green.</p>
-                    </div>
-                  </div>
+          <div className="bg-surface p-8 rounded-xl border border-border-subtle shadow-sm flex flex-col justify-between">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-3">
+                <svg className="w-5 h-5 text-orange-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.02 6.02 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                <div>
+                  <h3 className="text-base font-black text-foreground uppercase tracking-tight">Live Sales Feed</h3>
+                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Real-time transactions recorded across register terminals</p>
                 </div>
               </div>
+              <span className="flex items-center gap-1.5 text-[8.5px] font-black text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
+                POLLING ACTIVE
+              </span>
             </div>
-          ) : (
-            <div className="bg-surface p-8 rounded-xl border border-border-subtle shadow-sm flex flex-col justify-between">
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5 text-orange-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.02 6.02 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                  <div>
-                    <h3 className="text-base font-black text-foreground uppercase tracking-tight">Live Sales Feed</h3>
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Real-time transactions recorded across register terminals</p>
-                  </div>
-                </div>
-                <span className="flex items-center gap-1.5 text-[8.5px] font-black text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
-                  POLLING ACTIVE
-                </span>
-              </div>
 
               <div className="space-y-3">
                 {(!summary || summary.recentTransactions.length === 0) ? (
@@ -415,7 +391,6 @@ export default function InventoryDashboard() {
                 ))}
               </div>
             </div>
-          )}
 
           {/* Top product today */}
           {role !== 'STAFF' && summary?.topProductToday && (

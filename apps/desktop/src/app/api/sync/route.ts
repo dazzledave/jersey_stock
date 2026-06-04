@@ -1,5 +1,20 @@
 import { NextResponse } from 'next/server';
 import { syncToCloud } from '@/lib/services/syncService';
+import { cloudSyncService } from '@/lib/services/cloudSyncService';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  try {
+    // Process outbound queue first to protect local changes, then pull remote updates
+    await cloudSyncService.processSyncQueue();
+    await cloudSyncService.performDownsync();
+    return NextResponse.json({ success: true, message: 'Database synchronized with cloud successfully.' });
+  } catch (error: any) {
+    console.error('[API SYNC] Sync failed:', error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   try {

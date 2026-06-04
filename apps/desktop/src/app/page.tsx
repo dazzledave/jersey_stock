@@ -21,6 +21,24 @@ export default function Home() {
   const [globalAlert, setGlobalAlert] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { isAuthenticated, user, logout, isAdmin, isSupervisor, isOnline } = useAuth();
+  const [isSyncRefreshing, setIsSyncRefreshing] = useState(false);
+
+  const handleSyncRefresh = async () => {
+    setIsSyncRefreshing(true);
+    try {
+      const response = await fetch('/api/sync');
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(`Sync failed: ${error.error || 'Unknown error'}`);
+      }
+    } catch (err: any) {
+      alert(`Connection failed: ${err.message}`);
+    } finally {
+      setIsSyncRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -256,6 +274,29 @@ export default function Home() {
                 {isOnline ? 'Online' : 'Offline Mode'}
               </span>
             </div>
+            {isOnline && (
+              <button
+                onClick={handleSyncRefresh}
+                disabled={isSyncRefreshing}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2a3142] hover:bg-[#ffb443] hover:text-[#1a1f2b] disabled:opacity-50 text-white rounded-lg transition-all border border-slate-700/50 cursor-pointer"
+                title="Sync latest data from cloud"
+              >
+                <svg
+                  className={`w-3.5 h-3.5 ${isSyncRefreshing ? 'animate-spin' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+                  />
+                </svg>
+                <span>{isSyncRefreshing ? 'Syncing...' : 'Sync Now'}</span>
+              </button>
+            )}
           </div>
           <div 
             style={{ WebkitAppRegion: 'no-drag' } as any}
