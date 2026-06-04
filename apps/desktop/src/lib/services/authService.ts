@@ -199,6 +199,7 @@ export const authService = {
         }
       });
       cloudSyncService.queueSync('AuditLog', log.id).catch(console.error);
+      cloudSyncService.queueSync('User', localUser.id).catch(console.error);
     } catch (auditErr) {
       console.warn('Failed to save lastLogin / login audit trail:', auditErr);
     }
