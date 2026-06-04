@@ -45,7 +45,7 @@ export default function SalesTerminal() {
   const [currency, setCurrency] = useState('GH₵');
   const [exchangeRate, setExchangeRate] = useState(1);
   const [shopName, setShopName] = useState('Awards Centre');
-  const [address, setAddress] = useState('Accra, Ghana');
+  const [address, setAddress] = useState('Accra Sports Stadium, Ghana');
 
   const [variantSelector, setVariantSelector] = useState<Product | null>(null);
   const searchInputRef = React.useRef<HTMLInputElement>(null);

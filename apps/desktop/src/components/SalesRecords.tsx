@@ -47,7 +47,7 @@ export default function SalesRecords() {
   const [dateFilter, setDateFilter] = useState('');
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [shopName, setShopName] = useState('Awards Centre');
-  const [address, setAddress] = useState('Accra, Ghana');
+  const [address, setAddress] = useState('Accra Sports Stadium, Ghana');
 
   const { user, isSupervisor } = useAuth();
   const role = user?.role || 'STAFF';

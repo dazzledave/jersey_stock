@@ -9,7 +9,7 @@ export default function SystemSetup() {
   const [settings, setSettings] = useState({
     shopName: 'Awards Centre',
     currency: 'GH₵',
-    address: 'Accra, Ghana',
+    address: 'Accra Sports Stadium, Ghana',
     darkMode: false,
     exchangeRate: 1,
     supabaseUrl: '',
