@@ -362,7 +362,7 @@ export default function SalesRecords() {
                   </div>
                 </div>
 
-                {selectedSale.discountAmount && selectedSale.discountAmount > 0 && (
+                {!!selectedSale.discountAmount && selectedSale.discountAmount > 0 && (
                   <div className="space-y-1 py-2 border-t border-dashed border-border-subtle text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                     <div className="flex justify-between">
                       <span>Subtotal</span>

@@ -448,7 +448,7 @@ export default function InventoryDashboard() {
                   alerts.map((al, i) => (
                     <div key={i} className="bg-brand-bg/40 p-4 rounded-xl border border-border-subtle/50 flex justify-between items-center transition-all hover:border-rose-500/30 group">
                       <div className="space-y-1 max-w-[70%]">
-                        <p className="text-[10px] font-black text-foreground uppercase truncate group-hover:text-white transition-colors">
+                        <p className="text-[10px] font-black text-foreground uppercase truncate group-hover:text-orange-500 transition-colors">
                           {al.variant.product.name}
                         </p>
                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">
