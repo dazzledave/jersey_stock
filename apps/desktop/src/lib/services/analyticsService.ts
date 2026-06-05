@@ -129,29 +129,66 @@ export const analyticsService = {
     return all.filter(i => i.quantity <= i.reorderLevel);
   },
 
-  async getDetailedAnalytics() {
-    // Prevent Date-overflow bug: set day of month to 1 first
+  async getDetailedAnalytics(range?: string, customStart?: string, customEnd?: string) {
     const now = new Date();
+    let currentStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    let currentEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
     
-    // Set up this month and last month boundaries
-    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    let previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    let previousEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
-    const twelveMonthsAgo = new Date();
+    if (range === 'today') {
+      currentStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      currentEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      
+      previousStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
+      previousEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+    } else if (range === 'week') {
+      currentStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      currentStart.setHours(0, 0, 0, 0);
+      currentEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+      previousStart = new Date(currentStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+      previousStart.setHours(0, 0, 0, 0);
+      previousEnd = new Date(currentStart.getTime() - 1);
+    } else if (range === 'month') {
+      currentStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      currentEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+      previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+      previousEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    } else if (range === 'custom' && customStart && customEnd) {
+      currentStart = new Date(customStart);
+      currentStart.setHours(0, 0, 0, 0);
+      currentEnd = new Date(customEnd);
+      currentEnd.setHours(23, 59, 59, 999);
+
+      const durationMs = currentEnd.getTime() - currentStart.getTime();
+      previousStart = new Date(currentStart.getTime() - durationMs - 1);
+      previousStart.setHours(0, 0, 0, 0);
+      previousEnd = new Date(currentStart.getTime() - 1);
+    }
+
+    const twelveMonthsAgo = new Date(currentEnd);
     twelveMonthsAgo.setDate(1);
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
     twelveMonthsAgo.setHours(0, 0, 0, 0);
 
-    // Fetch all sales for the last 12 months to compute details
+    const fetchStart = previousStart < twelveMonthsAgo ? previousStart : twelveMonthsAgo;
+
+    // Fetch all sales for the required period
     const allSales = await prisma.sale.findMany({
-      where: { createdAt: { gte: twelveMonthsAgo } },
+      where: { createdAt: { gte: fetchStart, lte: currentEnd } },
       include: {
         items: {
           include: {
             variant: {
               include: {
-                product: true
+                product: {
+                  include: {
+                    category: true
+                  }
+                }
               }
             }
           }
@@ -179,16 +216,16 @@ export const analyticsService = {
     };
 
     // 1. Period-over-period Stats
-    const thisMonthSales = activeSales.filter(s => s.createdAt >= startOfThisMonth);
-    const lastMonthSales = activeSales.filter(s => s.createdAt >= startOfLastMonth && s.createdAt <= endOfLastMonth);
+    const thisPeriodSales = activeSales.filter(s => s.createdAt >= currentStart && s.createdAt <= currentEnd);
+    const prevPeriodSales = activeSales.filter(s => s.createdAt >= previousStart && s.createdAt <= previousEnd);
 
-    const currentMonth = calculateStats(thisMonthSales);
-    const previousMonth = calculateStats(lastMonthSales);
+    const currentMonth = calculateStats(thisPeriodSales);
+    const previousMonth = calculateStats(prevPeriodSales);
 
-    // 2. 12-Month Trend (fixed date overflow bug)
+    // 2. 12-Month Trend
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const trendData = Array.from({ length: 12 }).map((_, i) => {
-      const d = new Date();
+      const d = new Date(currentEnd);
       d.setDate(1);
       d.setMonth(d.getMonth() - (11 - i));
       const monthIdx = d.getMonth();
@@ -198,7 +235,6 @@ export const analyticsService = {
       const salesInMonth = activeSales.filter(s => s.createdAt.getMonth() === monthIdx && s.createdAt.getFullYear() === year);
       const revenue = salesInMonth.reduce((sum, s) => sum + s.totalAmount, 0);
       
-      // Calculate profit for this month too
       let cost = 0;
       salesInMonth.forEach(s => {
         s.items.forEach(item => {
@@ -210,51 +246,36 @@ export const analyticsService = {
       return { name: monthName, value: revenue, profit };
     });
 
-    // 3. Category Sales
-    const categories = await prisma.category.findMany({
-      include: {
-        products: {
-          include: {
-            variants: {
-              include: {
-                saleItems: {
-                  where: { sale: { isRefunded: false } }
-                }
-              }
-            }
-          }
+    // 3. Category Sales (derived from current period sales for speed and accuracy)
+    const categoryMap: Record<string, { revenue: number; quantity: number }> = {};
+    thisPeriodSales.forEach(sale => {
+      sale.items.forEach(item => {
+        const catName = item.variant?.product?.category?.name || 'Uncategorized';
+        if (!categoryMap[catName]) {
+          categoryMap[catName] = { revenue: 0, quantity: 0 };
         }
-      }
+        categoryMap[catName].revenue += item.price * item.quantity;
+        categoryMap[catName].quantity += item.quantity;
+      });
     });
+    const categoryData = Object.entries(categoryMap).map(([name, stats]) => ({
+      name,
+      value: stats.revenue,
+      quantity: stats.quantity
+    })).filter(c => c.quantity > 0);
 
-    const categoryData = categories.map(cat => {
-      const revenue = cat.products.reduce((sum, p) => {
-        return sum + p.variants.reduce((vSum, v) => {
-          return vSum + v.saleItems.reduce((sSum, si) => sSum + (si.price * si.quantity), 0);
-        }, 0);
-      }, 0);
-
-      const quantity = cat.products.reduce((sum, p) => {
-        return sum + p.variants.reduce((vSum, v) => {
-          return vSum + v.saleItems.reduce((sSum, si) => sSum + si.quantity, 0);
-        }, 0);
-      }, 0);
-
-      return { name: cat.name, value: revenue, quantity };
-    }).filter(c => c.quantity > 0);
-
-    // 4. Payment Method Breakdown
+    // 4. Payment Method Breakdown (derived from current period sales)
     const paymentMethods = ['cash', 'card', 'momo', 'free'];
     const paymentBreakdown = paymentMethods.map(method => {
-      const salesWithMethod = activeSales.filter(s => (s.paymentMethod || '').toLowerCase() === method);
+      const salesWithMethod = thisPeriodSales.filter(s => (s.paymentMethod || '').toLowerCase() === method);
       const value = salesWithMethod.reduce((sum, s) => sum + s.totalAmount, 0);
       const count = salesWithMethod.length;
       return { method: method.toUpperCase(), value, count };
     });
 
-    // 5. Hourly & Daily Sales
+    // 5. Hourly & Daily Sales (derived from current period sales)
     const hourlySales = Array.from({ length: 24 }).map((_, hour) => {
-      const value = activeSales
+      const value = thisPeriodSales
         .filter(s => s.createdAt.getHours() === hour)
         .reduce((sum, s) => sum + s.totalAmount, 0);
       return { hour, value };
@@ -262,42 +283,39 @@ export const analyticsService = {
 
     const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dailySales = daysOfWeek.map((day, idx) => {
-      const value = activeSales
+      const value = thisPeriodSales
         .filter(s => s.createdAt.getDay() === idx)
         .reduce((sum, s) => sum + s.totalAmount, 0);
       return { day, value };
     });
 
-    // 6. Top Products & Slow Movers
+    // 6. Top Products & Slow Movers (derived from current period sales for speed & accuracy)
     const allProducts = await prisma.product.findMany({
       include: {
         variants: {
           include: {
-            saleItems: {
-              include: { sale: true }
-            },
             inventory: true
           }
         }
       }
     });
 
-    const productSales = allProducts.map(p => {
-      let quantity = 0;
-      let revenue = 0;
-      let stock = 0;
-
-      p.variants.forEach(v => {
-        stock += v.inventory?.quantity || 0;
-        v.saleItems.forEach(si => {
-          if (!si.sale.isRefunded) {
-            quantity += si.quantity;
-            revenue += si.price * si.quantity;
-          }
-        });
+    const productSalesMap: Record<string, { quantity: number; revenue: number }> = {};
+    thisPeriodSales.forEach(sale => {
+      sale.items.forEach(item => {
+        const prodId = item.variant.productId;
+        if (!productSalesMap[prodId]) {
+          productSalesMap[prodId] = { quantity: 0, revenue: 0 };
+        }
+        productSalesMap[prodId].quantity += item.quantity;
+        productSalesMap[prodId].revenue += item.price * item.quantity;
       });
+    });
 
-      return { name: p.name, quantity, revenue, stock };
+    const productSales = allProducts.map(p => {
+      const sales = productSalesMap[p.id] || { quantity: 0, revenue: 0 };
+      const stock = p.variants.reduce((sum, v) => sum + (v.inventory?.quantity || 0), 0);
+      return { name: p.name, quantity: sales.quantity, revenue: sales.revenue, stock };
     });
 
     const topProducts = [...productSales]
@@ -309,13 +327,13 @@ export const analyticsService = {
       .sort((a, b) => a.quantity - b.quantity)
       .slice(0, 5);
 
-    // 7. Loss Prevention: refunds and discounts
-    const refundedSales = allSales.filter(s => s.isRefunded);
+    // 7. Loss Prevention: refunds and discounts (derived from current period)
+    const refundedSales = allSales.filter(s => s.isRefunded && s.createdAt >= currentStart && s.createdAt <= currentEnd);
     const refundCount = refundedSales.length;
     const refundAmount = refundedSales.reduce((sum, s) => sum + s.totalAmount, 0);
 
-    const totalDiscounts = activeSales.reduce((sum, s) => sum + (s.discountAmount || 0), 0);
-    const potentialRevenue = activeSales.reduce((sum, s) => sum + s.totalAmount, 0) + totalDiscounts;
+    const totalDiscounts = thisPeriodSales.reduce((sum, s) => sum + (s.discountAmount || 0), 0);
+    const potentialRevenue = thisPeriodSales.reduce((sum, s) => sum + s.totalAmount, 0) + totalDiscounts;
     const discountPercent = potentialRevenue > 0 ? (totalDiscounts / potentialRevenue) * 100 : 0;
 
     return {

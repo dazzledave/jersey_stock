@@ -61,7 +61,9 @@ export default function Analytics() {
   const [isLoading, setIsLoading] = useState(true);
   const [currency, setCurrency] = useState('GH₵');
   const [exchangeRate, setExchangeRate] = useState(1);
-  const [viewMode, setViewMode] = useState<'month' | 'trend'>('month');
+  const [range, setRange] = useState<'today' | 'week' | 'month' | 'custom'>('month');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     const saved = localStorage.getItem('ac_settings');
@@ -70,29 +72,38 @@ export default function Analytics() {
       if (parsed.currency) setCurrency(parsed.currency);
       if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
     }
-    fetchDetailed();
+    fetchDetailed('month');
   }, []);
 
-  const fetchDetailed = async () => {
+  const fetchDetailed = async (selectedRange = range, start = startDate, end = endDate) => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/analytics/detailed');
+      let url = `/api/analytics/detailed?range=${selectedRange}`;
+      if (selectedRange === 'custom' && start && end) {
+        url += `&startDate=${start}&endDate=${end}`;
+      }
+      const res = await fetch(url);
       const json = await res.json();
       setData(json);
-      
-      // Auto-switch to trend view if there is more than 1 month with actual sales
-      const activeMonthsCount = json.trendData?.filter((d: any) => d.value > 0).length || 0;
-      if (activeMonthsCount > 1) {
-        setViewMode('trend');
-      } else {
-        setViewMode('month');
-      }
     } catch (err) {
       console.error('Failed to fetch analytics:', err);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleRangeChange = (newRange: 'today' | 'week' | 'month' | 'custom') => {
+    setRange(newRange);
+    if (newRange !== 'custom') {
+      fetchDetailed(newRange);
+    }
+  };
+
+  const comparisonLabel = 
+    range === 'today' ? 'vs yesterday' :
+    range === 'week' ? 'vs last week' :
+    range === 'month' ? 'vs last month' :
+    'vs prev period';
 
   const getPercentageChange = (current: number, previous: number) => {
     if (previous === 0) return current > 0 ? 100 : 0;
@@ -144,26 +155,44 @@ export default function Analytics() {
           </div>
           <h2 className="text-3xl font-bold text-foreground tracking-tight">Executive Dashboard</h2>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
+          {range === 'custom' && (
+            <div className="flex items-center gap-2 bg-surface p-1 rounded-lg border border-border-subtle shadow-sm">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-transparent px-2 py-1 text-[10px] font-black uppercase text-foreground outline-none"
+              />
+              <span className="text-[10px] text-slate-500 font-bold">to</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-transparent px-2 py-1 text-[10px] font-black uppercase text-foreground outline-none"
+              />
+              <button
+                onClick={() => fetchDetailed('custom', startDate, endDate)}
+                className="bg-orange-500 hover:bg-orange-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded"
+              >
+                Go
+              </button>
+            </div>
+          )}
           <div className="bg-surface border border-border-subtle p-1 rounded-lg flex gap-1 shadow-sm">
-            <button 
-              onClick={() => setViewMode('month')} 
-              className={`px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
-                viewMode === 'month' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              This Month
-            </button>
-            <button 
-              onClick={() => setViewMode('trend')} 
-              className={`px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
-                viewMode === 'trend' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              12-Month Trend
-            </button>
+            {(['today', 'week', 'month', 'custom'] as const).map((r) => (
+              <button
+                key={r}
+                onClick={() => handleRangeChange(r)}
+                className={`px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                  range === r ? 'bg-orange-500 text-white shadow-md' : 'text-slate-400 hover:text-orange-500'
+                }`}
+              >
+                {r === 'week' ? 'This Week' : r === 'month' ? 'This Month' : r}
+              </button>
+            ))}
           </div>
-          <button onClick={fetchDetailed} className="bg-surface border border-border-subtle text-foreground text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-lg hover:bg-brand-bg transition-all shadow-sm flex items-center gap-2">
+          <button onClick={() => fetchDetailed(range, startDate, endDate)} className="bg-surface border border-border-subtle text-foreground text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-lg hover:bg-brand-bg transition-all shadow-sm flex items-center gap-2 cursor-pointer">
              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
              Refresh
           </button>
@@ -175,7 +204,15 @@ export default function Analytics() {
         {/* Gross Profit Card */}
         <div className="bg-surface p-5 rounded-xl border border-border-subtle shadow-sm flex flex-col justify-between space-y-4">
           <div className="flex justify-between items-start">
-            <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Gross Profit</span>
+            <div className="relative group/tooltip flex items-center gap-1.5">
+              <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Gross Profit</span>
+              <div className="cursor-help text-slate-400 hover:text-orange-500 transition-colors">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div className="absolute bottom-full left-0 mb-2 w-48 p-2.5 bg-slate-900 border border-slate-800 text-[9px] text-slate-300 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 text-left font-bold uppercase tracking-wider leading-relaxed">
+                Total sales revenue minus product cost price. Tracks actual product earnings.
+              </div>
+            </div>
             <div className="w-7 h-7 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M12 16V5"/></svg>
             </div>
@@ -184,7 +221,7 @@ export default function Analytics() {
             <h3 className="text-xl font-black text-foreground">{cur}{(cMonth.profit / rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
             <div className="flex items-center gap-2 mt-2">
               {renderTrendIndicator(profitChange)}
-              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">vs last month</span>
+              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">{comparisonLabel}</span>
             </div>
           </div>
         </div>
@@ -192,7 +229,15 @@ export default function Analytics() {
         {/* Profit Margin Card */}
         <div className="bg-surface p-5 rounded-xl border border-border-subtle shadow-sm flex flex-col justify-between space-y-4">
           <div className="flex justify-between items-start">
-            <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Margin %</span>
+            <div className="relative group/tooltip flex items-center gap-1.5">
+              <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Margin %</span>
+              <div className="cursor-help text-slate-400 hover:text-orange-500 transition-colors">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div className="absolute bottom-full left-0 mb-2 w-48 p-2.5 bg-slate-900 border border-slate-800 text-[9px] text-slate-300 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 text-left font-bold uppercase tracking-wider leading-relaxed">
+                Gross profit divided by revenue. Measures pricing efficiency and profitability.
+              </div>
+            </div>
             <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             </div>
@@ -211,7 +256,15 @@ export default function Analytics() {
         {/* Revenue Card (Secondary) */}
         <div className="bg-surface p-5 rounded-xl border border-border-subtle shadow-sm flex flex-col justify-between space-y-4">
           <div className="flex justify-between items-start">
-            <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Gross Revenue</span>
+            <div className="relative group/tooltip flex items-center gap-1.5">
+              <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Gross Revenue</span>
+              <div className="cursor-help text-slate-400 hover:text-orange-500 transition-colors">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div className="absolute bottom-full left-0 mb-2 w-48 p-2.5 bg-slate-900 border border-slate-800 text-[9px] text-slate-300 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 text-left font-bold uppercase tracking-wider leading-relaxed">
+                Total processed sales transactions before accounting for refunds or costs.
+              </div>
+            </div>
             <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
             </div>
@@ -220,7 +273,7 @@ export default function Analytics() {
             <h3 className="text-xl font-black text-foreground">{cur}{(cMonth.revenue / rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
             <div className="flex items-center gap-2 mt-2">
               {renderTrendIndicator(revChange)}
-              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">vs last month</span>
+              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">{comparisonLabel}</span>
             </div>
           </div>
         </div>
@@ -228,7 +281,15 @@ export default function Analytics() {
         {/* Transaction Count */}
         <div className="bg-surface p-5 rounded-xl border border-border-subtle shadow-sm flex flex-col justify-between space-y-4">
           <div className="flex justify-between items-start">
-            <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Transactions</span>
+            <div className="relative group/tooltip flex items-center gap-1.5">
+              <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Transactions</span>
+              <div className="cursor-help text-slate-400 hover:text-orange-500 transition-colors">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div className="absolute bottom-full left-0 mb-2 w-48 p-2.5 bg-slate-900 border border-slate-800 text-[9px] text-slate-300 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 text-left font-bold uppercase tracking-wider leading-relaxed">
+                Total number of successfully checked-out tickets and sales receipts.
+              </div>
+            </div>
             <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
             </div>
@@ -237,7 +298,7 @@ export default function Analytics() {
             <h3 className="text-xl font-black text-foreground">{cMonth.transactions} Sales</h3>
             <div className="flex items-center gap-2 mt-2">
               {renderTrendIndicator(transChange)}
-              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">vs last month</span>
+              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">{comparisonLabel}</span>
             </div>
           </div>
         </div>
@@ -245,7 +306,15 @@ export default function Analytics() {
         {/* Avg Basket Value */}
         <div className="bg-surface p-5 rounded-xl border border-border-subtle shadow-sm flex flex-col justify-between space-y-4">
           <div className="flex justify-between items-start">
-            <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Avg Basket</span>
+            <div className="relative group/tooltip flex items-center gap-1.5">
+              <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Avg Basket</span>
+              <div className="cursor-help text-slate-400 hover:text-orange-500 transition-colors">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div className="absolute bottom-full left-0 mb-2 w-48 p-2.5 bg-slate-900 border border-slate-800 text-[9px] text-slate-300 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 text-left font-bold uppercase tracking-wider leading-relaxed">
+                Average transaction ticket value. Calculated as gross revenue divided by transactions.
+              </div>
+            </div>
             <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             </div>
@@ -254,7 +323,7 @@ export default function Analytics() {
             <h3 className="text-xl font-black text-foreground">{cur}{(cMonth.avgBasket / rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
             <div className="flex items-center gap-2 mt-2">
               {renderTrendIndicator(avgBasketChange)}
-              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">vs last month</span>
+              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">{comparisonLabel}</span>
             </div>
           </div>
         </div>
@@ -263,136 +332,54 @@ export default function Analytics() {
       {/* Main Charts & Key Metric Comparisons */}
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-8 bg-surface p-8 rounded-xl border border-border-subtle shadow-sm flex flex-col justify-between">
-          <AnimatePresence mode="wait">
-            {viewMode === 'month' ? (
-              <motion.div 
-                key="month-detail"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-8"
-              >
-                <div>
-                  <h3 className="text-lg font-black text-foreground uppercase tracking-tight">Active Month Analysis</h3>
-                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Comparing performance metrics relative to the preceding calendar cycle</p>
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-lg font-black text-foreground uppercase tracking-tight">Active Period Analysis</h3>
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Comparing performance metrics relative to the preceding cycle</p>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-6 pt-4">
+              {/* Revenue PoP */}
+              <div className="p-4 bg-brand-bg/40 border border-border-subtle/55 rounded-xl text-center space-y-2">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Revenue Status</p>
+                <p className="text-xs text-slate-500 font-bold uppercase">This: <span className="text-foreground font-black">{cur}{(cMonth.revenue / rate).toFixed(0)}</span></p>
+                <p className="text-xs text-slate-500 font-bold uppercase">Last: <span className="text-foreground font-black">{cur}{(pMonth.revenue / rate).toFixed(0)}</span></p>
+                <div className="flex justify-center pt-2">
+                  {renderTrendIndicator(revChange)}
                 </div>
-                
-                <div className="grid grid-cols-3 gap-6 pt-4">
-                  {/* Revenue PoP */}
-                  <div className="p-4 bg-brand-bg/40 border border-border-subtle/55 rounded-xl text-center space-y-2">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Revenue Status</p>
-                    <p className="text-xs text-slate-500 font-bold uppercase">This: <span className="text-foreground font-black">{cur}{(cMonth.revenue / rate).toFixed(0)}</span></p>
-                    <p className="text-xs text-slate-500 font-bold uppercase">Last: <span className="text-foreground font-black">{cur}{(pMonth.revenue / rate).toFixed(0)}</span></p>
-                    <div className="flex justify-center pt-2">
-                      {renderTrendIndicator(revChange)}
-                    </div>
-                  </div>
-                  
-                  {/* Profit PoP */}
-                  <div className="p-4 bg-brand-bg/40 border border-border-subtle/55 rounded-xl text-center space-y-2">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Gross Profit Status</p>
-                    <p className="text-xs text-slate-500 font-bold uppercase">This: <span className="text-emerald-500 font-black">{cur}{(cMonth.profit / rate).toFixed(0)}</span></p>
-                    <p className="text-xs text-slate-500 font-bold uppercase">Last: <span className="text-slate-300 font-black">{cur}{(pMonth.profit / rate).toFixed(0)}</span></p>
-                    <div className="flex justify-center pt-2">
-                      {renderTrendIndicator(profitChange)}
-                    </div>
-                  </div>
+              </div>
+              
+              {/* Profit PoP */}
+              <div className="p-4 bg-brand-bg/40 border border-border-subtle/55 rounded-xl text-center space-y-2">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Gross Profit Status</p>
+                <p className="text-xs text-slate-500 font-bold uppercase">This: <span className="text-emerald-500 font-black">{cur}{(cMonth.profit / rate).toFixed(0)}</span></p>
+                <p className="text-xs text-slate-500 font-bold uppercase">Last: <span className="text-slate-300 font-black">{cur}{(pMonth.profit / rate).toFixed(0)}</span></p>
+                <div className="flex justify-center pt-2">
+                  {renderTrendIndicator(profitChange)}
+                </div>
+              </div>
 
-                  {/* Volume PoP */}
-                  <div className="p-4 bg-brand-bg/40 border border-border-subtle/55 rounded-xl text-center space-y-2">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Transaction Volume</p>
-                    <p className="text-xs text-slate-500 font-bold uppercase">This: <span className="text-foreground font-black">{cMonth.transactions} orders</span></p>
-                    <p className="text-xs text-slate-500 font-bold uppercase">Last: <span className="text-foreground font-black">{pMonth.transactions} orders</span></p>
-                    <div className="flex justify-center pt-2">
-                      {renderTrendIndicator(transChange)}
-                    </div>
-                  </div>
+              {/* Volume PoP */}
+              <div className="p-4 bg-brand-bg/40 border border-border-subtle/55 rounded-xl text-center space-y-2">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Transaction Volume</p>
+                <p className="text-xs text-slate-500 font-bold uppercase">This: <span className="text-foreground font-black">{cMonth.transactions} orders</span></p>
+                <p className="text-xs text-slate-500 font-bold uppercase">Last: <span className="text-foreground font-black">{pMonth.transactions} orders</span></p>
+                <div className="flex justify-center pt-2">
+                  {renderTrendIndicator(transChange)}
                 </div>
+              </div>
+            </div>
 
-                <div className="bg-brand-bg/25 border border-border-subtle p-5 rounded-xl">
-                  <h4 className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-3">Operating Summary</h4>
-                  <p className="text-xs font-medium leading-relaxed text-slate-400">
-                    Your store operates at an average profit margin of <strong className="text-white">{cMonth.margin.toFixed(1)}%</strong> this month. 
-                    {cMonth.profit >= pMonth.profit 
-                      ? " Gross profits are currently trending in positive territory compared to last month. Keep monitoring top performing product items."
-                      : " Operational margins and net revenues show a contraction relative to the previous month. Standard pricing controls or sales push might be required."}
-                  </p>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div 
-                key="trend-detail"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-6"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-black text-foreground uppercase tracking-tight">12-Month Performance Trend</h3>
-                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Visualizing gross revenue & gross profit distribution</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Total 12M Revenue</span>
-                    <span className="text-lg font-black text-foreground">{cur}{((data?.trendData.reduce((s, d) => s + d.value, 0) || 0) / rate).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                  </div>
-                </div>
-
-                <div className="h-[240px] flex items-end gap-3 px-4 relative pt-10">
-                  <div className="absolute inset-x-0 top-0 bottom-6 flex flex-col justify-between pointer-events-none opacity-5">
-                    {[1,2,3,4].map(i => <div key={i} className="border-t border-slate-400 w-full" />)}
-                  </div>
-                  
-                  {(data?.trendData || []).map((item, i) => {
-                    const maxValue = Math.max(...(data?.trendData.map(d => d.value) || [1]));
-                    const barHeight = maxValue > 0 ? (item.value / maxValue) * 180 : 4;
-                    const profitHeight = maxValue > 0 ? (Math.max(item.profit, 0) / maxValue) * 180 : 0;
-                    
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
-                        <div className="relative w-full flex justify-center items-end h-full">
-                          {/* Total Revenue Bar */}
-                          <motion.div 
-                            initial={{ height: 0 }}
-                            animate={{ height: Math.max(barHeight, 4) }}
-                            className="w-full bg-slate-800 rounded-t-sm relative flex justify-center items-end cursor-pointer group-hover:bg-slate-700/80 transition-colors"
-                          >
-                            {/* Nested Profit Bar */}
-                            {profitHeight > 0 && (
-                              <motion.div 
-                                initial={{ height: 0 }}
-                                animate={{ height: profitHeight }}
-                                className="w-full bg-orange-500 rounded-t-sm hover:bg-orange-600 transition-colors"
-                              />
-                            )}
-                          </motion.div>
-                          
-                          {item.value > 0 && (
-                            <div className="absolute -top-12 bg-slate-900 border border-border-subtle text-white text-[8px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl z-20 flex flex-col text-left">
-                              <span>REV: {cur}{(item.value / rate).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                              <span className="text-orange-500">PROFIT: {cur}{(item.profit / rate).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{item.name}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                <div className="flex justify-center gap-6 text-[9px] font-black uppercase tracking-widest text-slate-400 border-t border-border-subtle/50 pt-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 bg-slate-800 border border-slate-700 rounded-sm"></div>
-                    <span>Gross Revenue</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 bg-orange-500 rounded-sm"></div>
-                    <span className="text-orange-500">Gross Profit (Take Home)</span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            <div className="bg-brand-bg/25 border border-border-subtle p-5 rounded-xl">
+              <h4 className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-3">Operating Summary</h4>
+              <p className="text-xs font-medium leading-relaxed text-slate-400">
+                Your store operates at an average profit margin of <strong className="text-orange-500 font-black">{cMonth.margin.toFixed(1)}%</strong> in the selected period. 
+                {cMonth.profit >= pMonth.profit 
+                  ? " Gross profits are currently trending in positive territory compared to the comparison period. Keep monitoring top performing product items."
+                  : " Operational margins and net revenues show a contraction relative to the comparison period. Standard pricing controls or sales push might be required."}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Category breakdown (Sleek side progress list) */}
@@ -556,6 +543,73 @@ export default function Analytics() {
               </div>
               <span className="text-xs font-black text-orange-400">{cur}{( (data?.lossPrevention.totalDiscounts || 0) / rate).toFixed(0)}</span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 12-Month Performance Trend Chart */}
+      <div className="bg-surface p-8 rounded-xl border border-border-subtle shadow-sm space-y-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-lg font-black text-foreground uppercase tracking-tight">12-Month Performance Trend</h3>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Visualizing gross revenue & gross profit distribution</p>
+          </div>
+          <div className="text-right">
+            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Total 12M Revenue</span>
+            <span className="text-lg font-black text-foreground">{cur}{((data?.trendData.reduce((s, d) => s + d.value, 0) || 0) / rate).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+          </div>
+        </div>
+
+        <div className="h-[240px] flex items-end gap-3 px-4 relative pt-10">
+          <div className="absolute inset-x-0 top-0 bottom-6 flex flex-col justify-between pointer-events-none opacity-5">
+            {[1,2,3,4].map(i => <div key={i} className="border-t border-slate-400 w-full" />)}
+          </div>
+          
+          {(data?.trendData || []).map((item, i) => {
+            const maxValue = Math.max(...(data?.trendData.map(d => d.value) || [1]));
+            const barHeight = maxValue > 0 ? (item.value / maxValue) * 180 : 4;
+            const profitHeight = maxValue > 0 ? (Math.max(item.profit, 0) / maxValue) * 180 : 0;
+            
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
+                <div className="relative w-full flex justify-center items-end h-full">
+                  {/* Total Revenue Bar */}
+                  <motion.div 
+                    initial={{ height: 0 }}
+                    animate={{ height: Math.max(barHeight, 4) }}
+                    className="w-full bg-slate-800 rounded-t-sm relative flex justify-center items-end cursor-pointer group-hover:bg-slate-700/80 transition-colors"
+                  >
+                    {/* Nested Profit Bar */}
+                    {profitHeight > 0 && (
+                      <motion.div 
+                        initial={{ height: 0 }}
+                        animate={{ height: profitHeight }}
+                        className="w-full bg-orange-500 rounded-t-sm hover:bg-orange-600 transition-colors"
+                      />
+                    )}
+                  </motion.div>
+                  
+                  {item.value > 0 && (
+                    <div className="absolute -top-12 bg-slate-900 border border-border-subtle text-white text-[8px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl z-20 flex flex-col text-left">
+                      <span>REV: {cur}{(item.value / rate).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      <span className="text-orange-500">PROFIT: {cur}{(item.profit / rate).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{item.name}</div>
+              </div>
+            );
+          })}
+        </div>
+        
+        <div className="flex justify-center gap-6 text-[9px] font-black uppercase tracking-widest text-slate-400 border-t border-border-subtle/50 pt-3">
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 bg-slate-800 border border-slate-700 rounded-sm"></div>
+            <span>Gross Revenue</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 bg-orange-500 rounded-sm"></div>
+            <span className="text-orange-500">Gross Profit (Take Home)</span>
           </div>
         </div>
       </div>

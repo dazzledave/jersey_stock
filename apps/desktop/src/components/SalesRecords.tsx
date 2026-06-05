@@ -56,6 +56,16 @@ export default function SalesRecords() {
   const [isRefunding, setIsRefunding] = useState(false);
   const [refundError, setRefundError] = useState('');
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 10;
+  const totalPages = Math.ceil(filteredRecords.length / recordsPerPage) || 1;
+  const startIndex = (currentPage - 1) * recordsPerPage;
+  const paginatedRecords = filteredRecords.slice(startIndex, startIndex + recordsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredRecords]);
+
   useEffect(() => {
     const saved = localStorage.getItem('ac_settings');
     if (saved) {
@@ -211,7 +221,7 @@ export default function SalesRecords() {
                   <td colSpan={7} className="p-20 text-center text-xs font-bold text-slate-400 uppercase tracking-widest opacity-40">No records found for this period.</td>
                 </tr>
               ) : (
-                filteredRecords.map((r) => (
+                paginatedRecords.map((r) => (
                   <tr key={r.id} className="hover:bg-brand-bg/20 transition-colors group">
                     <td className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-tight">#{r.id.substring(0, 8)}</td>
                     <td className="px-6 py-5 text-[10px] font-bold text-foreground">{new Date(r.createdAt).toLocaleString()}</td>
@@ -244,6 +254,31 @@ export default function SalesRecords() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {!isLoading && filteredRecords.length > 0 && (
+          <div className="flex justify-between items-center px-6 py-4 bg-brand-bg/20 border-t border-border-subtle/30">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              Page {currentPage} of {totalPages} ({filteredRecords.length} records)
+            </span>
+            <div className="flex gap-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                className="px-4 py-2 rounded-lg bg-surface disabled:opacity-40 text-slate-400 hover:text-orange-500 border border-border-subtle disabled:hover:text-slate-400 disabled:hover:border-border-subtle transition-all text-[9px] font-black uppercase tracking-widest cursor-pointer"
+              >
+                Previous
+              </button>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                className="px-4 py-2 rounded-lg bg-surface disabled:opacity-40 text-slate-400 hover:text-orange-500 border border-border-subtle disabled:hover:text-slate-400 disabled:hover:border-border-subtle transition-all text-[9px] font-black uppercase tracking-widest cursor-pointer"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Receipt Modal */}
