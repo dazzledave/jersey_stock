@@ -116,9 +116,10 @@ export default function Home() {
         >
           <div className="bg-[#1e293b]/50 backdrop-blur-3xl p-12 rounded-[40px] border border-white/10 shadow-2xl space-y-8 text-center">
             <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500 mb-6 border border-rose-500/20">
-              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 12v.01M12 12a1 1 0 100-2 1 1 0 000 2zm0 6c-3.313 0-6-2.687-6-6s2.687-6 6-6 6 2.687 6 6-2.687 6-6 6z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h1.5a2.5 2.5 0 012.5 2.5v.5m-3.955 4.887A9.003 9.003 0 1120.945 13H19a2 2 0 01-2-2v-1a2 2 0 00-2-2 2 2 0 01-2-2V3.055" />
+              <svg className="w-10 h-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.6 9h16.8M3.6 15h16.8" />
+                <path d="M11.5 3a17 17 0 0 0 0 18M12.5 3a17 17 0 0 1 0 18" />
               </svg>
             </div>
             
@@ -145,7 +146,7 @@ export default function Home() {
               <button 
                 onClick={() => checkSetupStatus(true)}
                 disabled={isVerifyingConnection}
-                className="w-full bg-[#ffb443] hover:bg-[#fca42d] disabled:opacity-50 text-[#1a1f2b] font-black py-4 rounded-2xl text-xs uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full bg-[#ffb443] hover:bg-[#fca42d] disabled:opacity-50 text-[#1a1f2b] font-black py-4 rounded-2xl text-xs uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-2.5 cursor-pointer"
               >
                 {isVerifyingConnection ? (
                   <>
@@ -155,7 +156,9 @@ export default function Home() {
                 ) : (
                   <>
                     <span>Verify Connection & Sync</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18" /></svg>
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
                   </>
                 )}
               </button>
