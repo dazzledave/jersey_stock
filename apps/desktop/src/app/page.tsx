@@ -17,7 +17,9 @@ import { useAuth } from "@/components/AuthContext";
 export default function Home() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
-  const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
+  const [setupStatus, setSetupStatus] = useState<'checking' | 'initialized' | 'setup_required' | 'offline_first_use'>('checking');
+  const [isVerifyingConnection, setIsVerifyingConnection] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [globalAlert, setGlobalAlert] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { isAuthenticated, user, logout, isAdmin, isSupervisor, isOnline } = useAuth();
@@ -60,22 +62,40 @@ export default function Home() {
     checkSetupStatus();
   }, []);
 
-  const checkSetupStatus = async () => {
+  const checkSetupStatus = async (isRetry = false) => {
+    if (isRetry) {
+      setIsVerifyingConnection(true);
+      setConnectionError(null);
+    }
     try {
       const response = await fetch('/api/auth/setup-status');
       const data = await response.json();
-      setSetupRequired(!data.initialized);
-    } catch (error) {
+      
+      if (data.status === 'initialized') {
+        setSetupStatus('initialized');
+      } else if (data.status === 'offline_first_use') {
+        setSetupStatus('offline_first_use');
+        if (data.error) {
+          setConnectionError(data.error);
+        }
+      } else if (data.status === 'setup_required') {
+        setSetupStatus('setup_required');
+      } else {
+        // Fallback for safety
+        setSetupStatus('initialized');
+      }
+    } catch (error: any) {
       console.error('Failed to check setup status:', error);
-      setSetupRequired(false); // Fallback to login
+      setSetupStatus('offline_first_use');
+      setConnectionError(error.message || 'Unable to connect to local API');
+    } finally {
+      if (isRetry) {
+        setIsVerifyingConnection(false);
+      }
     }
   };
 
-
-
-  // Ghost node cleanup now handled via onAnimationComplete below
-
-  if (setupRequired === null) {
+  if (setupStatus === 'checking') {
     return (
       <div className="h-screen bg-[#0f172a] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-white/10 border-t-orange-500 rounded-full animate-spin" />
@@ -83,8 +103,71 @@ export default function Home() {
     );
   }
 
-  if (setupRequired) {
-    return <SetupWizard onComplete={() => setSetupRequired(false)} />;
+  if (setupStatus === 'offline_first_use') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0f172a] relative overflow-hidden font-['Segoe_UI_Variable_Text',_system-ui,_sans-serif]">
+        <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-orange-500/5 blur-[150px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-20%] left-[-10%] w-[60%] h-[60%] bg-rose-500/5 blur-[150px] rounded-full animate-pulse delay-700" />
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-lg p-1 relative z-10"
+        >
+          <div className="bg-[#1e293b]/50 backdrop-blur-3xl p-12 rounded-[40px] border border-white/10 shadow-2xl space-y-8 text-center">
+            <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto text-rose-500 mb-6 border border-rose-500/20">
+              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 12v.01M12 12a1 1 0 100-2 1 1 0 000 2zm0 6c-3.313 0-6-2.687-6-6s2.687-6 6-6 6 2.687 6 6-2.687 6-6 6z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h1.5a2.5 2.5 0 012.5 2.5v.5m-3.955 4.887A9.003 9.003 0 1120.945 13H19a2 2 0 01-2-2v-1a2 2 0 00-2-2 2 2 0 01-2-2V3.055" />
+              </svg>
+            </div>
+            
+            <div className="space-y-4">
+              <h1 className="text-3xl font-black text-white tracking-tight uppercase leading-tight">
+                Internet Required
+              </h1>
+              <p className="text-sm font-bold text-orange-500 uppercase tracking-widest">
+                First-Time Initialization
+              </p>
+              <p className="text-sm text-slate-400 font-medium leading-relaxed max-w-sm mx-auto">
+                An active internet connection is required during your first use of Awards Centre POS. This is necessary to sync your configuration, staff profiles, and security keys from the cloud database.
+              </p>
+            </div>
+
+            {connectionError && (
+              <div className="bg-rose-500/10 border border-rose-500/25 p-4 rounded-2xl text-xs font-bold text-rose-400 leading-relaxed break-words max-w-sm mx-auto">
+                <span className="text-rose-500 uppercase tracking-wider block mb-1">Status Error:</span>
+                {connectionError}
+              </div>
+            )}
+
+            <div className="pt-4">
+              <button 
+                onClick={() => checkSetupStatus(true)}
+                disabled={isVerifyingConnection}
+                className="w-full bg-[#ffb443] hover:bg-[#fca42d] disabled:opacity-50 text-[#1a1f2b] font-black py-4 rounded-2xl text-xs uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isVerifyingConnection ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-[#1a1f2b]/30 border-t-[#1a1f2b] rounded-full animate-spin" />
+                    <span>Verifying Connection...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Verify Connection & Sync</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18" /></svg>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (setupStatus === 'setup_required') {
+    return <SetupWizard onComplete={() => setSetupStatus('initialized')} />;
   }
 
   if (!isAuthenticated) {

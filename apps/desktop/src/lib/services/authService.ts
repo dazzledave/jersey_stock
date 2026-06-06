@@ -9,26 +9,39 @@ const JWT_SECRET = process.env.JWT_SECRET || 'awards-centre-pos-secret-key-2024'
 export const authService = {
   checkSetupStatus: async () => {
     const localUserCount = await prisma.user.count();
-    if (localUserCount > 0) return { initialized: true };
+    if (localUserCount > 0) return { status: 'initialized' };
 
-    // If no local users, check if cloud is already configured in settings
+    // If no local users, we MUST check Supabase.
     try {
       const supabase = await cloudSyncService.getSupabaseClient();
-      if (supabase) {
-        const { count, error } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true });
-        
-        if (!error && count && count > 0) {
-          console.log(`[SETUP] Found ${count} users in cloud. Skipping setup wizard.`);
-          return { initialized: true };
-        }
+      if (!supabase) {
+        // No client (keys not configured in .env or settings)
+        return { status: 'offline_first_use', error: 'Cloud configuration missing.' };
       }
-    } catch (err) {
-      console.warn('[SETUP] Cloud check failed during setup status check');
-    }
 
-    return { initialized: false };
+      // Test active connection to Supabase and query users table
+      const { count, error } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) {
+        throw error;
+      }
+
+      if (count && count > 0) {
+        console.log(`[SETUP] Found ${count} users in cloud. Performing background downsync...`);
+        // Downsync users and settings so we have local records
+        await cloudSyncService.performDownsync();
+        return { status: 'initialized' };
+      } else {
+        // Supabase is connected but has 0 users
+        return { status: 'setup_required' };
+      }
+    } catch (err: any) {
+      console.warn('[SETUP] Cloud check failed during setup status check:', err.message);
+      // Fail explicitly with offline_first_use when no local users exist and we cannot check the cloud
+      return { status: 'offline_first_use', error: err.message || 'No internet connection' };
+    }
   },
 
   registerFirstAdmin: async (username: string, password: string) => {
