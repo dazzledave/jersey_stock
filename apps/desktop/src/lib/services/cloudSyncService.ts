@@ -413,7 +413,7 @@ export const cloudSyncService = {
               size: 'Standard',
               color: 'Standard',
               sku: defaultSku,
-              barcode: ''
+              barcode: `BC-${randomSuffix}-${namePrefix}`
             }
           });
 
