@@ -319,6 +319,7 @@ function createWindow() {
   });
 
   mainWindow.loadURL(SERVER_URL);
+  mainWindow.setMenu(null);
 
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.focus();
