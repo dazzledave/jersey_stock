@@ -33,8 +33,8 @@ const mapToSnakeCase = (obj: any) => {
 };
 
 export const syncToCloud = async (supabaseUrl: string, supabaseKey: string) => {
-  // Use Service Role key if available in env to bypass RLS, otherwise use provided key
-  const finalKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseKey;
+  // Use Anon key configured or provided key
+  const finalKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || supabaseKey;
   
   const sanitizedUrl = supabaseUrl.trim()
     .replace(/\/rest\/v1\/?$/, '')

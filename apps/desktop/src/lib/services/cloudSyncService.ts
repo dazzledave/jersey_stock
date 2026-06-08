@@ -39,11 +39,11 @@ export const cloudSyncService = {
     if (!urlSetting?.value || !keySetting?.value) {
       // FALLBACK: Use .env variables if database settings are missing (for fresh machines)
       const envUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const envKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const envKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_KEY;
       
       if (!envUrl || !envKey) return null;
       
-      console.log(`[SYNC] Fallback client using URL: ${envUrl} and Key (prefix): ${envKey.slice(0, 10)}... (suffix): ${envKey.slice(-10)}`);
+      console.log(`[SYNC] Fallback client using URL: ${envUrl} and Anon Key (prefix): ${envKey.slice(0, 10)}...`);
       return createClient(envUrl.trim(), envKey.trim(), clientOptions);
     }
 
