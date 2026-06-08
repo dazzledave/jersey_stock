@@ -169,14 +169,14 @@ export default function AuditLogs() {
               ) : (
                 filteredLogs.map((l) => (
                   <tr key={l.id} className="hover:bg-brand-bg/20 transition-colors group">
-                    <td className="px-6 py-5 text-[10px] font-bold text-foreground">{new Date(l.createdAt).toLocaleString()}</td>
+                    <td className="px-6 py-5 text-[10px] font-bold text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{new Date(l.createdAt).toLocaleString()}</td>
                     <td className="px-6 py-5 text-[10px] font-black text-orange-500 uppercase tracking-widest">{l.username || 'System'}</td>
                     <td className="px-6 py-5">
                        <span className={`px-2.5 py-1 rounded text-[8px] font-black uppercase tracking-widest ${getActionBadgeColor(l.action)}`}>
                           {l.action}
                        </span>
                     </td>
-                    <td className="px-6 py-5 text-[11px] font-medium text-slate-300 max-w-sm truncate group-hover:text-white transition-colors" title={l.details}>
+                    <td className="px-6 py-5 text-[11px] font-medium text-slate-500 dark:text-slate-300 max-w-sm truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors" title={l.details}>
                       {l.details}
                     </td>
                   </tr>
