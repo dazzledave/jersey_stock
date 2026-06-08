@@ -711,7 +711,7 @@ export default function SalesTerminal() {
                         <div className="flex-1">
                           <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">{method} Amount</div>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">{currency}</span>
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 select-none">{currency}</span>
                             <input
                               type="number"
                               placeholder="0.00"
@@ -723,7 +723,7 @@ export default function SalesTerminal() {
                                   return [...existing, { method, amount: val }];
                                 });
                               }}
-                              className="w-full bg-surface p-2.5 pl-8 rounded-lg border border-border-subtle text-sm font-bold text-foreground outline-none focus:border-orange-500 transition-all"
+                              className="w-full bg-surface p-2.5 pl-12 rounded-lg border border-border-subtle text-sm font-bold text-foreground outline-none focus:border-orange-500 transition-all"
                             />
                           </div>
                         </div>
