@@ -469,7 +469,7 @@ export default function InventoryDashboard() {
             
             {alerts.length > 0 && (
               <div className="bg-rose-500/5 border border-rose-500/10 p-4 rounded-xl text-center text-[9px] font-bold uppercase tracking-widest text-rose-400 mt-4 leading-relaxed">
-                ⚠ {alerts.length} configurations are below safe thresholds. Issue supplier purchase orders immediately.
+                ⚠ {alerts.length} {alerts.length === 1 ? 'configuration is' : 'configurations are'} below safe thresholds. Issue supplier purchase orders immediately.
               </div>
             )}
           </div>
