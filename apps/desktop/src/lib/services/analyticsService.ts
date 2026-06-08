@@ -37,8 +37,16 @@ export const analyticsService = {
       });
     });
 
-    const allInventory = await prisma.inventory.findMany();
-    const lowStockCount = allInventory.filter(i => i.quantity <= i.reorderLevel).length;
+    const allInventory = await prisma.inventory.findMany({
+      include: {
+        variant: {
+          include: {
+            product: true
+          }
+        }
+      }
+    });
+    const lowStockCount = allInventory.filter(i => i.quantity <= i.reorderLevel && i.variant?.product?.isActive !== false).length;
 
     // 2. Today's and Yesterday's Stats
     const todaySalesList = activeSales.filter(s => s.createdAt >= startOfToday);
@@ -291,6 +299,7 @@ export const analyticsService = {
 
     // 6. Top Products & Slow Movers (derived from current period sales for speed & accuracy)
     const allProducts = await prisma.product.findMany({
+      where: { isActive: true },
       include: {
         variants: {
           include: {

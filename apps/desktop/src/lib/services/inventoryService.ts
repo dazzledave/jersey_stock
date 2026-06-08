@@ -65,6 +65,6 @@ export const inventoryService = {
         }
       }
     });
-    return all.filter(i => i.quantity <= i.reorderLevel);
+    return all.filter(i => i.quantity <= i.reorderLevel && i.variant?.product?.isActive !== false);
   }
 };
