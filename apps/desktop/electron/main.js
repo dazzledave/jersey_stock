@@ -326,6 +326,24 @@ function createWindow() {
     //   mainWindow.webContents.openDevTools({ mode: 'detach' });
     // }
   });
+
+  // Handle zooming using keyboard shortcuts (since Ctrl++ or Ctrl+= might be blocked or fail)
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.control || input.meta) {
+      if (input.key === '=' || input.key === '+') {
+        event.preventDefault();
+        const currentZoom = mainWindow.webContents.getZoomFactor();
+        mainWindow.webContents.setZoomFactor(Math.min(currentZoom + 0.1, 2.0));
+      } else if (input.key === '-') {
+        event.preventDefault();
+        const currentZoom = mainWindow.webContents.getZoomFactor();
+        mainWindow.webContents.setZoomFactor(Math.max(currentZoom - 0.1, 0.5));
+      } else if (input.key === '0') {
+        event.preventDefault();
+        mainWindow.webContents.setZoomFactor(1.0);
+      }
+    }
+  });
   
   mainWindow.on('closed', () => { mainWindow = null; });
 }
