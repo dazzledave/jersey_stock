@@ -19,10 +19,23 @@ export default function SystemSetup() {
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [profileData, setProfileData] = useState({ username: user?.username || '', password: '' });
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [recoveryKey, setRecoveryKey] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
+  const [verificationMode, setVerificationMode] = useState<'password' | 'recovery'>('password');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
+
+  // Sync profileData username when user context loads/changes
+  useEffect(() => {
+    if (user?.username) {
+      setProfileData(prev => ({ ...prev, username: user.username }));
+    }
+  }, [user]);
 
   // Staff Management State
   const [users, setUsers] = useState<any[]>([]);
@@ -404,6 +417,49 @@ export default function SystemSetup() {
     }
   };
 
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (verificationMode === 'password' && !oldPassword) {
+      showToast('Please enter your current password.', 'error');
+      return;
+    }
+    if (verificationMode === 'recovery' && !recoveryKey) {
+      showToast('Please enter your secret code.', 'error');
+      return;
+    }
+    setIsVerifying(true);
+    try {
+      const payload: any = { userId: user?.id };
+      if (verificationMode === 'password') {
+        payload.password = oldPassword;
+      } else {
+        payload.recoveryKey = recoveryKey;
+      }
+      const res = await fetch('/api/users/profile/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.verified) {
+        setIsVerified(true);
+        showToast('Identity verified successfully! You can now set your new password.', 'success');
+      } else {
+        showToast(data.error || 'Verification failed.', 'error');
+      }
+    } catch (err) {
+      showToast('Network error during verification.', 'error');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleForgotToggle = (mode: 'password' | 'recovery') => {
+    setVerificationMode(mode);
+    setOldPassword('');
+    setRecoveryKey('');
+  };
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUpdatingProfile(true);
@@ -424,6 +480,10 @@ export default function SystemSetup() {
         }
         showToast('Profile updated successfully!', 'success');
         setProfileData(prev => ({ ...prev, password: '' }));
+        setIsVerified(false);
+        setOldPassword('');
+        setRecoveryKey('');
+        setShowPasswordFields(false);
       } else {
         const data = await res.json();
         showToast('Error: ' + data.error, 'error');
@@ -473,7 +533,7 @@ export default function SystemSetup() {
       </div>
 
       {activeSubTab === 'my-profile' ? (
-        <div className="max-w-2xl bg-surface p-10 rounded-xl border border-border-subtle shadow-sm space-y-8">
+        <div className="max-w-2xl bg-surface p-10 rounded-xl border border-border-subtle shadow-sm space-y-8 animate-fade-in">
            <div>
               <h3 className="text-xl font-bold text-foreground mb-1">My Personal Profile</h3>
               <p className="text-xs text-slate-400 font-medium">Update your secure access credentials.</p>
@@ -488,20 +548,113 @@ export default function SystemSetup() {
                    className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
                  />
               </div>
-              <div className="space-y-2">
-                 <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Update Password</label>
-                 <input 
-                   type="password" 
-                   value={profileData.password}
-                   onChange={(e) => setProfileData({...profileData, password: e.target.value})}
-                   placeholder="Leave blank to keep current password"
-                   className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
-                 />
-              </div>
+
+              {!showPasswordFields ? (
+                <div className="pt-2">
+                  <button 
+                    type="button"
+                    onClick={() => setShowPasswordFields(true)}
+                    className="px-6 py-3 border border-border-subtle text-foreground text-[10px] font-black uppercase tracking-widest rounded-lg hover:border-orange-200 hover:bg-orange-500/5 transition-all"
+                  >
+                    Change Password
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6 pt-2 border-t border-border-subtle/50">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest">Password Verification</span>
+                    {isVerified && (
+                      <span className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md uppercase">✓ Verified</span>
+                    )}
+                  </div>
+
+                  {!isVerified ? (
+                    <div className="space-y-4 bg-brand-bg/30 p-5 rounded-xl border border-border-subtle">
+                      {verificationMode === 'password' ? (
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Current Password</label>
+                            <button 
+                              type="button"
+                              onClick={() => handleForgotToggle('recovery')}
+                              className="text-[9px] font-black text-orange-500 uppercase tracking-wider hover:underline"
+                            >
+                              Forgot Password?
+                            </button>
+                          </div>
+                          <input 
+                            type="password" 
+                            value={oldPassword}
+                            onChange={(e) => setOldPassword(e.target.value)}
+                            placeholder="Enter current password to unlock"
+                            className="w-full bg-surface p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Secret Code (Recovery Key)</label>
+                            <button 
+                              type="button"
+                              onClick={() => handleForgotToggle('password')}
+                              className="text-[9px] font-black text-orange-500 uppercase tracking-wider hover:underline"
+                            >
+                              I remember my password
+                            </button>
+                          </div>
+                          <input 
+                            type="text" 
+                            value={recoveryKey}
+                            onChange={(e) => setRecoveryKey(e.target.value)}
+                            placeholder="Enter your system secret recovery code"
+                            className="w-full bg-surface p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground uppercase" 
+                          />
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handleVerify}
+                        disabled={isVerifying}
+                        className="w-full bg-foreground text-surface font-black py-3 rounded-lg text-[10px] uppercase tracking-widest hover:bg-orange-500 transition-all shadow-md"
+                      >
+                        {isVerifying ? 'Verifying...' : 'Verify Identity'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="space-y-2">
+                         <label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">New Password</label>
+                         <input 
+                           type="password" 
+                           value={profileData.password}
+                           onChange={(e) => setProfileData({...profileData, password: e.target.value})}
+                           placeholder="Enter new secure password"
+                           className="w-full bg-brand-bg p-4 rounded-lg border border-border-subtle text-sm font-bold outline-none focus:border-orange-200 transition-all text-foreground" 
+                         />
+                      </div>
+                      <div className="text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsVerified(false);
+                            setOldPassword('');
+                            setRecoveryKey('');
+                          }}
+                          className="text-[8.5px] font-bold text-slate-500 uppercase hover:text-orange-500 transition-colors"
+                        >
+                          Reset verification
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button 
                 type="submit"
-                disabled={isUpdatingProfile}
-                className="w-full bg-orange-500 text-white font-black py-4 rounded-lg text-[10px] uppercase tracking-[0.2em] hover:bg-orange-600 transition-all shadow-lg"
+                disabled={isUpdatingProfile || (showPasswordFields && !isVerified)}
+                className="w-full bg-orange-500 text-white font-black py-4 rounded-lg text-[10px] uppercase tracking-[0.2em] hover:bg-orange-600 transition-all shadow-lg disabled:opacity-50"
               >
                 {isUpdatingProfile ? 'Updating...' : 'Update My Credentials'}
               </button>
