@@ -152,34 +152,45 @@ export const authService = {
       where: { username }
     });
 
-    // CLOUD FALLBACK: If not found locally, check the Supabase database
-    if (!localUser) {
-      try {
-        const supabase = await cloudSyncService.getSupabaseClient();
-        if (supabase) {
-          const { data: cloudUsers, error: cloudError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('username', username)
-            .single();
+    // Try to sync latest credentials/role/status from cloud if online
+    try {
+      const supabase = await cloudSyncService.getSupabaseClient();
+      if (supabase) {
+        const { data: cloudUser, error: cloudError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('username', username)
+          .single();
 
-          if (!cloudError && cloudUsers) {
+        if (!cloudError && cloudUser) {
+          if (localUser) {
+            console.log(`[AUTH] Syncing user ${username} role/status from cloud on login.`);
+            localUser = await prisma.user.update({
+              where: { id: localUser.id },
+              data: {
+                role: cloudUser.role,
+                isActive: cloudUser.isActive ?? true,
+                password: cloudUser.password,
+                recoveryKey: cloudUser.recoveryKey
+              }
+            });
+          } else {
             console.log(`[AUTH] Found cloud user: ${username}. Cloning to local...`);
-            // Create local copy with the same ID and role
             localUser = await prisma.user.create({
               data: {
-                id: cloudUsers.id,
-                username: cloudUsers.username,
-                password: cloudUsers.password, // Cloud password is already hashed
-                role: cloudUsers.role,
-                recoveryKey: cloudUsers.recoveryKey
+                id: cloudUser.id,
+                username: cloudUser.username,
+                password: cloudUser.password,
+                role: cloudUser.role,
+                isActive: cloudUser.isActive ?? true,
+                recoveryKey: cloudUser.recoveryKey
               }
             });
           }
         }
-      } catch (err: any) {
-        console.warn(`[AUTH] Cloud check failed: ${err.message}`);
       }
+    } catch (err: any) {
+      console.warn(`[AUTH] Cloud user sync failed, using local fallback: ${err.message}`);
     }
 
     if (!localUser) {
