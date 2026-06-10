@@ -8,38 +8,49 @@ const JWT_SECRET = process.env.JWT_SECRET || 'awards-centre-pos-secret-key-2024'
 
 export const authService = {
   checkSetupStatus: async () => {
+    // If online, check if the cloud database has been wiped/reset to 0 users
+    try {
+      const supabase = await cloudSyncService.getSupabaseClient();
+      if (supabase) {
+        const { count, error } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true });
+        
+        if (!error && count === 0) {
+          console.log('[SETUP] Cloud database has 0 users (wiped). Resetting local users state.');
+          await prisma.user.deleteMany({});
+          return { status: 'setup_required' };
+        }
+      }
+    } catch (err) {
+      console.warn('[SETUP] Cloud setup check failed, using local fallback.');
+    }
+
     const localUserCount = await prisma.user.count();
     if (localUserCount > 0) return { status: 'initialized' };
 
-    // If no local users, we MUST check Supabase.
+    // If no local users, check Supabase fallback to see if we should downsync
     try {
       const supabase = await cloudSyncService.getSupabaseClient();
       if (!supabase) {
-        // No client (keys not configured in .env or settings)
         return { status: 'offline_first_use', error: 'Cloud configuration missing.' };
       }
 
-      // Test active connection to Supabase and query users table
       const { count, error } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true });
       
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       if (count && count > 0) {
         console.log(`[SETUP] Found ${count} users in cloud. Performing background downsync...`);
-        // Downsync users and settings so we have local records
         await cloudSyncService.performDownsync();
         return { status: 'initialized' };
       } else {
-        // Supabase is connected but has 0 users
         return { status: 'setup_required' };
       }
     } catch (err: any) {
-      console.warn('[SETUP] Cloud check failed during setup status check:', err.message);
-      // Fail explicitly with offline_first_use when no local users exist and we cannot check the cloud
+      console.warn('[SETUP] Cloud fallback check failed:', err.message);
       return { status: 'offline_first_use', error: err.message || 'No internet connection' };
     }
   },
@@ -146,23 +157,27 @@ export const authService = {
 
     return { success: true };
   },
-
   login: async (username: string, password: string) => {
     let localUser = await prisma.user.findUnique({
       where: { username }
     });
 
+    let cloudUserFound = false;
+    let isOnline = false;
+
     // Try to sync latest credentials/role/status from cloud if online
     try {
       const supabase = await cloudSyncService.getSupabaseClient();
       if (supabase) {
+        isOnline = true;
         const { data: cloudUser, error: cloudError } = await supabase
           .from('users')
           .select('*')
           .eq('username', username)
-          .single();
+          .maybeSingle();
 
         if (!cloudError && cloudUser) {
+          cloudUserFound = true;
           if (localUser) {
             console.log(`[AUTH] Syncing user ${username} role/status from cloud on login.`);
             localUser = await prisma.user.update({
@@ -191,6 +206,15 @@ export const authService = {
       }
     } catch (err: any) {
       console.warn(`[AUTH] Cloud user sync failed, using local fallback: ${err.message}`);
+    }
+
+    // If online, but user does not exist in the master database (cloud), delete them locally
+    if (isOnline && !cloudUserFound) {
+      if (localUser) {
+        console.log(`[AUTH] User ${username} not found in cloud (deleted). Deleting local copy.`);
+        await prisma.user.delete({ where: { id: localUser.id } });
+      }
+      throw new Error('Invalid credentials.');
     }
 
     if (!localUser) {
